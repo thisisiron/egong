@@ -1,0 +1,14 @@
+{
+  "name": "egong-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "pnpm --filter @egong/frontend dev",
+    "dev:backend": "cd backend && uvicorn src.main:app --reload --port 8000",
+    "build:frontend": "pnpm --filter @egong/frontend build",
+    "test:frontend": "pnpm --filter @egong/frontend test",
+    "test:backend": "cd backend && pytest",
+    "db:push": "npx -y supabase db push",
+    "db:types": "npx -y supabase gen types typescript --project-id ltyopuvdqtcajioioudb > frontend/lib/supabase/database.types.ts"
+  }
+}

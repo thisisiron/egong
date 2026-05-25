@@ -1,0 +1,9 @@
+packages:
+  - "frontend"
+
+# Build scripts are explicitly disallowed for these native binaries.
+# sharp: optional Next.js image optimization (works without)
+# unrs-resolver: optional alternative resolver (eslint uses fallback)
+allowBuilds:
+  sharp: false
+  unrs-resolver: false

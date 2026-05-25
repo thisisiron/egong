@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# next.js
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# supabase local
+supabase/.branches/
+supabase/.temp/
+
+# editor
+.vscode/
+.idea/
+
+# brainstorming artifacts
+.superpowers/
+
+# Claude Code / agent harness (local to this machine)
+.agents/
+.claude/
+skills-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
