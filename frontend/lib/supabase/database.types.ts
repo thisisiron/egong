@@ -52,6 +52,54 @@ export type Database = {
           },
         ]
       }
+      admin_audit_log: {
+        Row: {
+          academy_id: string | null
+          action: string
+          admin_user_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          target_id: string | null
+          target_table: string | null
+        }
+        Insert: {
+          academy_id?: string | null
+          action: string
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Update: {
+          academy_id?: string | null
+          action?: string
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_log_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_audit_log_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance: {
         Row: {
           excused_reason: string | null
