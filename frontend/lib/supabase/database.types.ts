@@ -52,6 +52,61 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          excused_reason: string | null
+          id: string
+          marked_at: string
+          marked_by: string | null
+          needs_makeup: boolean
+          session_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+        }
+        Insert: {
+          excused_reason?: string | null
+          id?: string
+          marked_at?: string
+          marked_by?: string | null
+          needs_makeup?: boolean
+          session_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+        }
+        Update: {
+          excused_reason?: string | null
+          id?: string
+          marked_at?: string
+          marked_by?: string | null
+          needs_makeup?: boolean
+          session_id?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_students: {
         Row: {
           class_id: string
@@ -184,6 +239,47 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          scheduled_at: string
+          title: string
+          unit: string | null
+          video_notes: string | null
+          video_url: string | null
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          scheduled_at: string
+          title: string
+          unit?: string | null
+          video_notes?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          scheduled_at?: string
+          title?: string
+          unit?: string | null
+          video_notes?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
         ]
@@ -345,6 +441,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      attendance_counts: {
+        Args: { p_from: string; p_student_id: string; p_to: string }
+        Returns: {
+          absent_count: number
+          excused_count: number
+          late_count: number
+          present_count: number
+        }[]
+      }
+      attendance_rate: {
+        Args: { p_from: string; p_student_id: string; p_to: string }
+        Returns: number
+      }
       current_user_academy: { Args: never; Returns: string }
       current_user_role: {
         Args: never
@@ -354,6 +463,7 @@ export type Database = {
     }
     Enums: {
       academy_status: "active" | "suspended" | "deleted"
+      attendance_status: "present" | "late" | "absent" | "excused"
       class_level: "elementary" | "middle" | "high"
       parent_relationship: "mother" | "father" | "other"
       student_status: "enrolled" | "paused" | "graduated"
@@ -486,6 +596,7 @@ export const Constants = {
   public: {
     Enums: {
       academy_status: ["active", "suspended", "deleted"],
+      attendance_status: ["present", "late", "absent", "excused"],
       class_level: ["elementary", "middle", "high"],
       parent_relationship: ["mother", "father", "other"],
       student_status: ["enrolled", "paused", "graduated"],
