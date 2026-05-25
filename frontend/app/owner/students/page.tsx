@@ -14,6 +14,7 @@ export default async function StudentsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">학생</h1>
         <div className="flex gap-2">
+          <Link href="/owner/students/import"><Button variant="outline">csv 일괄 등록</Button></Link>
           <Link href="/owner/students/new"><Button>학생 등록</Button></Link>
         </div>
       </div>
