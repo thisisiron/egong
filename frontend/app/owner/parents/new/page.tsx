@@ -28,7 +28,7 @@ export default function NewParentPage() {
           <Input
             id="temp_password"
             name="temp_password"
-            type="text"
+            type="password"
             minLength={8}
             required
           />
