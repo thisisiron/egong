@@ -6,6 +6,8 @@ import {
   removeStudentAction,
   setTeacherAction,
 } from './actions'
+import { ScheduleGenerator } from './_components/ScheduleGenerator'
+import { SessionsList } from './_components/SessionsList'
 
 type TeacherLinkRow = {
   teacher_id: string
@@ -151,6 +153,10 @@ export default async function ClassDetailPage({
           </Button>
         </form>
       </section>
+
+      <ScheduleGenerator classId={cls.id} />
+
+      <SessionsList classId={cls.id} />
     </div>
   )
 }
