@@ -9,6 +9,11 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# python build artifacts
+*.egg-info/
+build/
+dist/
+
 # env
 .env
 .env.local

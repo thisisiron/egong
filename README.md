@@ -22,9 +22,13 @@ pip install -e ".[dev]"
 cd ..
 
 # 2. 환경변수
+cp .env.example .env                                        # 루트 (db:types 등 워크스페이스 스크립트용)
 cp frontend/.env.example frontend/.env.local
 cp backend/.env.example backend/.env
-# Supabase 대시보드에서 URL·publishable·secret 키를 복사해 두 파일에 입력
+# Supabase 대시보드에서 URL·publishable·secret 키와 project ref를 복사해 세 파일에 입력
+# pnpm db:types 실행 전에는 SUPABASE_PROJECT_REF가 셸 환경에 있어야 함:
+#   export SUPABASE_PROJECT_REF=<your-ref>     # Git Bash
+# 또는 dotenv-cli로 .env를 로드하는 방식 사용
 
 # 3. (선택) Supabase CLI 로그인·링크 — Task 2 마이그레이션 push 직전에
 npx supabase login                                          # 브라우저 OAuth
@@ -63,6 +67,6 @@ pnpm run dev:frontend                                       # http://localhost:3
 | `pnpm test:frontend` | 프론트엔드 테스트 |
 | `pnpm test:backend` | pytest (`cd backend && pytest`) |
 | `pnpm db:push` | Supabase 마이그레이션 push |
-| `pnpm db:types` | DB 타입 자동 생성 → `frontend/lib/supabase/database.types.ts` |
+| `pnpm db:types` | DB 타입 자동 생성 → `frontend/lib/supabase/database.types.ts` (셸에 `SUPABASE_PROJECT_REF` 필요) |
 
 자세한 셋업은 `frontend/README.md`, `backend/README.md` 참조.

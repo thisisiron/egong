@@ -9,6 +9,6 @@
     "test:frontend": "pnpm --filter @egong/frontend test",
     "test:backend": "cd backend && pytest",
     "db:push": "npx -y supabase db push",
-    "db:types": "npx -y supabase gen types typescript --project-id ltyopuvdqtcajioioudb > frontend/lib/supabase/database.types.ts"
+    "db:types": "npx -y supabase gen types typescript --project-id \"$SUPABASE_PROJECT_REF\" > frontend/lib/supabase/database.types.ts"
   }
 }
