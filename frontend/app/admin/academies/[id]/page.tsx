@@ -46,6 +46,18 @@ export default async function AcademyDetailPage({
         </div>
         <Button type="submit">저장</Button>
       </form>
+
+      <form
+        action={`/admin/academies/${a.id}/impersonate`}
+        method="post"
+        className="bg-white border rounded-lg p-6"
+      >
+        <h2 className="font-semibold mb-2">원장 화면 보기</h2>
+        <p className="text-xs text-slate-500 mb-3">
+          클릭하면 원장 magic link로 로그인됩니다. audit log에 기록됩니다.
+        </p>
+        <Button type="submit" variant="outline">원장으로 전환</Button>
+      </form>
     </div>
   )
 }
