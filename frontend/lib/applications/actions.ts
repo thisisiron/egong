@@ -47,8 +47,10 @@ export async function submitApplicationAction(formData: FormData): Promise<void>
     cache: 'no-store',
   })
   if (!resp.ok) {
-    const text = await resp.text()
-    throw new Error(`신청 처리에 실패했습니다 (${resp.status}): ${text.slice(0, 200)}`)
+    // 백엔드 응답 본문을 사용자에게 노출하지 않음 — 서버 로그로만.
+    const body = await resp.text().catch(() => '')
+    console.error('submitApplicationAction backend error', resp.status, body.slice(0, 500))
+    throw new Error('신청 처리에 실패했습니다. 잠시 후 다시 시도해주세요.')
   }
 
   redirect('/apply/done')
