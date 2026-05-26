@@ -124,17 +124,19 @@ export function parseCalendarParams(sp: {
   return { view, ym, year, day }
 }
 
-/** 현재 뷰 기준 적절한 range 반환 */
+/** 현재 뷰 기준 적절한 range 반환. week 뷰는 day param 이 있으면 그 주, 없으면 오늘 주. */
 export function rangeForView(
   view: CalendarView,
   ym: string,
   year: number,
+  day: string | null = null,
 ): { from: string; to: string; label: string } {
   if (view === 'month') return monthRange(ym)
   if (view === 'year') return yearRange(year)
-  // week — ym 의 첫 날짜 또는 오늘 기준
-  const today = new Date()
-  return weekRange(today)
+  // week — day 가 있으면 그 날 기준, 없으면 오늘
+  const base =
+    day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? new Date(`${day}T00:00:00`) : new Date()
+  return weekRange(base)
 }
 
 /** 다음/이전 month/year/week 계산 (URL state 이동용) */

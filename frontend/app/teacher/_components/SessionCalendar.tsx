@@ -12,6 +12,7 @@ import { CalendarMonth } from './CalendarMonth'
 import { CalendarYear } from './CalendarYear'
 import { SessionPopup } from './SessionPopup'
 
+/** searchParams는 page.tsx에서 이미 await 된 plain object. */
 type Props = {
   searchParams: {
     view?: string
@@ -28,7 +29,7 @@ const VIEW_BTN = (active: boolean) =>
 
 export async function SessionCalendar({ searchParams }: Props) {
   const { view, ym, year, day } = parseCalendarParams(searchParams)
-  const range = rangeForView(view, ym, year)
+  const range = rangeForView(view, ym, year, day)
 
   const supabase = await createClient()
   // RLS: teacher만 본인 담당 반의 sessions 보임
