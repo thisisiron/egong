@@ -58,6 +58,7 @@ async def create_teacher(academy_id: str, payload: TeacherCreate) -> TeacherOut:
                 "role": "teacher",
                 "display_name": payload.display_name,
                 "phone": payload.phone,
+                "email": payload.email,
             }
         ).execute()
     except Exception as e:
@@ -132,6 +133,7 @@ async def create_parent(academy_id: str, payload: ParentCreate) -> ParentOut:
                 "role": "parent",
                 "display_name": payload.name,
                 "phone": payload.phone,
+                "email": payload.email,
             }
         ).execute()
     except Exception as e:
@@ -262,6 +264,7 @@ async def attach_student_auth(
                 "academy_id": academy_id,
                 "role": "student",
                 "display_name": payload.email.split("@")[0],
+                "email": payload.email,
             }
         ).execute()
     except Exception as e:

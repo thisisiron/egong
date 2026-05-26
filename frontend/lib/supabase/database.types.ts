@@ -454,6 +454,7 @@ export type Database = {
           academy_id: string | null
           created_at: string
           display_name: string
+          email: string | null
           id: string
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
@@ -462,6 +463,7 @@ export type Database = {
           academy_id?: string | null
           created_at?: string
           display_name: string
+          email?: string | null
           id: string
           phone?: string | null
           role: Database["public"]["Enums"]["user_role"]
@@ -470,6 +472,7 @@ export type Database = {
           academy_id?: string | null
           created_at?: string
           display_name?: string
+          email?: string | null
           id?: string
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]

@@ -1,17 +1,22 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
+import { formatPhoneKR } from '@/lib/format'
 
 type TeacherRow = {
   id: string
-  users: { display_name: string; phone: string | null } | null
+  users: {
+    display_name: string
+    phone: string | null
+    email: string | null
+  } | null
 }
 
 export default async function TeachersPage() {
   const supabase = await createClient()
   const { data } = await supabase
     .from('teachers')
-    .select('id, users(display_name, phone)')
+    .select('id, users(display_name, phone, email)')
     .order('id')
 
   const teachers = (data ?? []) as unknown as TeacherRow[]
@@ -29,13 +34,14 @@ export default async function TeachersPage() {
           <thead className="bg-slate-50 text-left text-slate-600">
             <tr>
               <th className="px-4 py-3">이름</th>
+              <th className="px-4 py-3">이메일</th>
               <th className="px-4 py-3">연락처</th>
             </tr>
           </thead>
           <tbody>
             {teachers.length === 0 ? (
               <tr>
-                <td colSpan={2} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={3} className="px-4 py-8 text-center text-slate-400">
                   선생님이 없습니다.
                 </td>
               </tr>
@@ -43,7 +49,8 @@ export default async function TeachersPage() {
             {teachers.map((t) => (
               <tr key={t.id} className="border-t">
                 <td className="px-4 py-3 font-medium">{t.users?.display_name ?? '-'}</td>
-                <td className="px-4 py-3">{t.users?.phone ?? '-'}</td>
+                <td className="px-4 py-3 text-slate-600">{t.users?.email ?? '-'}</td>
+                <td className="px-4 py-3 tabular-nums">{formatPhoneKR(t.users?.phone)}</td>
               </tr>
             ))}
           </tbody>

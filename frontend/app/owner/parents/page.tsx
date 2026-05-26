@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
+import { formatPhoneKR } from '@/lib/format'
 
 type ParentRow = {
   id: string
   name: string
   phone: string | null
+  users: { email: string | null } | null
   student_parent: { student_id: string }[]
 }
 
@@ -16,7 +18,7 @@ export default async function ParentsPage() {
   // so a plain select shows the right set without an explicit filter.
   const { data } = await supabase
     .from('parents')
-    .select('id, name, phone, student_parent(student_id)')
+    .select('id, name, phone, users(email), student_parent(student_id)')
     .order('name')
 
   const parents = (data ?? []) as unknown as ParentRow[]
@@ -34,6 +36,7 @@ export default async function ParentsPage() {
           <thead className="bg-slate-50 text-left text-slate-600">
             <tr>
               <th className="px-4 py-3">이름</th>
+              <th className="px-4 py-3">이메일</th>
               <th className="px-4 py-3">연락처</th>
               <th className="px-4 py-3">연결된 학생 수</th>
             </tr>
@@ -41,18 +44,22 @@ export default async function ParentsPage() {
           <tbody>
             {parents.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={4} className="px-4 py-8 text-center text-slate-400">
                   등록된 학부모가 없습니다.
                 </td>
               </tr>
             ) : null}
-            {parents.map((p) => (
-              <tr key={p.id} className="border-t">
-                <td className="px-4 py-3 font-medium">{p.name}</td>
-                <td className="px-4 py-3">{p.phone ?? '-'}</td>
-                <td className="px-4 py-3">{p.student_parent?.length ?? 0}</td>
-              </tr>
-            ))}
+            {parents.map((p) => {
+              const user = Array.isArray(p.users) ? p.users[0] : p.users
+              return (
+                <tr key={p.id} className="border-t">
+                  <td className="px-4 py-3 font-medium">{p.name}</td>
+                  <td className="px-4 py-3 text-slate-600">{user?.email ?? '-'}</td>
+                  <td className="px-4 py-3 tabular-nums">{formatPhoneKR(p.phone)}</td>
+                  <td className="px-4 py-3">{p.student_parent?.length ?? 0}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
