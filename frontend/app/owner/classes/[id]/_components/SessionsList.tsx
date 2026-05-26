@@ -10,7 +10,7 @@ export async function SessionsList({ classId }: { classId: string }) {
     .limit(20)
 
   return (
-    <section className="bg-white border rounded-lg p-6 space-y-3">
+    <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-3">
       <h2 className="font-semibold">최근 회차 ({sessions?.length ?? 0})</h2>
       <ul className="text-sm space-y-1">
         {(sessions ?? []).map((s) => (

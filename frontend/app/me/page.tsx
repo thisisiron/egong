@@ -164,8 +164,8 @@ export default async function MyStudentPage({
 
   return (
     <div className="space-y-6">
-      <header className="bg-white border rounded-lg p-4 flex items-center gap-4">
-        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold">
+      <header className="bg-white border border-amber-100 rounded-lg p-4 flex items-center gap-4">
+        <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-semibold">
           {student?.name?.[0] ?? '학'}
         </div>
         <div className="flex-1">
@@ -186,7 +186,7 @@ export default async function MyStudentPage({
         absent={counts.absent_count + counts.excused_count}
       />
 
-      <section className="bg-white border rounded-lg p-4">
+      <section className="bg-white border border-amber-100 rounded-lg p-4">
         <AttendanceCalendar
           year={now.getFullYear()}
           month={now.getMonth() + 1}

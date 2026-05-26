@@ -22,7 +22,7 @@ export default async function OwnerDashboard() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-white border rounded-lg p-5">
+    <div className="bg-white border border-amber-100 rounded-lg p-5">
       <div className="text-sm text-slate-500">{label}</div>
       <div className="text-3xl font-semibold mt-1">{value}</div>
     </div>

@@ -29,9 +29,9 @@ export default async function TeachersPage() {
           <Button>선생님 등록</Button>
         </Link>
       </div>
-      <div className="bg-white border rounded-lg overflow-hidden">
+      <div className="bg-white border border-amber-100 rounded-lg overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-600">
+          <thead className="bg-amber-50 text-left text-slate-700">
             <tr>
               <th className="px-4 py-3">이름</th>
               <th className="px-4 py-3">이메일</th>

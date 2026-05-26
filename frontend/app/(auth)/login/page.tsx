@@ -9,8 +9,8 @@ export default async function LoginPage({ searchParams }: Props) {
   const { error, next } = await searchParams
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-sm bg-white rounded-xl shadow-sm border p-6 space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-amber-50 p-4">
+      <div className="w-full max-w-sm bg-white rounded-xl shadow-sm border border-amber-100 p-6 space-y-4">
         <h1 className="text-2xl font-semibold">로그인</h1>
         {error ? (
           <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">

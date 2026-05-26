@@ -31,7 +31,7 @@ export default async function NewAcademyPage({
         </div>
       )}
 
-      <form action={createAcademyAction} className="space-y-4 bg-white border rounded-lg p-6">
+      <form action={createAcademyAction} className="space-y-4 bg-white border border-amber-100 rounded-lg p-6">
         <div className="space-y-1">
           <Label htmlFor="name">학원명</Label>
           <Input id="name" name="name" required defaultValue={sp.name ?? ''} placeholder="예: 일도수학" />

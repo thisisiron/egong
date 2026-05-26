@@ -31,7 +31,7 @@ export async function ChildAssignment({ studentId }: { studentId: string }) {
   const history = assignments.filter((a) => a.left_at)
 
   return (
-    <section className="bg-white border rounded-lg p-6 space-y-3">
+    <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-3">
       <h2 className="font-semibold">반 배정</h2>
       <ul className="space-y-2">
         {active.length === 0 ? (

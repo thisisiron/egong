@@ -18,7 +18,7 @@ const STATUS_BADGE: Record<SessionCellInfo['status'], { label: string; cls: stri
 export function SessionPopup({ day, cells }: Props) {
   if (cells.length === 0) {
     return (
-      <div className="mt-3 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-500">
+      <div className="mt-3 rounded-lg border border-amber-100 bg-white p-4 text-sm text-slate-500">
         {day}: 수업이 없는 날이에요.
       </div>
     )
@@ -35,7 +35,7 @@ export function SessionPopup({ day, cells }: Props) {
         return (
           <div
             key={session.id}
-            className="rounded-lg border-2 border-slate-300 bg-white p-3 shadow-sm"
+            className="rounded-lg border-2 border-amber-300 bg-white p-3 shadow-sm"
           >
             <div className="flex items-center justify-between">
               <div className="text-sm font-semibold">
@@ -57,8 +57,8 @@ export function SessionPopup({ day, cells }: Props) {
                   href={`/teacher/sessions/${session.id}`}
                   className={
                     status === 'empty' || status === 'in_progress'
-                      ? 'inline-block px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded hover:bg-slate-800'
-                      : 'inline-block px-3 py-1.5 border border-slate-200 text-slate-600 text-xs rounded hover:bg-slate-50'
+                      ? 'inline-block px-3 py-1.5 bg-amber-400 text-slate-900 text-xs font-semibold rounded hover:bg-amber-500'
+                      : 'inline-block px-3 py-1.5 border border-slate-200 text-slate-600 text-xs rounded hover:bg-amber-50 hover:border-amber-300'
                   }
                 >
                   {status === 'empty' || status === 'in_progress'

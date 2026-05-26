@@ -7,7 +7,7 @@ export default function NewStudentPage() {
   return (
     <div className="max-w-xl mx-auto">
       <h1 className="text-2xl font-semibold mb-6">학생 등록</h1>
-      <form action={createStudentAction} className="space-y-4 bg-white border rounded-lg p-6">
+      <form action={createStudentAction} className="space-y-4 bg-white border border-amber-100 rounded-lg p-6">
         <div className="space-y-1">
           <Label htmlFor="name">이름</Label>
           <Input id="name" name="name" required />

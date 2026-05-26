@@ -19,9 +19,7 @@ export function BulkPresentButton({ sessionId, studentIds, allPresent }: Props) 
   const mode: 'apply' | 'clear' = allPresent ? 'clear' : 'apply'
   const label = allPresent ? '↩ 전원 출석 취소' : '✓ 전원 출석'
   const variant = allPresent ? 'outline' : 'default'
-  const className = allPresent
-    ? 'w-full'
-    : 'w-full bg-green-600 hover:bg-green-700 text-white'
+  const className = 'w-full'
 
   function onClick() {
     startTransition(() => {

@@ -40,7 +40,7 @@ export default async function StudentDetailPage({
     <div className="space-y-6 max-w-3xl">
       <h1 className="text-2xl font-semibold">{student.name}</h1>
 
-      <section className="bg-white border rounded-lg p-6 space-y-3">
+      <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-3">
         <h2 className="font-semibold">기본 정보</h2>
         <form action={updateStudentAction} className="space-y-3">
           <input type="hidden" name="id" value={student.id} />
@@ -73,7 +73,7 @@ export default async function StudentDetailPage({
         </form>
       </section>
 
-      <section className="bg-white border rounded-lg p-6 space-y-3">
+      <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-3">
         <h2 className="font-semibold">학부모 연결</h2>
         <ul className="space-y-2">
           {parentLinks.length === 0 ? (

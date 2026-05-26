@@ -37,7 +37,7 @@ export function CalendarWeek({ cells, selectedDay }: Props) {
         const d = new Date(session.scheduled_at)
         const day = ymd(d)
         const time = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-        const ring = selectedDay === day ? 'ring-2 ring-indigo-500' : ''
+        const ring = selectedDay === day ? 'ring-2 ring-amber-500' : ''
         return (
           <li key={session.id}>
             <Link

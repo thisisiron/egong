@@ -24,8 +24,8 @@ type Props = {
 
 const VIEW_BTN = (active: boolean) =>
   active
-    ? 'px-3 py-1.5 rounded bg-slate-900 text-white text-sm'
-    : 'px-3 py-1.5 rounded bg-white border text-slate-600 text-sm hover:bg-slate-50'
+    ? 'px-3 py-1.5 rounded bg-amber-400 text-slate-900 text-sm font-semibold'
+    : 'px-3 py-1.5 rounded bg-white border border-slate-200 text-slate-600 text-sm hover:bg-amber-50 hover:border-amber-300'
 
 export async function SessionCalendar({ searchParams }: Props) {
   const { view, ym, year, day } = parseCalendarParams(searchParams)
@@ -109,23 +109,23 @@ export async function SessionCalendar({ searchParams }: Props) {
         <div className="flex items-center gap-2 text-sm">
           {view === 'month' && (
             <>
-              <Link href={`/teacher?view=month&ym=${prevYm}`} className="px-2 py-1 rounded hover:bg-slate-100">‹</Link>
+              <Link href={`/teacher?view=month&ym=${prevYm}`} className="px-2 py-1 rounded hover:bg-amber-50">‹</Link>
               <span className="font-semibold">{range.label}</span>
-              <Link href={`/teacher?view=month&ym=${nextYm}`} className="px-2 py-1 rounded hover:bg-slate-100">›</Link>
+              <Link href={`/teacher?view=month&ym=${nextYm}`} className="px-2 py-1 rounded hover:bg-amber-50">›</Link>
             </>
           )}
           {view === 'year' && (
             <>
-              <Link href={`/teacher?view=year&y=${year - 1}`} className="px-2 py-1 rounded hover:bg-slate-100">‹</Link>
+              <Link href={`/teacher?view=year&y=${year - 1}`} className="px-2 py-1 rounded hover:bg-amber-50">‹</Link>
               <span className="font-semibold">{range.label}</span>
-              <Link href={`/teacher?view=year&y=${year + 1}`} className="px-2 py-1 rounded hover:bg-slate-100">›</Link>
+              <Link href={`/teacher?view=year&y=${year + 1}`} className="px-2 py-1 rounded hover:bg-amber-50">›</Link>
             </>
           )}
           {view === 'week' && <span className="font-semibold">{range.label}</span>}
         </div>
       </div>
 
-      <div className="bg-white border rounded-lg p-4">
+      <div className="bg-white border border-amber-100 rounded-lg p-4">
         {view === 'week' && <CalendarWeek cells={cells} selectedDay={day} />}
         {view === 'month' && <CalendarMonth ym={ym} cells={cells} selectedDay={day} />}
         {view === 'year' && <CalendarYear year={year} cells={cells} />}

@@ -25,7 +25,7 @@ export default async function AcademyDetailPage({
   return (
     <div className="max-w-xl mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">{a.name}</h1>
-      <form action={updateAcademyAction} className="space-y-4 bg-white border rounded-lg p-6">
+      <form action={updateAcademyAction} className="space-y-4 bg-white border border-amber-100 rounded-lg p-6">
         <input type="hidden" name="id" value={a.id} />
         <div className="space-y-1">
           <Label htmlFor="name">학원명</Label>
@@ -50,7 +50,7 @@ export default async function AcademyDetailPage({
       <form
         action={`/admin/academies/${a.id}/impersonate`}
         method="post"
-        className="bg-white border rounded-lg p-6"
+        className="bg-white border border-amber-100 rounded-lg p-6"
       >
         <h2 className="font-semibold mb-2">원장 화면 보기</h2>
         <p className="text-xs text-slate-500 mb-3">

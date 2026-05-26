@@ -37,7 +37,7 @@ export function AttendanceCalendar({
         {cells.map((c, i) => {
           if (!c) return <div key={i} />
           const cls = c.status ? COLORS[c.status] : 'text-slate-300'
-          const today = c.isToday ? 'ring-2 ring-indigo-500' : ''
+          const today = c.isToday ? 'ring-2 ring-amber-500' : ''
           return (
             <div
               key={i}

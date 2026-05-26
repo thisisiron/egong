@@ -23,9 +23,9 @@ export default async function AdminDashboard() {
           <Button>새 학원 생성</Button>
         </Link>
       </div>
-      <div className="bg-white border rounded-lg overflow-hidden">
+      <div className="bg-white border border-amber-100 rounded-lg overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-600">
+          <thead className="bg-amber-50 text-left text-slate-700">
             <tr>
               <th className="px-4 py-3">학원명</th>
               <th className="px-4 py-3">상태</th>
@@ -53,7 +53,7 @@ export default async function AdminDashboard() {
                 <td className="px-4 py-3 text-right">
                   <Link
                     href={`/admin/academies/${a.id}`}
-                    className="text-blue-600 hover:underline"
+                    className="text-amber-700 hover:underline"
                   >
                     상세
                   </Link>

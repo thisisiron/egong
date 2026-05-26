@@ -46,7 +46,7 @@ export function ScheduleGenerator({ classId }: { classId: string }) {
   }
 
   return (
-    <section className="bg-white border rounded-lg p-6 space-y-3">
+    <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-3">
       <h2 className="font-semibold">수업 일정 일괄 생성</h2>
       <form onSubmit={onSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
@@ -69,8 +69,8 @@ export function ScheduleGenerator({ classId }: { classId: string }) {
                 onClick={() => toggleDay(d.value)}
                 className={`px-3 py-2 rounded text-sm border ${
                   days.includes(d.value)
-                    ? 'bg-slate-900 text-white border-slate-900'
-                    : 'bg-white text-slate-600 border-slate-200'
+                    ? 'bg-amber-400 text-slate-900 border-amber-400 font-semibold'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-amber-50 hover:border-amber-300'
                 }`}
               >
                 {d.label}
