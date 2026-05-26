@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Egong — 학원 관리",
-  description: "학원 운영과 학습 관리를 한 곳에서.",
+  description: "🥚 학원 운영 도구.",
 };
 
 export default function RootLayout({

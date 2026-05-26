@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Logo } from '@/components/Logo'
 import { requireRole } from '@/lib/auth'
 
 export default async function TeacherLayout({
@@ -8,12 +8,10 @@ export default async function TeacherLayout({
 }) {
   await requireRole(['teacher'])
   return (
-    <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white border-b">
+    <div className="min-h-screen bg-amber-50">
+      <nav className="bg-white border-b border-amber-100">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center text-sm">
-          <Link href="/teacher" className="font-semibold">
-            선생님 홈
-          </Link>
+          <Logo subtitle="일도수학" />
           <div className="flex-1" />
           <form action="/auth/logout" method="post">
             <button className="text-slate-500 hover:text-slate-900">로그아웃</button>
