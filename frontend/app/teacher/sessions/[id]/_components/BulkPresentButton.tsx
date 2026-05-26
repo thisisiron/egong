@@ -25,7 +25,11 @@ export function BulkPresentButton({ sessionId, studentIds, allPresent }: Props) 
 
   function onClick() {
     startTransition(() => {
-      bulkSetAllPresentAction({ session_id: sessionId, student_ids: studentIds, mode })
+      void bulkSetAllPresentAction({
+        session_id: sessionId,
+        student_ids: studentIds,
+        mode,
+      })
     })
   }
 
