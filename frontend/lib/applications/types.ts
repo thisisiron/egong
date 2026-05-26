@@ -86,3 +86,17 @@ export type BusinessStatus = {
   end_date: string | null
   raw_b_no: string
 }
+
+/** Backend POST /business/validate 응답. valid_kind=match일 때만 status_* 채워짐. */
+export type BusinessVerification = {
+  valid_kind: 'match' | 'mismatch' | 'unknown'
+  valid_label: string
+  valid_msg: string | null
+
+  status_kind: 'active' | 'paused' | 'closed' | 'unknown' | null
+  status_label: string | null
+  tax_type_label: string | null
+  end_date: string | null
+
+  raw_b_no: string
+}

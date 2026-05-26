@@ -11,25 +11,25 @@ import { submitApplicationAction } from '../actions'
 import {
   BUSINESS_TYPE_OPTIONS,
   STUDENT_COUNT_OPTIONS,
-  type BusinessStatus,
+  type BusinessVerification,
   type BusinessType,
 } from '../types'
-import { BusinessNumberCheck } from './BusinessNumberCheck'
+import { BusinessVerification as BusinessVerificationPanel } from './BusinessVerification'
 import { BusinessTypeRadio } from './BusinessTypeRadio'
 import { FileUpload } from './FileUpload'
 
 export function ApplicationForm() {
   const [businessType, setBusinessType] = useState<BusinessType | null>(null)
   const [filePath, setFilePath] = useState<string | null>(null)
-  const [businessStatus, setBusinessStatus] = useState<BusinessStatus | null>(null)
+  const [verification, setVerification] = useState<BusinessVerification | null>(null)
   const [agreed, setAgreed] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   function handleBusinessTypeChange(next: BusinessType | null) {
     setBusinessType(next)
-    // 유형을 바꾸면 이전 사업자번호 검증 결과는 무효 — 다시 확인하도록 초기화.
-    setBusinessStatus(null)
+    // 유형을 바꾸면 이전 진위확인 결과는 무효 — 다시 확인하도록 초기화.
+    setVerification(null)
   }
 
   const selectedTypeOption = BUSINESS_TYPE_OPTIONS.find((o) => o.value === businessType)
@@ -48,16 +48,20 @@ export function ApplicationForm() {
       return
     }
     if (businessType !== 'planned') {
-      if (!businessStatus) {
-        setError('사업자번호 확인이 필요합니다 ("확인" 버튼을 눌러주세요)')
+      if (!verification) {
+        setError('사업자 진위확인이 필요합니다 ("진위확인" 버튼을 눌러주세요)')
         return
       }
-      if (businessStatus.status_kind === 'closed') {
+      if (verification.valid_kind === 'mismatch') {
+        setError('국세청 진위확인에 실패했습니다. 사업자등록증 정보를 다시 확인해주세요.')
+        return
+      }
+      if (verification.valid_kind === 'unknown') {
+        setError('국세청에서 사업자등록정보를 확인할 수 없습니다. 잠시 후 다시 시도해주세요.')
+        return
+      }
+      if (verification.status_kind === 'closed') {
         setError('폐업한 사업자번호로는 도입 신청을 진행할 수 없습니다.')
-        return
-      }
-      if (businessStatus.status_kind === 'unknown') {
-        setError('국세청에서 사업자번호를 찾을 수 없습니다. 다시 확인해주세요.')
         return
       }
     }
@@ -161,9 +165,10 @@ export function ApplicationForm() {
               required
               placeholder={businessType === 'planned' ? '예: (예정) 일도수학' : '사업자등록증 기재명'}
             />
-            <Field label="대표자명" name="business_owner_name" required />
-            {businessType !== 'planned' && (
-              <BusinessNumberCheck onChange={setBusinessStatus} />
+            {businessType === 'planned' ? (
+              <Field label="대표자명" name="business_owner_name" required />
+            ) : (
+              <BusinessVerificationPanel onChange={setVerification} />
             )}
           </>
         )}
