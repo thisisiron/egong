@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     supabase_publishable_key: str
     allowed_origins: str = "http://localhost:3000"
     environment: str = "development"
+    nts_api_key: str  # 추가 — 국세청 API 일반 인증키 (decoded)
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 

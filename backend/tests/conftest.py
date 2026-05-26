@@ -8,6 +8,7 @@ os.environ.setdefault("SUPABASE_SECRET_KEY", "test_secret_key")
 os.environ.setdefault("SUPABASE_PUBLISHABLE_KEY", "test_publishable_key")
 os.environ.setdefault("ALLOWED_ORIGINS", "http://localhost:3000")
 os.environ.setdefault("ENVIRONMENT", "test")
+os.environ.setdefault("NTS_API_KEY", "test_nts_api_key_xxxxxx")
 
 
 @pytest_asyncio.fixture
