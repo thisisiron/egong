@@ -32,6 +32,12 @@ export default async function LoginPage({ searchParams }: Props) {
         <a href="/forgot-password" className="block text-sm text-slate-600 hover:underline text-center">
           비밀번호를 잊으셨나요?
         </a>
+        <div className="border-t border-amber-100 pt-4 text-center">
+          <p className="text-xs text-slate-500 mb-2">학원을 새로 도입하고 싶으세요?</p>
+          <a href="/apply" className="text-sm font-semibold text-amber-700 hover:text-amber-800">
+            학원 도입 신청하기 →
+          </a>
+        </div>
       </div>
     </div>
   )

@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { Database } from './lib/supabase/database.types'
 
-const PUBLIC_PATHS = ['/login', '/forgot-password', '/auth']
+const PUBLIC_PATHS = ['/login', '/forgot-password', '/auth', '/apply']
 
 const ROLE_PREFIX: Record<string, string[]> = {
   admin: ['/admin'],
