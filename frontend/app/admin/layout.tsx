@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 import { Logo } from '@/components/Logo'
 import { requireRole } from '@/lib/auth'
 
@@ -8,6 +10,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <nav className="bg-white border-b border-amber-100">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6 text-sm">
           <Logo subtitle="시스템 관리자" />
+          <div className="flex items-center gap-1 ml-4">
+            <Link
+              href="/admin"
+              className="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-amber-50"
+            >
+              학원
+            </Link>
+            <Link
+              href="/admin/applications"
+              className="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-amber-50"
+            >
+              신청서
+            </Link>
+          </div>
           <div className="flex-1" />
           <form action="/auth/logout" method="post">
             <button className="text-slate-500 hover:text-slate-900">로그아웃</button>
