@@ -26,6 +26,12 @@ export function ApplicationForm() {
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
+  function handleBusinessTypeChange(next: BusinessType | null) {
+    setBusinessType(next)
+    // 유형을 바꾸면 이전 사업자번호 검증 결과는 무효 — 다시 확인하도록 초기화.
+    setBusinessStatus(null)
+  }
+
   const selectedTypeOption = BUSINESS_TYPE_OPTIONS.find((o) => o.value === businessType)
   const fileRequired = selectedTypeOption?.requiresFile ?? false
 
@@ -132,7 +138,7 @@ export function ApplicationForm() {
 
         <div className="space-y-3 pt-2">
           <Label className="block">사업자 유형 *</Label>
-          <BusinessTypeRadio value={businessType} onChange={setBusinessType} />
+          <BusinessTypeRadio value={businessType} onChange={handleBusinessTypeChange} />
         </div>
 
         {businessType && (

@@ -129,7 +129,7 @@ export function BusinessNumberCheck({ onChange, name = 'business_number' }: Prop
       )}
 
       {status && statusStyle && (
-        <div className={`rounded-md border p-3 text-sm ${statusStyle.bg}`}>
+        <div aria-live="polite" className={`rounded-md border p-3 text-sm ${statusStyle.bg}`}>
           <p className={`font-semibold ${statusStyle.text}`}>
             {statusStyle.icon} {status.status_label}
           </p>
