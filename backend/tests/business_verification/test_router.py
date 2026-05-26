@@ -3,6 +3,7 @@
 NTS API 호출은 httpx mock으로 차단 — 외부 의존성 없이 테스트.
 """
 
+import httpx
 import pytest
 from unittest.mock import AsyncMock, patch
 
@@ -114,3 +115,106 @@ async def test_status_unknown_business(client):
     body = response.json()
     assert body["found"] is False
     assert body["status_kind"] == "unknown"
+
+
+@pytest.mark.asyncio
+async def test_status_paused_business(client):
+    """휴업자 (b_stt_cd=02)."""
+    nts_response = {
+        "match_cnt": 1,
+        "data": [
+            {
+                "b_no": "1111111111",
+                "b_stt": "휴업자",
+                "b_stt_cd": "02",
+                "tax_type": "부가가치세 일반과세자",
+                "tax_type_cd": "01",
+                "end_dt": "",
+            }
+        ],
+    }
+
+    mock_resp = AsyncMock()
+    mock_resp.status_code = 200
+    mock_resp.json = lambda: nts_response
+
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(return_value=mock_resp)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with patch("src.business_verification.service.httpx.AsyncClient", return_value=mock_client):
+        response = await client.post("/api/v1/business/status", json={"b_no": "1111111111"})
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status_kind"] == "paused"
+    assert body["status_label"] == "휴업자"
+
+
+@pytest.mark.asyncio
+async def test_status_unmapped_status_code(client):
+    """b_stt_cd가 BUSINESS_STATUS_CODES에 없는 경우 — unknown으로 fallback."""
+    nts_response = {
+        "match_cnt": 1,
+        "data": [
+            {
+                "b_no": "2222222222",
+                "b_stt": "확인불가",
+                "b_stt_cd": "99",
+                "tax_type": "부가가치세 일반과세자",
+                "tax_type_cd": "01",
+                "end_dt": "",
+            }
+        ],
+    }
+
+    mock_resp = AsyncMock()
+    mock_resp.status_code = 200
+    mock_resp.json = lambda: nts_response
+
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(return_value=mock_resp)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with patch("src.business_verification.service.httpx.AsyncClient", return_value=mock_client):
+        response = await client.post("/api/v1/business/status", json={"b_no": "2222222222"})
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["found"] is True
+    assert body["status_kind"] == "unknown"
+    assert body["status_label"] == "확인불가"
+
+
+@pytest.mark.asyncio
+async def test_status_nts_returns_non_200(client):
+    """NTS API가 500 반환 — 502로 변환."""
+    mock_resp = AsyncMock()
+    mock_resp.status_code = 500
+    mock_resp.text = "internal"
+
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(return_value=mock_resp)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with patch("src.business_verification.service.httpx.AsyncClient", return_value=mock_client):
+        response = await client.post("/api/v1/business/status", json={"b_no": "1234567890"})
+
+    assert response.status_code == 502
+
+
+@pytest.mark.asyncio
+async def test_status_nts_network_error(client):
+    """httpx 네트워크 오류 — 502로 변환."""
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(side_effect=httpx.ConnectError("boom"))
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with patch("src.business_verification.service.httpx.AsyncClient", return_value=mock_client):
+        response = await client.post("/api/v1/business/status", json={"b_no": "1234567890"})
+
+    assert response.status_code == 502
