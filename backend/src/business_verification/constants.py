@@ -27,3 +27,12 @@ TAX_TYPE_LABELS: dict[str, str] = {
 
 # 사업자번호 형식 검증 — 10자리 숫자
 BUSINESS_NUMBER_DIGITS = 10
+
+NTS_VALIDATE_API_URL = "https://api.odcloud.kr/api/nts-businessman/v1/validate"
+
+# valid 코드 (NTS 응답)
+# "01" = 일치, "02" = 불일치 (확인 불가)
+VALID_CODES: dict[str, tuple[str, str]] = {
+    "01": ("match", "진위확인 일치"),
+    "02": ("mismatch", "진위확인 불일치"),
+}

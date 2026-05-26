@@ -218,3 +218,114 @@ async def test_status_nts_network_error(client):
         response = await client.post("/api/v1/business/status", json={"b_no": "1234567890"})
 
     assert response.status_code == 502
+
+
+@pytest.mark.asyncio
+async def test_validate_match_with_status(client):
+    """일치 케이스 — status 동봉."""
+    nts_response = {
+        "request_cnt": 1,
+        "valid_cnt": 1,
+        "status_code": "OK",
+        "data": [
+            {
+                "b_no": "1209862762",
+                "valid": "01",
+                "status": {
+                    "b_no": "1209862762",
+                    "b_stt": "계속사업자",
+                    "b_stt_cd": "01",
+                    "tax_type": "부가가치세 면세사업자",
+                    "tax_type_cd": "04",
+                    "end_dt": "",
+                },
+            }
+        ],
+    }
+
+    mock_resp = AsyncMock()
+    mock_resp.status_code = 200
+    mock_resp.json = lambda: nts_response
+
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(return_value=mock_resp)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with patch(
+        "src.business_verification.service.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        response = await client.post(
+            "/api/v1/business/validate",
+            json={"b_no": "120-98-62762", "p_nm": "김민지", "start_dt": "2023-10-13"},
+        )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["valid_kind"] == "match"
+    assert body["valid_label"] == "진위확인 일치"
+    assert body["status_kind"] == "active"
+    assert body["status_label"] == "계속사업자"
+    assert body["tax_type_label"] == "부가가치세 면세사업자"
+    assert body["raw_b_no"] == "1209862762"
+
+
+@pytest.mark.asyncio
+async def test_validate_mismatch(client):
+    """불일치 케이스 — status 빠짐."""
+    nts_response = {
+        "request_cnt": 1,
+        "status_code": "OK",
+        "data": [
+            {
+                "b_no": "1209862762",
+                "valid": "02",
+                "valid_msg": "확인할 수 없습니다.",
+            }
+        ],
+    }
+
+    mock_resp = AsyncMock()
+    mock_resp.status_code = 200
+    mock_resp.json = lambda: nts_response
+
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(return_value=mock_resp)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with patch(
+        "src.business_verification.service.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        response = await client.post(
+            "/api/v1/business/validate",
+            json={"b_no": "1209862762", "p_nm": "홍길동", "start_dt": "20231013"},
+        )
+
+    body = response.json()
+    assert body["valid_kind"] == "mismatch"
+    assert body["valid_label"] == "진위확인 불일치"
+    assert body["valid_msg"] == "확인할 수 없습니다."
+    assert body.get("status_kind") is None
+    assert body.get("status_label") is None
+
+
+@pytest.mark.asyncio
+async def test_validate_rejects_short_start_dt(client):
+    response = await client.post(
+        "/api/v1/business/validate",
+        json={"b_no": "1209862762", "p_nm": "김민지", "start_dt": "2023"},
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_validate_rejects_empty_p_nm(client):
+    response = await client.post(
+        "/api/v1/business/validate",
+        json={"b_no": "1209862762", "p_nm": "", "start_dt": "20231013"},
+    )
+    # Pydantic min_length=1 reject (422)
+    assert response.status_code == 422
