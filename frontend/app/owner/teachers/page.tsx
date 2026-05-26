@@ -29,16 +29,16 @@ export default async function TeachersPage() {
           <Button>선생님 등록</Button>
         </Link>
       </div>
-      <div className="bg-white border border-amber-100 rounded-lg overflow-hidden">
+      <div className="bg-white border border-amber-200 rounded-lg overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-amber-50 text-left text-slate-700">
+          <thead className="bg-amber-50 text-left text-slate-700 border-b border-amber-200">
             <tr>
               <th className="px-4 py-3">이름</th>
               <th className="px-4 py-3">이메일</th>
               <th className="px-4 py-3">연락처</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-amber-100">
             {teachers.length === 0 ? (
               <tr>
                 <td colSpan={3} className="px-4 py-8 text-center text-slate-400">
@@ -47,7 +47,7 @@ export default async function TeachersPage() {
               </tr>
             ) : null}
             {teachers.map((t) => (
-              <tr key={t.id} className="border-t">
+              <tr key={t.id} className="hover:bg-amber-50/50">
                 <td className="px-4 py-3 font-medium">{t.users?.display_name ?? '-'}</td>
                 <td className="px-4 py-3 text-slate-600">{t.users?.email ?? '-'}</td>
                 <td className="px-4 py-3 tabular-nums">{formatPhoneKR(t.users?.phone)}</td>

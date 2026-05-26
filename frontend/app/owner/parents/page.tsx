@@ -31,9 +31,9 @@ export default async function ParentsPage() {
           <Button>학부모 등록</Button>
         </Link>
       </div>
-      <div className="bg-white border border-amber-100 rounded-lg overflow-hidden">
+      <div className="bg-white border border-amber-200 rounded-lg overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-amber-50 text-left text-slate-700">
+          <thead className="bg-amber-50 text-left text-slate-700 border-b border-amber-200">
             <tr>
               <th className="px-4 py-3">이름</th>
               <th className="px-4 py-3">이메일</th>
@@ -41,7 +41,7 @@ export default async function ParentsPage() {
               <th className="px-4 py-3">연결된 학생 수</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-amber-100">
             {parents.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center text-slate-400">
@@ -52,7 +52,7 @@ export default async function ParentsPage() {
             {parents.map((p) => {
               const user = Array.isArray(p.users) ? p.users[0] : p.users
               return (
-                <tr key={p.id} className="border-t">
+                <tr key={p.id} className="hover:bg-amber-50/50">
                   <td className="px-4 py-3 font-medium">{p.name}</td>
                   <td className="px-4 py-3 text-slate-600">{user?.email ?? '-'}</td>
                   <td className="px-4 py-3 tabular-nums">{formatPhoneKR(p.phone)}</td>

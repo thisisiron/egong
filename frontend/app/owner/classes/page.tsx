@@ -17,16 +17,16 @@ export default async function ClassesPage() {
           <Button>새 반 생성</Button>
         </Link>
       </div>
-      <div className="bg-white border border-amber-100 rounded-lg overflow-hidden">
+      <div className="bg-white border border-amber-200 rounded-lg overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-amber-50 text-left text-slate-700">
+          <thead className="bg-amber-50 text-left text-slate-700 border-b border-amber-200">
             <tr>
               <th className="px-4 py-3">반 이름</th>
               <th className="px-4 py-3">레벨</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-amber-100">
             {(!classes || classes.length === 0) ? (
               <tr>
                 <td colSpan={3} className="px-4 py-8 text-center text-slate-400">
@@ -35,7 +35,7 @@ export default async function ClassesPage() {
               </tr>
             ) : null}
             {(classes ?? []).map((c) => (
-              <tr key={c.id} className="border-t">
+              <tr key={c.id} className="hover:bg-amber-50/50">
                 <td className="px-4 py-3 font-medium">{c.name}</td>
                 <td className="px-4 py-3">{c.level}</td>
                 <td className="px-4 py-3 text-right">
