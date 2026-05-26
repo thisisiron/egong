@@ -52,6 +52,93 @@ export type Database = {
           },
         ]
       }
+      academy_applications: {
+        Row: {
+          academy_name: string
+          academy_region: string | null
+          academy_student_count:
+            | Database["public"]["Enums"]["academy_student_count"]
+            | null
+          applicant_email: string
+          applicant_name: string
+          applicant_phone: string
+          business_name: string
+          business_number: string | null
+          business_owner_name: string
+          business_type: Database["public"]["Enums"]["business_type"]
+          created_academy_id: string | null
+          created_at: string
+          id: string
+          inquiry_message: string | null
+          registration_file_path: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["application_status"]
+        }
+        Insert: {
+          academy_name: string
+          academy_region?: string | null
+          academy_student_count?:
+            | Database["public"]["Enums"]["academy_student_count"]
+            | null
+          applicant_email: string
+          applicant_name: string
+          applicant_phone: string
+          business_name: string
+          business_number?: string | null
+          business_owner_name: string
+          business_type: Database["public"]["Enums"]["business_type"]
+          created_academy_id?: string | null
+          created_at?: string
+          id?: string
+          inquiry_message?: string | null
+          registration_file_path?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+        }
+        Update: {
+          academy_name?: string
+          academy_region?: string | null
+          academy_student_count?:
+            | Database["public"]["Enums"]["academy_student_count"]
+            | null
+          applicant_email?: string
+          applicant_name?: string
+          applicant_phone?: string
+          business_name?: string
+          business_number?: string | null
+          business_owner_name?: string
+          business_type?: Database["public"]["Enums"]["business_type"]
+          created_academy_id?: string | null
+          created_at?: string
+          id?: string
+          inquiry_message?: string | null
+          registration_file_path?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_applications_created_academy_id_fkey"
+            columns: ["created_academy_id"]
+            isOneToOne: false
+            referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_applications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_audit_log: {
         Row: {
           academy_id: string | null
@@ -514,7 +601,10 @@ export type Database = {
     }
     Enums: {
       academy_status: "active" | "suspended" | "deleted"
+      academy_student_count: "under_50" | "50_to_200" | "over_200"
+      application_status: "pending" | "approved" | "rejected"
       attendance_status: "present" | "late" | "absent" | "excused"
+      business_type: "individual" | "corporate" | "tutoring" | "planned"
       class_level: "elementary" | "middle" | "high"
       parent_relationship: "mother" | "father" | "other"
       student_status: "enrolled" | "paused" | "graduated"
@@ -647,7 +737,10 @@ export const Constants = {
   public: {
     Enums: {
       academy_status: ["active", "suspended", "deleted"],
+      academy_student_count: ["under_50", "50_to_200", "over_200"],
+      application_status: ["pending", "approved", "rejected"],
       attendance_status: ["present", "late", "absent", "excused"],
+      business_type: ["individual", "corporate", "tutoring", "planned"],
       class_level: ["elementary", "middle", "high"],
       parent_relationship: ["mother", "father", "other"],
       student_status: ["enrolled", "paused", "graduated"],
