@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AttendanceRow } from './_components/AttendanceRow'
+import { BulkPresentButton } from './_components/BulkPresentButton'
 import { updateVideoUrlAction } from './actions'
 
 type Status = 'present' | 'late' | 'absent' | 'excused'
@@ -111,6 +112,22 @@ export default async function TeacherSessionPage({
           <Button type="submit">저장</Button>
         </div>
       </form>
+
+      {(() => {
+        const studentIds = studentRows.map((s) => s.id)
+        const allPresent =
+          studentIds.length > 0 &&
+          studentIds.every((sid) => attMap.get(sid)?.status === 'present')
+        return (
+          <div className="bg-white border rounded-lg p-4">
+            <BulkPresentButton
+              sessionId={session.id}
+              studentIds={studentIds}
+              allPresent={allPresent}
+            />
+          </div>
+        )
+      })()}
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
