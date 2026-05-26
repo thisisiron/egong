@@ -9,11 +9,15 @@ The anon-facing surface is enforced by the router's dependency-less endpoint
 and by table/storage RLS at the DB layer.
 """
 
+import logging
+
 from fastapi import HTTPException, status
 
 from src.common.supabase_admin import get_admin_client
 
 from .schemas import ApplicationOut, ApplicationSubmit, SignedDownloadUrl
+
+logger = logging.getLogger(__name__)
 
 
 async def submit(payload: ApplicationSubmit) -> None:
@@ -36,10 +40,12 @@ async def submit(payload: ApplicationSubmit) -> None:
                 "registration_file_path": payload.registration_file_path,
             }
         ).execute()
-    except Exception as e:
+    except Exception:
+        # Never leak driver-level details to anon callers.
+        logger.exception("application submit failed (email=%s)", payload.applicant_email)
         raise HTTPException(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
-            f"failed to submit application: {e}",
+            "failed to submit application",
         ) from None
 
 
@@ -81,13 +87,26 @@ async def signed_download_url(
     resp = await client.storage.from_("business-docs").create_signed_url(
         app.registration_file_path, expires_in
     )
-    # supabase-py returns {"signedURL": "..."} or dict-like
-    url = resp.get("signedURL") if isinstance(resp, dict) else getattr(resp, "signedURL", None)
+    # supabase-py returns dict-like; key name varies by version (signedURL vs signed_url).
+    url = _extract_signed_url(resp)
     if not url:
+        logger.error("create_signed_url returned no URL field: %r", resp)
         raise HTTPException(
             status.HTTP_500_INTERNAL_SERVER_ERROR, "failed to create signed url"
         )
     return SignedDownloadUrl(url=url, expires_in=expires_in)
+
+
+def _extract_signed_url(resp: object) -> str | None:
+    """Pull URL from a supabase-py storage response across version key-name variations."""
+    for key in ("signedURL", "signed_url", "signedUrl"):
+        if isinstance(resp, dict):
+            value = resp.get(key)
+        else:
+            value = getattr(resp, key, None)
+        if isinstance(value, str) and value:
+            return value
+    return None
 
 
 def _to_out(row: dict) -> ApplicationOut:
