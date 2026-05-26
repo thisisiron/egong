@@ -8,13 +8,20 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
 import { submitApplicationAction } from '../actions'
-import { BUSINESS_TYPE_OPTIONS, STUDENT_COUNT_OPTIONS, type BusinessType } from '../types'
+import {
+  BUSINESS_TYPE_OPTIONS,
+  STUDENT_COUNT_OPTIONS,
+  type BusinessStatus,
+  type BusinessType,
+} from '../types'
+import { BusinessNumberCheck } from './BusinessNumberCheck'
 import { BusinessTypeRadio } from './BusinessTypeRadio'
 import { FileUpload } from './FileUpload'
 
 export function ApplicationForm() {
   const [businessType, setBusinessType] = useState<BusinessType | null>(null)
   const [filePath, setFilePath] = useState<string | null>(null)
+  const [businessStatus, setBusinessStatus] = useState<BusinessStatus | null>(null)
   const [agreed, setAgreed] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -33,6 +40,20 @@ export function ApplicationForm() {
     if (fileRequired && !filePath) {
       setError('사업자등록증 파일을 첨부하세요')
       return
+    }
+    if (businessType !== 'planned') {
+      if (!businessStatus) {
+        setError('사업자번호 확인이 필요합니다 ("확인" 버튼을 눌러주세요)')
+        return
+      }
+      if (businessStatus.status_kind === 'closed') {
+        setError('폐업한 사업자번호로는 도입 신청을 진행할 수 없습니다.')
+        return
+      }
+      if (businessStatus.status_kind === 'unknown') {
+        setError('국세청에서 사업자번호를 찾을 수 없습니다. 다시 확인해주세요.')
+        return
+      }
     }
     if (!agreed) {
       setError('개인정보 수집·이용에 동의해주세요')
@@ -135,11 +156,9 @@ export function ApplicationForm() {
               placeholder={businessType === 'planned' ? '예: (예정) 일도수학' : '사업자등록증 기재명'}
             />
             <Field label="대표자명" name="business_owner_name" required />
-            <Field
-              label="사업자등록번호 (선택)"
-              name="business_number"
-              placeholder="123-45-67890"
-            />
+            {businessType !== 'planned' && (
+              <BusinessNumberCheck onChange={setBusinessStatus} />
+            )}
           </>
         )}
       </section>

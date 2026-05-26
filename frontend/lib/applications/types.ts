@@ -76,3 +76,13 @@ export const STUDENT_COUNT_OPTIONS: Array<{ value: StudentCount; label: string }
   { value: '50_to_200', label: '50명 ~ 200명' },
   { value: 'over_200', label: '200명 이상' },
 ]
+
+/** Backend POST /business/status 응답 (BusinessVerification 도메인). */
+export type BusinessStatus = {
+  found: boolean
+  status_kind: 'active' | 'paused' | 'closed' | 'unknown'
+  status_label: string
+  tax_type_label: string | null
+  end_date: string | null
+  raw_b_no: string
+}
