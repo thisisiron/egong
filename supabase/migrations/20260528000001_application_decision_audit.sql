@@ -6,7 +6,7 @@
 alter table public.academy_applications
   add column if not exists approved_at timestamptz null,
   add column if not exists decided_by uuid null references public.users(id),
-  add column if not exists created_academy_id uuid null references public.academies(id),
+  add column if not exists created_academy_id uuid null references public.academy(id),
   add column if not exists created_owner_user_id uuid null references public.users(id);
 
 do $$

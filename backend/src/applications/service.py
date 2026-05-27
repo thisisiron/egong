@@ -165,7 +165,7 @@ async def approve(application_id: str, admin_user_id: str) -> ApprovalResult:
     # 1. academies INSERT
     try:
         academy_resp = await (
-            client.table("academies")
+            client.table("academy")
             .insert(
                 {
                     "name": app.academy_name,
@@ -297,7 +297,7 @@ async def approve(application_id: str, admin_user_id: str) -> ApprovalResult:
 
 async def _safe_delete_academy(client, academy_id: str) -> None:
     try:
-        await client.table("academies").delete().eq("id", academy_id).execute()
+        await client.table("academy").delete().eq("id", academy_id).execute()
     except Exception:
         logger.exception("rollback: delete academy failed (id=%s)", academy_id)
 

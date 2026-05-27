@@ -189,7 +189,7 @@ async def test_approve_invite_failure_rolls_back_academy(client):
     )
 
     def table_router(name):
-        if name == "academies":
+        if name == "academy":
             return mock_table_academies
         return MagicMock()
 
