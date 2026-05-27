@@ -30,6 +30,12 @@ class ApplicationSubmit(BaseModel):
     business_owner_name: str = Field(min_length=1, max_length=100)
     business_number: str | None = Field(default=None, max_length=20)
     registration_file_path: str | None = Field(default=None, max_length=500)
+    verified_b_stt_cd: str | None = Field(
+        default=None,
+        min_length=2,
+        max_length=2,
+        description='진위확인 통과 시 NTS 상태 코드 ("01" 또는 "02"). 미제공 시 진위확인 미시행.',
+    )
 
 
 class ApplicationOut(BaseModel):
@@ -49,6 +55,8 @@ class ApplicationOut(BaseModel):
     business_owner_name: str
     business_number: str | None
     registration_file_path: str | None
+    verified_at: datetime | None = None
+    verified_b_stt_cd: str | None = None
     created_at: datetime
 
 

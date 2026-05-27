@@ -10,6 +10,7 @@ and by table/storage RLS at the DB layer.
 """
 
 import logging
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 
@@ -24,6 +25,12 @@ async def submit(payload: ApplicationSubmit) -> None:
     """Insert a new pending application. No auth required."""
     client = await get_admin_client()
     try:
+        # 진위확인 코드가 있으면 verified_at = now(), 둘 다 set.
+        # CHECK 제약(둘 다 NULL 이거나 둘 다 SET)을 만족시키기 위해 한 묶음으로.
+        verified_at: str | None = None
+        if payload.verified_b_stt_cd:
+            verified_at = datetime.now(timezone.utc).isoformat()
+
         await client.table("academy_applications").insert(
             {
                 "applicant_name": payload.applicant_name,
@@ -38,6 +45,8 @@ async def submit(payload: ApplicationSubmit) -> None:
                 "business_owner_name": payload.business_owner_name,
                 "business_number": payload.business_number,
                 "registration_file_path": payload.registration_file_path,
+                "verified_at": verified_at,
+                "verified_b_stt_cd": payload.verified_b_stt_cd,
             }
         ).execute()
     except Exception:
