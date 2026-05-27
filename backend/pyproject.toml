@@ -25,6 +25,11 @@ dev = [
     "ruff>=0.7.0",
     "respx>=0.21.0",
 ]
+# Migrations are applied via scripts/apply_migration.py (psycopg → session pooler).
+# Kept as an optional extra to avoid forcing it on app runtime.
+migrations = [
+    "psycopg[binary]>=3.3.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
