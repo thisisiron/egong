@@ -30,6 +30,8 @@ export type ApplicationSubmitInput = {
 export type Application = ApplicationSubmitInput & {
   id: string
   status: ApplicationStatus
+  verified_at: string | null
+  verified_b_stt_cd: '01' | '02' | null
   created_at: string
 }
 

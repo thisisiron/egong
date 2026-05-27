@@ -182,6 +182,14 @@ export function BusinessVerification({ onChange }: Props) {
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 
+      {result?.valid_kind === 'match' && result.status_kind && (
+        <input
+          type="hidden"
+          name="verified_b_stt_cd"
+          value={result.status_kind === 'active' ? '01' : result.status_kind === 'paused' ? '02' : ''}
+        />
+      )}
+
       {result && style && (
         <div
           aria-live="polite"

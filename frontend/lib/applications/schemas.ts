@@ -24,6 +24,10 @@ export const applicationSubmitSchema = z.object({
   business_owner_name: z.string().min(1, '대표자명을 입력하세요').max(100),
   business_number: z.string().max(20).nullable().optional(),
   registration_file_path: z.string().max(500).nullable().optional(),
+  verified_b_stt_cd: z
+    .union([z.literal('01'), z.literal('02'), z.null()])
+    .optional()
+    .nullable(),
 })
 
 export type ApplicationSubmitSchema = z.infer<typeof applicationSubmitSchema>

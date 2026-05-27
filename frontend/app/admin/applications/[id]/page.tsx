@@ -80,6 +80,26 @@ export default async function ApplicationDetailPage({
             )
           }
         />
+        {application.verified_at && (
+          <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm mt-3">
+            <p className="font-semibold text-green-800">
+              ✓ NTS 진위확인 통과
+            </p>
+            <p className="mt-1 text-xs text-green-700">
+              상태:{' '}
+              <strong>
+                {application.verified_b_stt_cd === '01' ? '계속사업자' : '휴업자'}
+              </strong>
+              <span className="opacity-70">
+                {' · 확인 시각: '}
+                {new Date(application.verified_at).toLocaleString('ko-KR')}
+              </span>
+            </p>
+            <p className="mt-1 text-xs text-green-600 opacity-80">
+              신청 시점 NTS 응답 기준. 최신 상태는 사업자번호로 재조회하세요.
+            </p>
+          </div>
+        )}
       </Section>
 
       <Section title="접수">

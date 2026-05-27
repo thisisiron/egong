@@ -59,7 +59,19 @@ export default async function AdminApplicationsPage() {
                 <td className="px-4 py-3">
                   <ApplicationStatusBadge status={a.status} />
                 </td>
-                <td className="px-4 py-3 font-medium">{a.academy_name}</td>
+                <td className="px-4 py-3 font-medium">
+                  <span className="inline-flex items-center gap-2">
+                    {a.academy_name}
+                    {a.verified_at && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-md border border-green-200 bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700"
+                        title={`진위확인 통과 (${a.verified_b_stt_cd === '01' ? '계속사업자' : '휴업자'})`}
+                      >
+                        ✓ 진위확인
+                      </span>
+                    )}
+                  </span>
+                </td>
                 <td className="px-4 py-3">{a.applicant_name}</td>
                 <td className="px-4 py-3 text-slate-600">{a.applicant_email}</td>
                 <td className="px-4 py-3 tabular-nums">{formatPhoneKR(a.applicant_phone)}</td>

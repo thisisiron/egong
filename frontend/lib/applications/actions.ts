@@ -32,6 +32,7 @@ export async function submitApplicationAction(formData: FormData): Promise<void>
     business_owner_name: str(raw.business_owner_name),
     business_number: nullable(raw.business_number),
     registration_file_path: nullable(raw.registration_file_path),
+    verified_b_stt_cd: nullable(raw.verified_b_stt_cd),
   }
 
   const parsed = applicationSubmitSchema.safeParse(normalized)
