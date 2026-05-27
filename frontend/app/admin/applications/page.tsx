@@ -60,7 +60,7 @@ export default async function AdminApplicationsPage() {
                   <ApplicationStatusBadge status={a.status} />
                 </td>
                 <td className="px-4 py-3 font-medium">
-                  <span className="inline-flex items-center gap-2">
+                  <span className="inline-flex items-center gap-2 flex-wrap">
                     {a.academy_name}
                     {a.verified_at && (
                       <span
@@ -69,6 +69,20 @@ export default async function AdminApplicationsPage() {
                       >
                         ✓ 진위확인
                       </span>
+                    )}
+                    {a.status === 'pending' && (
+                      <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-800">
+                        ⏳ 검토 대기
+                      </span>
+                    )}
+                    {a.status === 'approved' && a.created_academy_id && (
+                      <a
+                        href={`/admin/academies/${a.created_academy_id}`}
+                        className="inline-flex items-center gap-1 rounded-md border border-green-300 bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800 hover:bg-green-200"
+                        title="승인됨 — 학원으로 이동"
+                      >
+                        ✓ 승인됨
+                      </a>
                     )}
                   </span>
                 </td>
@@ -90,9 +104,6 @@ export default async function AdminApplicationsPage() {
         </table>
       </div>
 
-      <p className="text-xs text-slate-500">
-        Phase 2에서 승인·거절 액션이 추가됩니다. 현재는 보기만 가능합니다.
-      </p>
     </div>
   )
 }

@@ -32,6 +32,10 @@ export type Application = ApplicationSubmitInput & {
   status: ApplicationStatus
   verified_at: string | null
   verified_b_stt_cd: '01' | '02' | null
+  approved_at: string | null
+  decided_by: string | null
+  created_academy_id: string | null
+  created_owner_user_id: string | null
   created_at: string
 }
 
@@ -101,4 +105,12 @@ export type BusinessVerification = {
   end_date: string | null
 
   raw_b_no: string
+}
+
+/** Backend POST /admin/applications/{id}/approve 응답. */
+export type ApprovalResult = {
+  academy_id: string
+  owner_user_id: string
+  invite_sent: boolean
+  already_approved: boolean
 }

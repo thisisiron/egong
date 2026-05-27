@@ -6,6 +6,7 @@ import {
   getRegistrationFileUrl,
 } from '@/lib/applications/service'
 import { ApplicationStatusBadge } from '@/lib/applications/components/ApplicationStatusBadge'
+import { DecisionPanel } from '@/lib/applications/components/DecisionPanel'
 import { formatPhoneKR } from '@/lib/format'
 import { BUSINESS_TYPE_OPTIONS, STUDENT_COUNT_OPTIONS } from '@/lib/applications/types'
 
@@ -109,9 +110,9 @@ export default async function ApplicationDetailPage({
         />
       </Section>
 
-      <p className="text-xs text-slate-500">
-        Phase 2에서 승인 / 거절 액션이 추가됩니다.
-      </p>
+      <Section title="결정">
+        <DecisionPanel application={application} />
+      </Section>
     </div>
   )
 }
