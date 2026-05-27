@@ -57,6 +57,10 @@ class ApplicationOut(BaseModel):
     registration_file_path: str | None
     verified_at: datetime | None = None
     verified_b_stt_cd: str | None = None
+    approved_at: datetime | None = None
+    decided_by: str | None = None
+    created_academy_id: str | None = None
+    created_owner_user_id: str | None = None
     created_at: datetime
 
 
@@ -71,3 +75,12 @@ class SignedDownloadUrl(BaseModel):
 
     url: str
     expires_in: int  # seconds
+
+
+class ApprovalResult(BaseModel):
+    """승인 결과. 중복 호출 안전 — 두 번째 호출은 invite_sent=False."""
+
+    academy_id: str
+    owner_user_id: str
+    invite_sent: bool
+    already_approved: bool

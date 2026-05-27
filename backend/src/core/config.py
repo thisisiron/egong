@@ -9,7 +9,9 @@ class Settings(BaseSettings):
     environment: str = "development"
     nts_api_key: str  # 추가 — 국세청 API 일반 인증키 (decoded)
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
+    model_config = SettingsConfigDict(
+        env_file=".env", case_sensitive=False, extra="ignore"
+    )
 
     @property
     def allowed_origins_list(self) -> list[str]:

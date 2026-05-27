@@ -17,6 +17,7 @@ from .schemas import (
     ApplicationOut,
     ApplicationSubmit,
     ApplicationSubmitResult,
+    ApprovalResult,
     SignedDownloadUrl,
 )
 
@@ -54,3 +55,15 @@ async def get_application_file_url(
     _admin: Annotated[CurrentUser, Depends(require_admin)],
 ) -> SignedDownloadUrl | None:
     return await service.signed_download_url(application_id)
+
+
+@router.post(
+    "/admin/applications/{application_id}/approve",
+    response_model=ApprovalResult,
+)
+async def approve_application(
+    application_id: str,
+    admin: Annotated[CurrentUser, Depends(require_admin)],
+) -> ApprovalResult:
+    """Admin only — 승인: 학원 생성 + 원장 초대 + 신청 업데이트. 중복 호출 안전."""
+    return await service.approve(application_id, admin.user_id)
