@@ -1,4 +1,7 @@
 'use server'
+// 세션 인증 인프라 — Supabase auth 클라이언트(signInWithPassword)를 직접 써야 함.
+// 도메인 데이터 접근이 아니므로 DAL 규칙의 정당한 예외.
+// eslint-disable-next-line no-restricted-imports
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { roleHome } from '@/lib/auth'

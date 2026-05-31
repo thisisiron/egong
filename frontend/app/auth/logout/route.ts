@@ -1,3 +1,6 @@
+// 세션 인증 인프라 — Supabase auth 클라이언트(signOut)를 직접 써야 함.
+// 도메인 데이터 접근이 아니므로 DAL 규칙의 정당한 예외.
+// eslint-disable-next-line no-restricted-imports
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 

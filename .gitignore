@@ -20,6 +20,9 @@ dist/
 .env.*.local
 !.env.example
 
+# local-only docs (dev account creds 등 — 커밋 금지)
+*.local.md
+
 # next.js
 frontend/.next/
 frontend/out/
