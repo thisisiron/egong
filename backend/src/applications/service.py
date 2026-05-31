@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 
+from src.academies import service as academies_service
 from src.audit import service as audit_log
 from src.common.supabase_admin import get_admin_client
 
@@ -133,9 +134,12 @@ async def approve(application_id: str, admin_user_id: str) -> ApprovalResult:
 
     부분 실패 보상 트랜잭션:
     - academy 생성 후 invite 실패 → academy 삭제
-    - invite 후 users insert 실패 → auth user 삭제 + academy 삭제
-    - users 후 owners insert 실패 → users 삭제 + auth user 삭제 + academy 삭제
+    - invite 후 원장 profile insert 실패 → auth user 삭제 + academy 삭제
     - cleanup 자체가 실패하면 logger.exception 으로 로그만 남기고 원래 에러 raise
+
+    학원(academy)·원장 users-profile은 academies 도메인이 소유한다.
+    여기서 직접 테이블에 손대지 않고 academies_service 함수를 재사용한다
+    (CLAUDE.md 도메인 의존 규칙).
     """
     app = await get_by_id(application_id)
 
@@ -162,31 +166,18 @@ async def approve(application_id: str, admin_user_id: str) -> ApprovalResult:
 
     client = await get_admin_client()
 
-    # 1. academies INSERT
+    # 1. 학원 생성 (academies 도메인 소유 — service 함수 재사용)
     try:
-        academy_resp = await (
-            client.table("academy")
-            .insert(
-                {
-                    "name": app.academy_name,
-                    "status": "active",
-                    "created_by": admin_user_id,
-                }
-            )
-            .execute()
+        academy_row = await academies_service.create_academy(
+            admin_user_id, app.academy_name, status="active"
         )
     except Exception:
-        logger.exception("academy insert failed (app=%s)", application_id)
+        logger.exception("academy create failed (app=%s)", application_id)
         raise HTTPException(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
             "학원 생성 실패",
         ) from None
-
-    if not academy_resp.data:
-        raise HTTPException(
-            status.HTTP_500_INTERNAL_SERVER_ERROR, "학원 생성 응답 비정상"
-        )
-    academy_id = academy_resp.data[0]["id"]
+    academy_id = academy_row["id"]
 
     # 2. Supabase Auth invite_user_by_email — 초대 메일 자동 발송
     try:
@@ -203,51 +194,27 @@ async def approve(application_id: str, admin_user_id: str) -> ApprovalResult:
         logger.exception(
             "invite_user_by_email failed (email=%s)", app.applicant_email
         )
-        await _safe_delete_academy(client, academy_id)
+        await academies_service.delete_academy(academy_id)
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             "원장 이메일이 이미 등록되어 있거나 초대 메일 발송에 실패했습니다.",
         ) from None
 
-    # 3. users INSERT
+    # 3. 원장 users-profile 생성 (academies 도메인이 academy↔owner 연결 소유).
+    #    users.academy_id 로 학원에 연결 — 별도 owners 테이블은 존재하지 않음.
     try:
-        await (
-            client.table("users")
-            .insert(
-                {
-                    "id": owner_user_id,
-                    "email": app.applicant_email,
-                    "role": "owner",
-                    "display_name": app.applicant_name,
-                }
-            )
-            .execute()
+        await academies_service.create_owner_profile(
+            owner_user_id, academy_id, app.applicant_name, app.applicant_email
         )
     except Exception:
-        logger.exception("users insert failed (user=%s)", owner_user_id)
+        logger.exception("owner profile create failed (user=%s)", owner_user_id)
         await _safe_delete_auth_user(client, owner_user_id)
-        await _safe_delete_academy(client, academy_id)
+        await academies_service.delete_academy(academy_id)
         raise HTTPException(
             status.HTTP_500_INTERNAL_SERVER_ERROR, "원장 프로필 생성 실패"
         ) from None
 
-    # 4. owners INSERT (academy ↔ owner 연결)
-    try:
-        await (
-            client.table("owners")
-            .insert({"user_id": owner_user_id, "academy_id": academy_id})
-            .execute()
-        )
-    except Exception:
-        logger.exception("owners insert failed (user=%s)", owner_user_id)
-        await _safe_delete_users_row(client, owner_user_id)
-        await _safe_delete_auth_user(client, owner_user_id)
-        await _safe_delete_academy(client, academy_id)
-        raise HTTPException(
-            status.HTTP_500_INTERNAL_SERVER_ERROR, "원장-학원 연결 실패"
-        ) from None
-
-    # 5. application UPDATE
+    # 4. application UPDATE
     try:
         await (
             client.table("academy_applications")
@@ -274,7 +241,7 @@ async def approve(application_id: str, admin_user_id: str) -> ApprovalResult:
             "신청 상태 업데이트 실패 — 관리자에게 문의하세요.",
         ) from None
 
-    # 6. audit_log
+    # 5. audit_log
     await audit_log.log(
         admin_user_id,
         action="approve_application",
@@ -292,21 +259,9 @@ async def approve(application_id: str, admin_user_id: str) -> ApprovalResult:
     )
 
 
-# --- 보상 트랜잭션 helpers (cleanup용. 실패해도 raise 안 함, 로그만) ---
-
-
-async def _safe_delete_academy(client, academy_id: str) -> None:
-    try:
-        await client.table("academy").delete().eq("id", academy_id).execute()
-    except Exception:
-        logger.exception("rollback: delete academy failed (id=%s)", academy_id)
-
-
-async def _safe_delete_users_row(client, user_id: str) -> None:
-    try:
-        await client.table("users").delete().eq("id", user_id).execute()
-    except Exception:
-        logger.exception("rollback: delete users row failed (id=%s)", user_id)
+# --- 보상 트랜잭션 helper (cleanup용. 실패해도 raise 안 함, 로그만) ---
+# academy/users 행 삭제는 academies_service.delete_academy/delete_owner_profile
+# 가 담당한다. 여기엔 applications 가 소유한 auth 라이프사이클(invite)만 남긴다.
 
 
 async def _safe_delete_auth_user(client, user_id: str) -> None:

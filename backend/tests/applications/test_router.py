@@ -206,13 +206,18 @@ async def test_approve_invite_failure_rolls_back_academy(client):
         ), patch(
             "src.applications.service.get_admin_client",
             new=AsyncMock(return_value=mock_client),
+        ), patch(
+            # academy insert/delete 는 academies_service 안에서 자기 client 를
+            # 생성하므로 academies 도메인의 get_admin_client 도 같은 mock 으로.
+            "src.academies.service.get_admin_client",
+            new=AsyncMock(return_value=mock_client),
         ):
             response = await client.post(
                 "/api/v1/admin/applications/app-001/approve",
                 headers={"Authorization": "Bearer fake"},
             )
         assert response.status_code == 422
-        # academy 삭제(rollback)가 호출됐는지 확인
+        # academy 삭제(rollback)가 호출됐는지 확인 (academies_service.delete_academy 경유)
         mock_table_academies.delete.assert_called_once()
     finally:
         app.dependency_overrides.clear()
