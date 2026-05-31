@@ -6,7 +6,6 @@ import {
   removeClassStudentAction,
   setClassTeacherAction,
 } from '@/lib/classes/actions'
-import { ScheduleGenerator } from './_components/ScheduleGenerator'
 import { SessionsManager } from '@/lib/sessions/components/SessionsManager'
 
 export default async function ClassDetailPage({
@@ -105,8 +104,6 @@ export default async function ClassDetailPage({
           </Button>
         </form>
       </section>
-
-      <ScheduleGenerator classId={cls.id} />
 
       <SessionsManager classId={cls.id} />
     </div>
