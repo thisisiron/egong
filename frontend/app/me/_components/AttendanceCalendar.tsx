@@ -8,7 +8,8 @@ const COLORS: Record<NonNullable<DayCell['status']>, string> = {
   present: 'bg-green-100 text-green-800',
   late: 'bg-amber-100 text-amber-800',
   absent: 'bg-red-100 text-red-700',
-  excused: 'bg-indigo-100 text-indigo-700',
+  // 레거시 excused는 결석과 동일하게 표시 (사전연락 구분 제거).
+  excused: 'bg-red-100 text-red-700',
 }
 
 export function AttendanceCalendar({
@@ -52,7 +53,6 @@ export function AttendanceCalendar({
         <Legend color="bg-green-100" label="출석" />
         <Legend color="bg-amber-100" label="지각" />
         <Legend color="bg-red-100" label="결석" />
-        <Legend color="bg-indigo-100" label="사전연락" />
       </div>
     </div>
   )

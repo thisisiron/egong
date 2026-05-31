@@ -9,7 +9,8 @@ const STATUS_LABEL: Record<NonNullable<Props['status']>, string> = {
   present: '출석',
   late: '⚠ 지각',
   absent: '❌ 결석',
-  excused: '🔵 사전연락',
+  // 레거시 excused는 결석으로 통일 표시.
+  excused: '❌ 결석',
 }
 
 export function SessionVideoItem({ title, scheduledAt, status, videoUrl }: Props) {
