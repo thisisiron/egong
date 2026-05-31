@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition, type ReactNode } from 'react'
+import { useState, useTransition, type ReactNode } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -101,20 +101,29 @@ export function SessionEditDialog(props: Props) {
     monthDays: [],
   })
 
-  // open이 true로 바뀔 때마다 폼 필드를 초기 상태로 re-seed.
+  // 다이얼로그가 (다시) 열릴 때마다 폼 필드를 초기 상태로 re-seed.
+  // useEffect + 동기 setState 대신 React가 권장하는 "렌더 중 상태 조정" 패턴 사용
+  // (https://react.dev/reference/react/useState#storing-information-from-previous-renders).
+  // effect 안에서 setState를 호출하면 cascading render가 발생(react-hooks/set-state-in-effect)하므로,
+  // 가드된 렌더 단계 setState로 같은 동작을 구현한다 (React가 커밋 전에 즉시 재렌더 — 화면 깜빡임 없음).
   // edit 모드: existing.* 으로 다시 채워 stale 값 (사용자가 타이핑 후 취소한 값) 제거.
   // create 모드: error만 클리어 — selectedClassId 등 드롭다운 선택은 유지.
-  useEffect(() => {
-    if (!open) return
-    setError(null)
-    if (mode === 'edit' && existing) {
-      setTitle(existing.title)
-      setScheduledAt(isoToLocalInput(existing.scheduled_at))
-      setUnit(existing.unit ?? '')
-      setVideoUrl(existing.video_url ?? '')
-      setVideoNotes(existing.video_notes ?? '')
+  // open=false일 땐 seedKey=null로 둬서, 같은 회차 다이얼로그를 다시 열어도 re-seed가 보장됨.
+  const seedKey = open ? `${mode}:${existing?.id ?? 'new'}` : null
+  const [seededKey, setSeededKey] = useState<string | null>(seedKey)
+  if (seedKey !== seededKey) {
+    setSeededKey(seedKey)
+    if (seedKey !== null) {
+      setError(null)
+      if (mode === 'edit' && existing) {
+        setTitle(existing.title)
+        setScheduledAt(isoToLocalInput(existing.scheduled_at))
+        setUnit(existing.unit ?? '')
+        setVideoUrl(existing.video_url ?? '')
+        setVideoNotes(existing.video_notes ?? '')
+      }
     }
-  }, [open, mode, existing])
+  }
 
   function reset() {
     setError(null)
