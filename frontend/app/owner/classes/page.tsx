@@ -1,13 +1,9 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { listClasses } from '@/lib/classes/service'
 import { Button } from '@/components/ui/button'
 
 export default async function ClassesPage() {
-  const supabase = await createClient()
-  const { data: classes } = await supabase
-    .from('classes')
-    .select('id, name, level, description')
-    .order('name')
+  const classes = await listClasses()
 
   return (
     <div className="space-y-4">

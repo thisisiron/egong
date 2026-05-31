@@ -1,29 +1,13 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getClassDetailView } from '@/lib/classes/service'
 import { Button } from '@/components/ui/button'
 import {
-  addStudentAction,
-  removeStudentAction,
-  setTeacherAction,
-} from './actions'
+  addClassStudentAction,
+  removeClassStudentAction,
+  setClassTeacherAction,
+} from '@/lib/classes/actions'
 import { ScheduleGenerator } from './_components/ScheduleGenerator'
 import { SessionsManager } from '@/lib/sessions/components/SessionsManager'
-
-type TeacherLinkRow = {
-  teacher_id: string
-  teachers: { users: { display_name: string } | null } | null
-}
-
-type StudentLinkRow = {
-  id: string
-  joined_at: string
-  students: { id: string; name: string; school: string | null } | null
-}
-
-type TeacherOption = {
-  id: string
-  users: { display_name: string } | null
-}
 
 export default async function ClassDetailPage({
   params,
@@ -31,42 +15,10 @@ export default async function ClassDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const supabase = await createClient()
+  const view = await getClassDetailView(id)
+  if (!view) notFound()
 
-  const [clsRes, teacherLinksRes, studentLinksRes, allTeachersRes, allStudentsRes] =
-    await Promise.all([
-      supabase.from('classes').select('*').eq('id', id).single(),
-      supabase
-        .from('class_teachers')
-        .select('teacher_id, teachers(users(display_name))')
-        .eq('class_id', id),
-      supabase
-        .from('class_students')
-        .select('id, joined_at, students(id, name, school)')
-        .eq('class_id', id)
-        .is('left_at', null)
-        .order('joined_at'),
-      supabase.from('teachers').select('id, users(display_name)'),
-      supabase
-        .from('students')
-        .select('id, name')
-        .eq('status', 'enrolled')
-        .order('name'),
-    ])
-
-  const cls = clsRes.data
-  if (!cls) notFound()
-
-  const teacherLinks = (teacherLinksRes.data ?? []) as unknown as TeacherLinkRow[]
-  const studentLinks = (studentLinksRes.data ?? []) as unknown as StudentLinkRow[]
-  const allTeachers = (allTeachersRes.data ?? []) as unknown as TeacherOption[]
-  const allStudents = allStudentsRes.data ?? []
-
-  const currentTeacher = teacherLinks[0]
-  const assignedStudentIds = new Set(
-    studentLinks.map((s) => s.students?.id).filter(Boolean) as string[]
-  )
-  const availableStudents = allStudents.filter((s) => !assignedStudentIds.has(s.id))
+  const { cls, currentTeacher, students, teacherOptions, availableStudents } = view
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -80,12 +32,12 @@ export default async function ClassDetailPage({
         <h2 className="font-semibold">담임 선생님</h2>
         {currentTeacher ? (
           <p className="text-sm">
-            현재: <span className="font-medium">{currentTeacher.teachers?.users?.display_name ?? '-'}</span>
+            현재: <span className="font-medium">{currentTeacher.display_name}</span>
           </p>
         ) : (
           <p className="text-sm text-slate-400">담임이 지정되지 않았습니다.</p>
         )}
-        <form action={setTeacherAction} className="flex gap-2">
+        <form action={setClassTeacherAction} className="flex gap-2">
           <input type="hidden" name="class_id" value={cls.id} />
           {currentTeacher ? (
             <input
@@ -101,9 +53,9 @@ export default async function ClassDetailPage({
             required
           >
             <option value="">선생님 선택...</option>
-            {allTeachers.map((t) => (
+            {teacherOptions.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.users?.display_name ?? '(이름 없음)'}
+                {t.display_name}
               </option>
             ))}
           </select>
@@ -112,29 +64,29 @@ export default async function ClassDetailPage({
       </section>
 
       <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-3">
-        <h2 className="font-semibold">배정된 학생 ({studentLinks.length})</h2>
+        <h2 className="font-semibold">배정된 학생 ({students.length})</h2>
         <ul className="space-y-1">
-          {studentLinks.length === 0 ? (
+          {students.length === 0 ? (
             <li className="text-sm text-slate-400">배정된 학생이 없습니다.</li>
           ) : null}
-          {studentLinks.map((s) => (
+          {students.map((s) => (
             <li
-              key={s.id}
+              key={s.assignment_id}
               className="flex items-center justify-between border rounded p-2 text-sm"
             >
               <span>
-                {s.students?.name ?? '(삭제됨)'}{' '}
-                <span className="text-slate-500">({s.students?.school ?? '-'})</span>
+                {s.name}{' '}
+                <span className="text-slate-500">({s.school ?? '-'})</span>
               </span>
-              <form action={removeStudentAction}>
-                <input type="hidden" name="assignment_id" value={s.id} />
+              <form action={removeClassStudentAction}>
+                <input type="hidden" name="assignment_id" value={s.assignment_id} />
                 <input type="hidden" name="class_id" value={cls.id} />
                 <button className="text-red-600 hover:underline">제거</button>
               </form>
             </li>
           ))}
         </ul>
-        <form action={addStudentAction} className="flex gap-2 pt-2 border-t">
+        <form action={addClassStudentAction} className="flex gap-2 pt-2 border-t">
           <input type="hidden" name="class_id" value={cls.id} />
           <select
             name="student_id"
