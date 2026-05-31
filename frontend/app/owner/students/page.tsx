@@ -1,13 +1,9 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
+import { listStudents } from '@/lib/students/service'
 
 export default async function StudentsPage() {
-  const supabase = await createClient()
-  const { data: students } = await supabase
-    .from('students')
-    .select('id, name, school, grade, status')
-    .order('name')
+  const students = await listStudents()
 
   return (
     <div className="space-y-4">
@@ -30,14 +26,14 @@ export default async function StudentsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-amber-100">
-            {(!students || students.length === 0) ? (
+            {students.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
                   학생이 없습니다.
                 </td>
               </tr>
             ) : null}
-            {(students ?? []).map((s) => (
+            {students.map((s) => (
               <tr key={s.id} className="hover:bg-amber-50/50">
                 <td className="px-4 py-3 font-medium">{s.name}</td>
                 <td className="px-4 py-3">{s.school ?? '-'}</td>

@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { createStudentAction } from './actions'
+import { createStudentAction } from '@/lib/students/actions'
 
 export default function NewStudentPage() {
   return (

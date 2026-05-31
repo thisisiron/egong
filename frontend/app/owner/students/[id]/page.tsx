@@ -1,19 +1,14 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { getStudentDetail } from '@/lib/students/service'
 import {
   addParentLinkAction,
   removeParentLinkAction,
   updateStudentAction,
-} from './actions'
+} from '@/lib/students/actions'
 import { ChildAssignment } from './_components/ChildAssignment'
-
-type ParentLinkRow = {
-  relationship: string
-  parents: { id: string; name: string; phone: string | null } | null
-}
 
 export default async function StudentDetailPage({
   params,
@@ -21,20 +16,9 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const supabase = await createClient()
-
-  const [studentRes, parentLinksRes] = await Promise.all([
-    supabase.from('students').select('*').eq('id', id).single(),
-    supabase
-      .from('student_parent')
-      .select('relationship, parents(id, name, phone)')
-      .eq('student_id', id),
-  ])
-
-  const student = studentRes.data
-  if (!student) notFound()
-
-  const parentLinks = (parentLinksRes.data ?? []) as unknown as ParentLinkRow[]
+  const view = await getStudentDetail(id)
+  if (!view) notFound()
+  const { student, parentLinks } = view
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -79,28 +63,26 @@ export default async function StudentDetailPage({
           {parentLinks.length === 0 ? (
             <li className="text-sm text-slate-400">연결된 학부모가 없습니다.</li>
           ) : null}
-          {parentLinks.map((link) =>
-            link.parents ? (
-              <li
-                key={link.parents.id}
-                className="flex items-center justify-between border rounded p-3"
-              >
-                <div>
-                  <div className="font-medium">
-                    {link.parents.name} ({link.relationship})
-                  </div>
-                  <div className="text-xs text-slate-500">{link.parents.phone ?? ''}</div>
+          {parentLinks.map((link) => (
+            <li
+              key={link.parent_id}
+              className="flex items-center justify-between border rounded p-3"
+            >
+              <div>
+                <div className="font-medium">
+                  {link.name} ({link.relationship})
                 </div>
-                <form action={removeParentLinkAction}>
-                  <input type="hidden" name="student_id" value={student.id} />
-                  <input type="hidden" name="parent_id" value={link.parents.id} />
-                  <button className="text-sm text-red-600 hover:underline">
-                    연결 해제
-                  </button>
-                </form>
-              </li>
-            ) : null
-          )}
+                <div className="text-xs text-slate-500">{link.phone ?? ''}</div>
+              </div>
+              <form action={removeParentLinkAction}>
+                <input type="hidden" name="student_id" value={student.id} />
+                <input type="hidden" name="parent_id" value={link.parent_id} />
+                <button className="text-sm text-red-600 hover:underline">
+                  연결 해제
+                </button>
+              </form>
+            </li>
+          ))}
         </ul>
         <form
           action={addParentLinkAction}

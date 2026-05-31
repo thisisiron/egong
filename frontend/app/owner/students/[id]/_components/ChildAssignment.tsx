@@ -1,34 +1,16 @@
-import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
+import { getStudentClassAssignments } from '@/lib/students/service'
+import { listClasses } from '@/lib/classes/service'
 import {
   assignToClassAction,
   unassignFromClassAction,
-} from '../assign-actions'
-
-type AssignmentRow = {
-  id: string
-  joined_at: string
-  left_at: string | null
-  classes: { id: string; name: string; level: string } | null
-}
+} from '@/lib/students/actions'
 
 export async function ChildAssignment({ studentId }: { studentId: string }) {
-  const supabase = await createClient()
-
-  const [assignmentsRes, classesRes] = await Promise.all([
-    supabase
-      .from('class_students')
-      .select('id, joined_at, left_at, classes(id, name, level)')
-      .eq('student_id', studentId)
-      .order('joined_at', { ascending: false }),
-    supabase.from('classes').select('id, name, level').order('name'),
+  const [{ active, history }, classes] = await Promise.all([
+    getStudentClassAssignments(studentId),
+    listClasses(),
   ])
-
-  const assignments = (assignmentsRes.data ?? []) as unknown as AssignmentRow[]
-  const classes = classesRes.data ?? []
-
-  const active = assignments.filter((a) => !a.left_at)
-  const history = assignments.filter((a) => a.left_at)
 
   return (
     <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-3">
@@ -38,15 +20,15 @@ export async function ChildAssignment({ studentId }: { studentId: string }) {
           <li className="text-sm text-slate-400">활성 배정 없음.</li>
         ) : null}
         {active.map((a) => (
-          <li key={a.id} className="flex items-center justify-between border rounded p-3">
+          <li key={a.assignment_id} className="flex items-center justify-between border rounded p-3">
             <div>
-              <div className="font-medium">{a.classes?.name ?? '(삭제됨)'}</div>
+              <div className="font-medium">{a.class_name}</div>
               <div className="text-xs text-slate-500">
-                {a.classes?.level ?? '-'} · {a.joined_at} ~ 현재
+                {a.class_level} · {a.joined_at} ~ 현재
               </div>
             </div>
             <form action={unassignFromClassAction}>
-              <input type="hidden" name="assignment_id" value={a.id} />
+              <input type="hidden" name="assignment_id" value={a.assignment_id} />
               <input type="hidden" name="student_id" value={studentId} />
               <button className="text-sm text-orange-600 hover:underline">종료</button>
             </form>
@@ -74,8 +56,8 @@ export async function ChildAssignment({ studentId }: { studentId: string }) {
           <summary>이전 배정 이력 ({history.length})</summary>
           <ul className="mt-2 space-y-1">
             {history.map((a) => (
-              <li key={a.id}>
-                {a.classes?.name ?? '(삭제됨)'} — {a.joined_at} ~ {a.left_at}
+              <li key={a.assignment_id}>
+                {a.class_name} — {a.joined_at} ~ {a.left_at}
               </li>
             ))}
           </ul>

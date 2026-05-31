@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 
-import { uploadStudentsCsvAction, type ImportActionResult } from '../actions'
+import { uploadStudentsCsvAction, type ImportActionResult } from '@/lib/students/actions'
 
 export function CsvImportForm() {
   const router = useRouter()
