@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react'
 import { Button } from '@/components/ui/button'
-import { bulkSetAllPresentAction } from '../actions'
+import { bulkSetAllPresentAction } from '@/lib/attendance/actions'
 
 type Props = {
   sessionId: string

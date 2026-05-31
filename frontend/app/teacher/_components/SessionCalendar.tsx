@@ -1,5 +1,7 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getTeacherSessionsInRange } from '@/lib/sessions/service'
+import { getAttendanceCountsBySessionIds } from '@/lib/attendance/service'
+import { getClassSizes } from '@/lib/classes/service'
 import {
   parseCalendarParams,
   rangeForView,
@@ -31,45 +33,14 @@ export async function SessionCalendar({ searchParams }: Props) {
   const { view, ym, year, day } = parseCalendarParams(searchParams)
   const range = rangeForView(view, ym, year, day)
 
-  const supabase = await createClient()
-  // RLS: teacher만 본인 담당 반의 sessions 보임
-  const { data: sessionRows } = await supabase
-    .from('sessions')
-    .select('id, scheduled_at, title, video_url, classes!inner(id, name)')
-    .gte('scheduled_at', range.from)
-    .lt('scheduled_at', range.to)
-    .order('scheduled_at')
-
-  const sessions = (sessionRows ?? []).map((s) => {
-    const cls = Array.isArray(s.classes) ? s.classes[0] : s.classes
-    return { ...s, class_id: cls?.id ?? '', class_name: cls?.name ?? '-' }
-  })
-
-  // 각 session 의 attendance count + class size 병렬 조회
+  const sessions = await getTeacherSessionsInRange(range.from, range.to)
   const sessionIds = sessions.map((s) => s.id)
   const classIds = Array.from(new Set(sessions.map((s) => s.class_id).filter(Boolean)))
 
-  const [{ data: attRows }, { data: csRows }] = await Promise.all([
-    sessionIds.length === 0
-      ? Promise.resolve({ data: [] as { session_id: string }[] })
-      : supabase.from('attendance').select('session_id').in('session_id', sessionIds),
-    classIds.length === 0
-      ? Promise.resolve({ data: [] as { class_id: string; student_id: string }[] })
-      : supabase
-          .from('class_students')
-          .select('class_id, student_id')
-          .in('class_id', classIds)
-          .is('left_at', null),
+  const [attCount, sizeByClass] = await Promise.all([
+    getAttendanceCountsBySessionIds(sessionIds),
+    getClassSizes(classIds),
   ])
-
-  const attCount = new Map<string, number>()
-  for (const r of attRows ?? []) {
-    attCount.set(r.session_id, (attCount.get(r.session_id) ?? 0) + 1)
-  }
-  const sizeByClass = new Map<string, number>()
-  for (const r of csRows ?? []) {
-    sizeByClass.set(r.class_id, (sizeByClass.get(r.class_id) ?? 0) + 1)
-  }
 
   const summaries: SessionSummary[] = sessions.map((s) => ({
     id: s.id,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { upsertAttendanceAction } from '../actions'
+import { upsertAttendanceAction } from '@/lib/attendance/actions'
 
 type Status = 'present' | 'late' | 'absent' | 'excused'
 type PickableStatus = 'present' | 'late' | 'absent'

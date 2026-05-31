@@ -1,37 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { getSessionForTeacher } from '@/lib/sessions/service'
+import { getClassRoster } from '@/lib/classes/service'
+import { getSessionAttendance } from '@/lib/attendance/service'
+import { updateVideoUrlAction } from '@/lib/sessions/actions'
 import { AttendanceRow } from './_components/AttendanceRow'
 import { BulkPresentButton } from './_components/BulkPresentButton'
-import { updateVideoUrlAction } from './actions'
-
-type Status = 'present' | 'late' | 'absent' | 'excused'
-
-type SessionRow = {
-  id: string
-  scheduled_at: string
-  title: string
-  unit: string | null
-  video_url: string | null
-  classes:
-    | { id: string; name: string; level: string }
-    | { id: string; name: string; level: string }[]
-    | null
-}
-
-type ClassStudentRow = {
-  students:
-    | { id: string; name: string; school: string | null }
-    | { id: string; name: string; school: string | null }[]
-    | null
-}
-
-type AttendanceRecord = {
-  student_id: string
-  status: Status
-  excused_reason: string | null
-  needs_makeup: boolean
-}
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export default async function TeacherSessionPage({
   params,
@@ -39,46 +13,13 @@ export default async function TeacherSessionPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const supabase = await createClient()
-
-  // First fetch: session metadata (need class id for the next two queries)
-  const { data: session } = await supabase
-    .from('sessions')
-    .select('id, scheduled_at, title, unit, video_url, classes(id, name, level)')
-    .eq('id', id)
-    .single()
-
+  const session = await getSessionForTeacher(id)
   if (!session) return <div>회차를 찾을 수 없습니다.</div>
 
-  const sessionRow = session as unknown as SessionRow
-  const cls = Array.isArray(sessionRow.classes)
-    ? sessionRow.classes[0]
-    : sessionRow.classes
-  if (!cls) return <div>반 정보를 찾을 수 없습니다.</div>
-
-  // Parallel: students in this class + existing attendance for this session
-  const [classStudentsRes, attendanceRes] = await Promise.all([
-    supabase
-      .from('class_students')
-      .select('students(id, name, school)')
-      .eq('class_id', cls.id)
-      .is('left_at', null),
-    supabase
-      .from('attendance')
-      .select('student_id, status, excused_reason, needs_makeup')
-      .eq('session_id', id),
+  const [studentRows, attendance] = await Promise.all([
+    getClassRoster(session.class_id),
+    getSessionAttendance(id),
   ])
-
-  const classStudents = (classStudentsRes.data ?? []) as unknown as ClassStudentRow[]
-  const attendance = (attendanceRes.data ?? []) as unknown as AttendanceRecord[]
-
-  const studentRows = classStudents
-    .map((cs) => (Array.isArray(cs.students) ? cs.students[0] : cs.students))
-    .filter((s): s is { id: string; name: string; school: string | null } =>
-      Boolean(s)
-    )
-  // sort by name in JS (Supabase relationship sorting is brittle)
-  studentRows.sort((a, b) => a.name.localeCompare(b.name, 'ko'))
 
   const attMap = new Map(attendance.map((a) => [a.student_id, a]))
   const filledCount = studentRows.filter((s) => attMap.has(s.id)).length
@@ -87,13 +28,13 @@ export default async function TeacherSessionPage({
   return (
     <div className="space-y-4">
       <header className="bg-white border border-amber-100 rounded-lg p-4">
-        <div className="text-xs text-slate-500">{cls.name}</div>
+        <div className="text-xs text-slate-500">{session.class_name}</div>
         <div className="text-lg font-semibold mt-1">
-          {new Date(sessionRow.scheduled_at).toLocaleString('ko-KR')}
+          {new Date(session.scheduled_at).toLocaleString('ko-KR')}
         </div>
         <div className="text-sm text-slate-600">
-          {sessionRow.title}
-          {sessionRow.unit ? ` · ${sessionRow.unit}` : ''}
+          {session.title}
+          {session.unit ? ` · ${session.unit}` : ''}
         </div>
       </header>
 
@@ -101,12 +42,12 @@ export default async function TeacherSessionPage({
         action={updateVideoUrlAction}
         className="bg-white border border-amber-100 rounded-lg p-4 space-y-2"
       >
-        <input type="hidden" name="session_id" value={sessionRow.id} />
+        <input type="hidden" name="session_id" value={session.id} />
         <label className="text-sm font-medium">📹 수업 영상 URL</label>
         <div className="flex gap-2">
           <Input
             name="video_url"
-            defaultValue={sessionRow.video_url ?? ''}
+            defaultValue={session.video_url ?? ''}
             placeholder="https://vimeo.com/..."
           />
           <Button type="submit">저장</Button>
@@ -141,7 +82,7 @@ export default async function TeacherSessionPage({
           return (
             <AttendanceRow
               key={s.id}
-              sessionId={sessionRow.id}
+              sessionId={session.id}
               student={s}
               initialStatus={att?.status ?? null}
               initialReason={att?.excused_reason ?? null}
