@@ -115,6 +115,7 @@ export function RepeatScheduleFields({ value, onChange }: Props) {
               <button
                 key={d.value}
                 type="button"
+                aria-pressed={value.weekdays.includes(d.value)}
                 onClick={() => toggleWeekday(d.value)}
                 className={`px-3 py-2 rounded text-sm border ${
                   value.weekdays.includes(d.value)
@@ -137,6 +138,7 @@ export function RepeatScheduleFields({ value, onChange }: Props) {
               <button
                 key={d}
                 type="button"
+                aria-pressed={value.monthDays.includes(d)}
                 onClick={() => toggleMonthDay(d)}
                 className={`py-1.5 rounded text-xs border ${
                   value.monthDays.includes(d)
