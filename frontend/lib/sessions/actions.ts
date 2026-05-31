@@ -167,8 +167,12 @@ export async function bulkCreateSessionsAction(input: {
   const supabase = await createClient()
 
   // 중복 제거: 같은 반 + 같은 시각이 이미 있으면 건너뜀.
-  // 입력 시각 범위 내 기존 세션만 조회해 비교.
-  const isos = parsed.sessions.map((s) => s.scheduled_at)
+  // 입력을 canonical ISO로 정규화해 DB 비교 기준과 일치시킴 (양쪽 toISOString).
+  const normalized = parsed.sessions.map((s) => ({
+    title: s.title,
+    scheduled_at: new Date(s.scheduled_at).toISOString(),
+  }))
+  const isos = normalized.map((s) => s.scheduled_at)
   const minIso = isos.reduce((a, b) => (a < b ? a : b))
   const maxIso = isos.reduce((a, b) => (a > b ? a : b))
   const { data: existing, error: exErr } = await supabase
@@ -178,11 +182,17 @@ export async function bulkCreateSessionsAction(input: {
     .gte('scheduled_at', minIso)
     .lte('scheduled_at', maxIso)
   if (exErr) throw new Error(exErr.message)
-  const existingSet = new Set(
+
+  // 기존 세션 + 배치 내 중복 모두 한 Set으로 제거.
+  const seen = new Set(
     (existing ?? []).map((r) => new Date(r.scheduled_at).toISOString())
   )
-
-  const toInsert = parsed.sessions.filter((s) => !existingSet.has(s.scheduled_at))
+  const toInsert: { scheduled_at: string; title: string }[] = []
+  for (const s of normalized) {
+    if (seen.has(s.scheduled_at)) continue
+    seen.add(s.scheduled_at)
+    toInsert.push(s)
+  }
   const skipped = parsed.sessions.length - toInsert.length
 
   if (toInsert.length === 0) {
