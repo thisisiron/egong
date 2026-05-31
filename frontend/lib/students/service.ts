@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
+import { getSessionUser } from '@/lib/auth'
 import type {
   StudentRow,
   StudentDetailView,
@@ -103,4 +104,64 @@ export async function getStudentClassAssignments(
     active: assignments.filter((a) => !a.left_at),
     history: assignments.filter((a) => a.left_at),
   }
+}
+
+/** 학생 수 (RLS가 학원 범위). */
+export async function countStudents(): Promise<number> {
+  const supabase = await createClient()
+  const { count, error } = await supabase
+    .from('students')
+    .select('*', { count: 'exact', head: true })
+  if (error) throw new Error(error.message)
+  return count ?? 0
+}
+
+/** 현재 사용자가 보는 학생 목록.
+ * - student: 본인 student 행 (단일)
+ * - parent: 연결된 자녀들 (이름순)
+ */
+export async function getMyChildren(): Promise<
+  Array<{ id: string; name: string; grade: string | null }>
+> {
+  const user = await getSessionUser()
+  if (!user) return []
+  const supabase = await createClient()
+
+  if (user.role === 'student') {
+    const { data } = await supabase
+      .from('students')
+      .select('id, name, grade')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    return data ? [{ id: data.id, name: data.name, grade: data.grade }] : []
+  }
+
+  if (user.role === 'parent') {
+    const { data } = await supabase
+      .from('student_parent')
+      .select('students(id, name, grade)')
+    return (data ?? [])
+      .map((l: { students: unknown }) =>
+        pickOne(l.students) as { id: string; name: string; grade: string | null } | null
+      )
+      .filter(
+        (s): s is { id: string; name: string; grade: string | null } => s !== null
+      )
+      .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+  }
+
+  return []
+}
+
+/** 학생 프로필 (헤더 표시용). */
+export async function getStudentProfile(
+  id: string
+): Promise<{ id: string; name: string; school: string | null; grade: string | null } | null> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('students')
+    .select('id, name, school, grade')
+    .eq('id', id)
+    .maybeSingle()
+  return data ?? null
 }

@@ -1,20 +1,21 @@
-import { createClient } from '@/lib/supabase/server'
+import { countStudents } from '@/lib/students/service'
+import { countTeachers } from '@/lib/teachers/service'
+import { countClasses } from '@/lib/classes/service'
 
 export default async function OwnerDashboard() {
-  const supabase = await createClient()
-  const [studentsRes, teachersRes, classesRes] = await Promise.all([
-    supabase.from('students').select('*', { count: 'exact', head: true }),
-    supabase.from('teachers').select('*', { count: 'exact', head: true }),
-    supabase.from('classes').select('*', { count: 'exact', head: true }),
+  const [students, teachers, classes] = await Promise.all([
+    countStudents(),
+    countTeachers(),
+    countClasses(),
   ])
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">대시보드</h1>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Stat label="학생" value={studentsRes.count ?? 0} />
-        <Stat label="선생님" value={teachersRes.count ?? 0} />
-        <Stat label="반" value={classesRes.count ?? 0} />
+        <Stat label="학생" value={students} />
+        <Stat label="선생님" value={teachers} />
+        <Stat label="반" value={classes} />
       </div>
     </div>
   )

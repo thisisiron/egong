@@ -27,3 +27,13 @@ export async function listTeachers(): Promise<TeacherRow[]> {
     }
   })
 }
+
+/** 선생님 수 (RLS가 학원 범위). */
+export async function countTeachers(): Promise<number> {
+  const supabase = await createClient()
+  const { count, error } = await supabase
+    .from('teachers')
+    .select('*', { count: 'exact', head: true })
+  if (error) throw new Error(error.message)
+  return count ?? 0
+}

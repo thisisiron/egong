@@ -125,3 +125,13 @@ export async function getClassSizes(classIds: string[]): Promise<Map<string, num
   }
   return result
 }
+
+/** 반 수 (RLS가 학원 범위). */
+export async function countClasses(): Promise<number> {
+  const supabase = await createClient()
+  const { count, error } = await supabase
+    .from('classes')
+    .select('*', { count: 'exact', head: true })
+  if (error) throw new Error(error.message)
+  return count ?? 0
+}
