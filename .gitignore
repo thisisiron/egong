@@ -39,6 +39,9 @@ supabase/.temp/
 # brainstorming artifacts
 .superpowers/
 
+# superpowers specs/plans/runbooks — 로컬 작업 산출물, 추적 안 함 (파일은 디스크 유지)
+docs/superpowers/
+
 # Claude Code / agent harness (local to this machine)
 .agents/
 .claude/
