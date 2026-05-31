@@ -44,6 +44,7 @@ docs/superpowers/
 
 # AI 작업 노트 — origin에 올리지 않음 (파일은 디스크 유지)
 CLAUDE.md
+AGENTS.md
 
 # Claude Code / agent harness (local to this machine)
 .agents/
