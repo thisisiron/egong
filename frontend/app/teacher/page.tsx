@@ -1,4 +1,6 @@
 import { SessionCalendar } from './_components/SessionCalendar'
+import { TeacherSessionAddButton } from '@/lib/sessions/components/TeacherSessionAddButton'
+import { MyRecentSessions } from '@/lib/sessions/components/MyRecentSessions'
 
 type SearchParams = {
   view?: string
@@ -15,8 +17,12 @@ export default async function TeacherDashboard({
   const sp = await searchParams
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">내 수업</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">내 수업</h1>
+        <TeacherSessionAddButton />
+      </div>
       <SessionCalendar searchParams={sp} />
+      <MyRecentSessions />
     </div>
   )
 }
