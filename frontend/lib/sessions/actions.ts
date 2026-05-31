@@ -188,3 +188,17 @@ export async function generateSessionsAction(input: GenerateInput) {
   revalidatePath(`/owner/classes/${input.class_id}`)
   return { created: data?.length ?? 0 }
 }
+
+export async function updateVideoUrlAction(formData: FormData) {
+  await requireRole(['teacher'])
+  const sessionId = String(formData.get('session_id'))
+  const videoUrl = String(formData.get('video_url') || '').trim() || null
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('sessions')
+    .update({ video_url: videoUrl })
+    .eq('id', sessionId)
+  if (error) throw new Error(error.message)
+  revalidatePath(`/teacher/sessions/${sessionId}`)
+}

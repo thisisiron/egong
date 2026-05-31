@@ -1,7 +1,5 @@
-import {
-  getClassSessions,
-  getAttendanceCountsBySessionIds,
-} from '@/lib/sessions/service'
+import { getClassSessions } from '@/lib/sessions/service'
+import { getAttendanceCountsBySessionIds } from '@/lib/attendance/service'
 import { SessionEditDialog } from './SessionEditDialog'
 import { SessionListItem } from './SessionListItem'
 import { Button } from '@/components/ui/button'

@@ -10,6 +10,10 @@ import type {
   StudentOption,
 } from './types'
 
+/** join 결과(객체 또는 배열)를 단일 객체로 정규화. */
+const pickOne = <T,>(v: T | T[] | null | undefined): T | null =>
+  Array.isArray(v) ? (v[0] ?? null) : (v ?? null)
+
 /** 반 목록 — owner 반 목록 페이지. RLS가 학원 범위 필터. */
 export async function listClasses(): Promise<ClassRow[]> {
   const supabase = await createClient()
@@ -40,9 +44,6 @@ export async function getClassDetailView(id: string): Promise<ClassDetailView | 
 
   const cls = clsRes.data as ClassRow | null
   if (!cls) return null
-
-  const pickOne = <T,>(v: T | T[] | null | undefined): T | null =>
-    Array.isArray(v) ? (v[0] ?? null) : (v ?? null)
 
   // 현재 담임 (첫 번째 링크)
   const tLinks = (teacherLinksRes.data ?? []) as Array<{
@@ -87,4 +88,40 @@ export async function getClassDetailView(id: string): Promise<ClassDetailView | 
   )
 
   return { cls, currentTeacher, students, teacherOptions, availableStudents }
+}
+
+/** 한 반의 현재 배정 학생 명단 (출결 화면용). 이름순. */
+export async function getClassRoster(
+  classId: string
+): Promise<Array<{ id: string; name: string; school: string | null }>> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('class_students')
+    .select('students(id, name, school)')
+    .eq('class_id', classId)
+    .is('left_at', null)
+  if (error) throw new Error(error.message)
+  const rows = (data ?? []) as Array<{ students: unknown }>
+  const students = rows
+    .map((r) => pickOne(r.students) as { id: string; name: string; school: string | null } | null)
+    .filter((s): s is { id: string; name: string; school: string | null } => s !== null)
+  students.sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+  return students
+}
+
+/** 여러 반의 현재 배정 학생 수 (캘린더 class_size용). Map<class_id, count>. */
+export async function getClassSizes(classIds: string[]): Promise<Map<string, number>> {
+  const result = new Map<string, number>()
+  if (classIds.length === 0) return result
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('class_students')
+    .select('class_id')
+    .in('class_id', classIds)
+    .is('left_at', null)
+  if (error) throw new Error(error.message)
+  for (const r of data ?? []) {
+    result.set(r.class_id, (result.get(r.class_id) ?? 0) + 1)
+  }
+  return result
 }

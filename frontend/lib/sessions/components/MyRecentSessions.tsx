@@ -1,7 +1,5 @@
-import {
-  getMyRecentSessions,
-  getAttendanceCountsBySessionIds,
-} from '@/lib/sessions/service'
+import { getMyRecentSessions } from '@/lib/sessions/service'
+import { getAttendanceCountsBySessionIds } from '@/lib/attendance/service'
 import { SessionListItem } from './SessionListItem'
 
 /** 선생님 페이지 하단 — 최근 14일 본인 반 세션 목록 (수정·삭제 진입). */

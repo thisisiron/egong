@@ -23,26 +23,6 @@ export async function getClassSessions(
   return data ?? []
 }
 
-/** 여러 세션의 attendance 카운트 일괄 조회 (N+1 회피).
- * Returns Map<session_id, count>.
- */
-export async function getAttendanceCountsBySessionIds(
-  sessionIds: string[]
-): Promise<Map<string, number>> {
-  const result = new Map<string, number>()
-  if (sessionIds.length === 0) return result
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('attendance')
-    .select('session_id')
-    .in('session_id', sessionIds)
-  if (error) throw new Error(error.message)
-  for (const r of data ?? []) {
-    result.set(r.session_id, (result.get(r.session_id) ?? 0) + 1)
-  }
-  return result
-}
-
 /** 선생님이 가르치는 반 목록 — 추가 다이얼로그 드롭다운 용.
  * RLS: classes_teacher_read 정책으로 본인 가르치는 반만 보임.
  */
@@ -81,6 +61,74 @@ export async function getMyRecentSessions(
       unit: s.unit,
       video_url: s.video_url,
       video_notes: s.video_notes,
+      class_name: cls?.name ?? '-',
+    }
+  })
+}
+
+/** 선생님 출결 화면용 — 단일 세션 메타 + 반 정보. */
+export async function getSessionForTeacher(id: string): Promise<{
+  id: string
+  scheduled_at: string
+  title: string
+  unit: string | null
+  video_url: string | null
+  class_id: string
+  class_name: string
+} | null> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('sessions')
+    .select('id, scheduled_at, title, unit, video_url, classes(id, name)')
+    .eq('id', id)
+    .maybeSingle()
+  if (!data) return null
+  const cls = (Array.isArray(data.classes) ? data.classes[0] : data.classes) as
+    | { id: string; name: string }
+    | null
+  if (!cls) return null
+  return {
+    id: data.id,
+    scheduled_at: data.scheduled_at,
+    title: data.title,
+    unit: data.unit,
+    video_url: data.video_url,
+    class_id: cls.id,
+    class_name: cls.name,
+  }
+}
+
+/** 선생님 캘린더용 — 기간 내 본인 반 세션 (RLS가 본인 반만). */
+export async function getTeacherSessionsInRange(
+  fromIso: string,
+  toIso: string
+): Promise<
+  Array<{
+    id: string
+    scheduled_at: string
+    title: string
+    video_url: string | null
+    class_id: string
+    class_name: string
+  }>
+> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('sessions')
+    .select('id, scheduled_at, title, video_url, classes!inner(id, name)')
+    .gte('scheduled_at', fromIso)
+    .lt('scheduled_at', toIso)
+    .order('scheduled_at')
+  return (data ?? []).map((s: { id: string; scheduled_at: string; title: string; video_url: string | null; classes: unknown }) => {
+    const cls = (Array.isArray(s.classes) ? s.classes[0] : s.classes) as
+      | { id: string; name: string }
+      | null
+    return {
+      id: s.id,
+      scheduled_at: s.scheduled_at,
+      title: s.title,
+      video_url: s.video_url,
+      class_id: cls?.id ?? '',
       class_name: cls?.name ?? '-',
     }
   })

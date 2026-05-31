@@ -6,7 +6,7 @@ import { AttendanceStats } from './_components/AttendanceStats'
 import { ChildSelector } from './_components/ChildSelector'
 import { SessionVideoItem } from './_components/SessionVideoItem'
 
-import { monthRange, ymd } from '@/lib/attendance'
+import { monthRange, ymd } from '@/lib/date'
 
 type AttStatus = 'present' | 'late' | 'absent' | 'excused'
 
