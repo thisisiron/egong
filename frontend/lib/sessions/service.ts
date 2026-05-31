@@ -48,10 +48,11 @@ export async function getAttendanceCountsBySessionIds(
  */
 export async function getMyTeachingClasses(): Promise<TeachingClassOption[]> {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('classes')
     .select('id, name')
     .order('name')
+  if (error) throw new Error(error.message)
   return (data ?? []).map((c) => ({ id: c.id, name: c.name }))
 }
 
