@@ -17,7 +17,13 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   createSessionAction,
   updateSessionAction,
+  bulkCreateSessionsAction,
 } from '@/lib/sessions/actions'
+import { buildRepeatSessions } from '@/lib/sessions/repeat'
+import {
+  RepeatScheduleFields,
+  type RepeatFieldsValue,
+} from './RepeatScheduleFields'
 import type { Session, TeachingClassOption } from '@/lib/sessions/types'
 
 // Discriminated union — edit 모드에서는 `existing`이 컴파일타임에 강제됨.
@@ -56,6 +62,13 @@ function isoToLocalInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+/** 오늘 날짜 'YYYY-MM-DD' (로컬). date input 기본값. */
+function todayStr(): string {
+  const d = new Date()
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 export function SessionEditDialog(props: Props) {
   const { mode, trigger } = props
   // 모드별 props 접근 (TS narrowing). Create에만 있는 필드는 props.mode === 'create'에서 꺼냄.
@@ -77,6 +90,16 @@ export function SessionEditDialog(props: Props) {
   const [unit, setUnit] = useState(existing?.unit ?? '')
   const [videoUrl, setVideoUrl] = useState(existing?.video_url ?? '')
   const [videoNotes, setVideoNotes] = useState(existing?.video_notes ?? '')
+  const [repeatOn, setRepeatOn] = useState(false)
+  const [repeatResult, setRepeatResult] = useState<string | null>(null)
+  const [repeat, setRepeat] = useState<RepeatFieldsValue>({
+    fromDate: todayStr(),
+    toDate: todayStr(),
+    time: '19:00',
+    freq: 'weekly',
+    weekdays: [],
+    monthDays: [],
+  })
 
   // open이 true로 바뀔 때마다 폼 필드를 초기 상태로 re-seed.
   // edit 모드: existing.* 으로 다시 채워 stale 값 (사용자가 타이핑 후 취소한 값) 제거.
@@ -95,17 +118,54 @@ export function SessionEditDialog(props: Props) {
 
   function reset() {
     setError(null)
+    setRepeatResult(null)
     if (mode === 'create') {
       setTitle('')
       setScheduledAt(nextHourLocal())
       setUnit('')
+      setRepeatOn(false)
+      setRepeat({
+        fromDate: todayStr(),
+        toDate: todayStr(),
+        time: '19:00',
+        freq: 'weekly',
+        weekdays: [],
+        monthDays: [],
+      })
     }
   }
 
   function submit() {
     setError(null)
+    setRepeatResult(null)
+
+    // create + 반복 ON: 클라에서 날짜 목록 계산 → 일괄 생성.
+    if (mode === 'create' && repeatOn) {
+      const generated = buildRepeatSessions({ ...repeat, titlePrefix: title })
+      if (generated.length === 0) {
+        setError('조건에 맞는 날짜가 없습니다. 기간·요일·날짜를 확인해주세요.')
+        return
+      }
+      startTransition(async () => {
+        try {
+          const r = await bulkCreateSessionsAction({
+            class_id: selectedClassId,
+            sessions: generated,
+          })
+          setRepeatResult(
+            r.skipped > 0
+              ? `${r.created}회차 생성됨 (중복 ${r.skipped}건 건너뜀)`
+              : `${r.created}회차 생성됨`
+          )
+        } catch (e) {
+          setError(e instanceof Error ? e.message : '생성에 실패했습니다.')
+        }
+      })
+      return
+    }
+
+    // 단건 (기존 로직)
     // TZ fix: 브라우저 로컬 시각을 ISO(UTC)로 변환해서 서버에 전달.
-    // 서버는 Node 프로세스 TZ에 무관하게 정확한 시각을 받음.
     const isoScheduledAt = new Date(scheduledAt).toISOString()
 
     startTransition(async () => {
@@ -178,39 +238,58 @@ export function SessionEditDialog(props: Props) {
               </div>
             )}
 
+            {mode === 'create' && (
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={repeatOn}
+                  onChange={(e) => {
+                    setRepeatOn(e.target.checked)
+                    setRepeatResult(null)
+                    setError(null)
+                  }}
+                />
+                반복 일정으로 여러 회차 만들기
+              </label>
+            )}
+
             <div className="space-y-1">
-              <Label htmlFor="title">수업 제목</Label>
+              <Label htmlFor="title">{repeatOn ? '수업 제목 (접두어)' : '수업 제목'}</Label>
               <Input
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="예: 6/3 정물 드로잉"
-                required
+                placeholder={repeatOn ? '예: 정규수업 → "6/3 정규수업"' : '예: 6/3 정물 드로잉'}
                 maxLength={100}
               />
             </div>
 
-            <div className="space-y-1">
-              <Label htmlFor="scheduled_at">수업 시각</Label>
-              <Input
-                id="scheduled_at"
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="unit">단원 (선택)</Label>
-              <Input
-                id="unit"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                placeholder="예: 1단원 - 선과 면"
-                maxLength={50}
-              />
-            </div>
+            {mode === 'create' && repeatOn ? (
+              <RepeatScheduleFields value={repeat} onChange={setRepeat} />
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <Label htmlFor="scheduled_at">수업 시각</Label>
+                  <Input
+                    id="scheduled_at"
+                    type="datetime-local"
+                    value={scheduledAt}
+                    onChange={(e) => setScheduledAt(e.target.value)}
+                    required={!repeatOn}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="unit">단원 (선택)</Label>
+                  <Input
+                    id="unit"
+                    value={unit}
+                    onChange={(e) => setUnit(e.target.value)}
+                    placeholder="예: 1단원 - 선과 면"
+                    maxLength={50}
+                  />
+                </div>
+              </>
+            )}
 
             {mode === 'edit' && (
               <>
@@ -243,6 +322,12 @@ export function SessionEditDialog(props: Props) {
                 {error}
               </div>
             )}
+
+            {repeatResult && (
+              <div role="status" aria-live="polite" className="text-sm text-green-700 bg-green-50 border border-green-200 rounded p-2">
+                {repeatResult}
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -255,7 +340,7 @@ export function SessionEditDialog(props: Props) {
               취소
             </Button>
             <Button type="submit" disabled={pending || !selectedClassId}>
-              {pending ? '저장 중...' : '저장'}
+              {pending ? '저장 중...' : repeatOn ? '생성' : '저장'}
             </Button>
           </DialogFooter>
         </form>
