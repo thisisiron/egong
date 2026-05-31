@@ -11,6 +11,12 @@ type Academy = {
   created_at: string
 }
 
+const STATUS_LABEL: Record<string, string> = {
+  active: '활성',
+  suspended: '일시정지',
+  deleted: '삭제됨',
+}
+
 export default async function AdminDashboard() {
   await requireRole(['admin'])
   const academies = await apiFetch<Academy[]>('/admin/academies')
@@ -45,7 +51,7 @@ export default async function AdminDashboard() {
             {academies.map((a) => (
               <tr key={a.id} className="hover:bg-amber-50/50">
                 <td className="px-4 py-3 font-medium">{a.name}</td>
-                <td className="px-4 py-3">{a.status}</td>
+                <td className="px-4 py-3">{STATUS_LABEL[a.status] ?? a.status}</td>
                 <td className="px-4 py-3">{a.contract_started_at ?? '-'}</td>
                 <td className="px-4 py-3 text-slate-500">
                   {new Date(a.created_at).toLocaleDateString('ko-KR')}

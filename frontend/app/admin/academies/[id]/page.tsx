@@ -39,9 +39,9 @@ export default async function AcademyDetailPage({
             defaultValue={a.status}
             className="w-full border rounded px-3 py-2 text-sm"
           >
-            <option value="active">active</option>
-            <option value="suspended">suspended</option>
-            <option value="deleted">deleted</option>
+            <option value="active">활성</option>
+            <option value="suspended">일시정지</option>
+            <option value="deleted">삭제됨</option>
           </select>
         </div>
         <Button type="submit">저장</Button>
