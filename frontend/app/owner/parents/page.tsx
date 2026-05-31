@@ -1,27 +1,10 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { formatPhoneKR } from '@/lib/format'
-
-type ParentRow = {
-  id: string
-  name: string
-  phone: string | null
-  users: { email: string | null } | null
-  student_parent: { student_id: string }[]
-}
+import { listParents } from '@/lib/parents/service'
 
 export default async function ParentsPage() {
-  const supabase = await createClient()
-  // RLS limits visible parents to those linked to a student in this academy
-  // (parents_owner_all policy in supabase/migrations/...rls_policies.sql),
-  // so a plain select shows the right set without an explicit filter.
-  const { data } = await supabase
-    .from('parents')
-    .select('id, name, phone, users(email), student_parent(student_id)')
-    .order('name')
-
-  const parents = (data ?? []) as unknown as ParentRow[]
+  const parents = await listParents()
 
   return (
     <div className="space-y-4">
@@ -49,17 +32,14 @@ export default async function ParentsPage() {
                 </td>
               </tr>
             ) : null}
-            {parents.map((p) => {
-              const user = Array.isArray(p.users) ? p.users[0] : p.users
-              return (
-                <tr key={p.id} className="hover:bg-amber-50/50">
-                  <td className="px-4 py-3 font-medium">{p.name}</td>
-                  <td className="px-4 py-3 text-slate-600">{user?.email ?? '-'}</td>
-                  <td className="px-4 py-3 tabular-nums">{formatPhoneKR(p.phone)}</td>
-                  <td className="px-4 py-3">{p.student_parent?.length ?? 0}</td>
-                </tr>
-              )
-            })}
+            {parents.map((p) => (
+              <tr key={p.id} className="hover:bg-amber-50/50">
+                <td className="px-4 py-3 font-medium">{p.name}</td>
+                <td className="px-4 py-3 text-slate-600">{p.email ?? '-'}</td>
+                <td className="px-4 py-3 tabular-nums">{formatPhoneKR(p.phone)}</td>
+                <td className="px-4 py-3">{p.linked_student_count}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

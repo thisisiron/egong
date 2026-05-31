@@ -1,25 +1,10 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { formatPhoneKR } from '@/lib/format'
-
-type TeacherRow = {
-  id: string
-  users: {
-    display_name: string
-    phone: string | null
-    email: string | null
-  } | null
-}
+import { listTeachers } from '@/lib/teachers/service'
 
 export default async function TeachersPage() {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('teachers')
-    .select('id, users(display_name, phone, email)')
-    .order('id')
-
-  const teachers = (data ?? []) as unknown as TeacherRow[]
+  const teachers = await listTeachers()
 
   return (
     <div className="space-y-4">
@@ -48,9 +33,9 @@ export default async function TeachersPage() {
             ) : null}
             {teachers.map((t) => (
               <tr key={t.id} className="hover:bg-amber-50/50">
-                <td className="px-4 py-3 font-medium">{t.users?.display_name ?? '-'}</td>
-                <td className="px-4 py-3 text-slate-600">{t.users?.email ?? '-'}</td>
-                <td className="px-4 py-3 tabular-nums">{formatPhoneKR(t.users?.phone)}</td>
+                <td className="px-4 py-3 font-medium">{t.display_name}</td>
+                <td className="px-4 py-3 text-slate-600">{t.email ?? '-'}</td>
+                <td className="px-4 py-3 tabular-nums">{formatPhoneKR(t.phone)}</td>
               </tr>
             ))}
           </tbody>

@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { createParentAction } from './actions'
+import { createParentAction } from '@/lib/parents/actions'
 
 export default function NewParentPage() {
   return (

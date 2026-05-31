@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole, getSessionUser } from '@/lib/auth'
-import { apiFetch } from '@/lib/api/client'
+import { resolveParentIdByEmail } from '@/lib/parents/service'
 import {
   createStudentSchema,
   updateStudentSchema,
@@ -99,13 +99,8 @@ export async function addParentLinkAction(formData: FormData) {
 
   // owner UI는 학부모 이메일만 안다. backend가 auth.users를 service-role로
   // 조회해 parent.id로 해석. 미발견 시 명확한 안내 메시지.
-  let parentId: string
-  try {
-    const result = await apiFetch<{ id: string }>(
-      `/owner/parents/by-email?email=${encodeURIComponent(parsed.parent_email)}`
-    )
-    parentId = result.id
-  } catch {
+  const parentId = await resolveParentIdByEmail(parsed.parent_email)
+  if (!parentId) {
     throw new Error(
       `해당 이메일의 학부모를 찾을 수 없습니다: ${parsed.parent_email}. 먼저 /owner/parents/new 에서 학부모를 등록하세요.`
     )
