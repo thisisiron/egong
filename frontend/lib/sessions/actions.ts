@@ -7,6 +7,7 @@ import {
   sessionCreateSchema,
   sessionUpdateSchema,
   sessionDeleteSchema,
+  bulkCreateSessionsSchema,
 } from './schemas'
 import type {
   SessionCreateInput,
@@ -138,57 +139,6 @@ export async function deleteSessionAction(input: SessionDeleteInput) {
   revalidateAll(existing.class_id)
 }
 
-type GenerateInput = {
-  class_id: string
-  from_date: string
-  to_date: string
-  time_of_day: string // HH:MM
-  title_prefix: string
-  weekdays: number[] // 0=Sun..6=Sat
-}
-
-/** 반의 수업 일정 일괄 생성 — owner 전용. (반 단위 belongs-to 검증 후 진행) */
-export async function generateSessionsAction(input: GenerateInput) {
-  await requireRole(['owner'])
-  await verifyClassAccess(input.class_id)
-  const supabase = await createClient()
-
-  const [hh, mm] = input.time_of_day.split(':').map(Number)
-  const from = new Date(input.from_date + 'T00:00:00')
-  const to = new Date(input.to_date + 'T00:00:00')
-  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
-    throw new Error('잘못된 날짜 형식입니다.')
-  }
-  if (from > to) throw new Error('시작일이 종료일보다 늦습니다.')
-  if (input.weekdays.length === 0) throw new Error('요일을 선택해주세요.')
-
-  const sessions: { class_id: string; scheduled_at: string; title: string }[] = []
-  const cursor = new Date(from)
-  while (cursor <= to) {
-    if (input.weekdays.includes(cursor.getDay())) {
-      const scheduled = new Date(cursor)
-      scheduled.setHours(hh, mm, 0, 0)
-      const dateLabel = `${scheduled.getMonth() + 1}/${scheduled.getDate()}`
-      sessions.push({
-        class_id: input.class_id,
-        scheduled_at: scheduled.toISOString(),
-        title: `${dateLabel} ${input.title_prefix || '수업'}`,
-      })
-    }
-    cursor.setDate(cursor.getDate() + 1)
-  }
-
-  if (sessions.length === 0) return { created: 0 }
-
-  const { data, error } = await supabase
-    .from('sessions')
-    .insert(sessions)
-    .select('id')
-  if (error) throw new Error(error.message)
-  revalidatePath(`/owner/classes/${input.class_id}`)
-  return { created: data?.length ?? 0 }
-}
-
 export async function updateVideoUrlAction(formData: FormData) {
   await requireRole(['teacher'])
   const sessionId = String(formData.get('session_id'))
@@ -201,4 +151,57 @@ export async function updateVideoUrlAction(formData: FormData) {
     .eq('id', sessionId)
   if (error) throw new Error(error.message)
   revalidatePath(`/teacher/sessions/${sessionId}`)
+}
+
+/** 반복 일괄 생성. 클라가 buildRepeatSessions로 계산한 목록을 받아 중복 제거 후 insert.
+ * owner·teacher 둘 다 (verifyClassAccess가 양쪽 처리).
+ */
+export async function bulkCreateSessionsAction(input: {
+  class_id: string
+  sessions: { scheduled_at: string; title: string }[]
+}): Promise<{ created: number; skipped: number }> {
+  await requireOwnerOrTeacher()
+  const parsed = bulkCreateSessionsSchema.parse(input)
+  await verifyClassAccess(parsed.class_id)
+
+  const supabase = await createClient()
+
+  // 중복 제거: 같은 반 + 같은 시각이 이미 있으면 건너뜀.
+  // 입력 시각 범위 내 기존 세션만 조회해 비교.
+  const isos = parsed.sessions.map((s) => s.scheduled_at)
+  const minIso = isos.reduce((a, b) => (a < b ? a : b))
+  const maxIso = isos.reduce((a, b) => (a > b ? a : b))
+  const { data: existing, error: exErr } = await supabase
+    .from('sessions')
+    .select('scheduled_at')
+    .eq('class_id', parsed.class_id)
+    .gte('scheduled_at', minIso)
+    .lte('scheduled_at', maxIso)
+  if (exErr) throw new Error(exErr.message)
+  const existingSet = new Set(
+    (existing ?? []).map((r) => new Date(r.scheduled_at).toISOString())
+  )
+
+  const toInsert = parsed.sessions.filter((s) => !existingSet.has(s.scheduled_at))
+  const skipped = parsed.sessions.length - toInsert.length
+
+  if (toInsert.length === 0) {
+    return { created: 0, skipped }
+  }
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .insert(
+      toInsert.map((s) => ({
+        class_id: parsed.class_id,
+        scheduled_at: s.scheduled_at,
+        title: s.title,
+      }))
+    )
+    .select('id')
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/owner/classes/${parsed.class_id}`)
+  revalidatePath('/teacher')
+  return { created: data?.length ?? 0, skipped }
 }

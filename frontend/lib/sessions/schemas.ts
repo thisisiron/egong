@@ -60,3 +60,20 @@ export const sessionDeleteSchema = z.object({
 export type SessionCreateInput = z.infer<typeof sessionCreateSchema>
 export type SessionUpdateInput = z.infer<typeof sessionUpdateSchema>
 export type SessionDeleteInput = z.infer<typeof sessionDeleteSchema>
+
+export const bulkCreateSessionsSchema = z.object({
+  class_id: z.string().uuid('잘못된 반 ID 입니다.'),
+  sessions: z
+    .array(
+      z.object({
+        scheduled_at: z
+          .string()
+          .refine((v) => !Number.isNaN(new Date(v).getTime()), '잘못된 시각 형식입니다.'),
+        title: z.string().trim().min(1).max(100),
+      })
+    )
+    .min(1, '생성할 세션이 없습니다.')
+    .max(366, '한 번에 최대 366건까지 생성할 수 있습니다.'),
+})
+
+export type BulkCreateSessionsInput = z.infer<typeof bulkCreateSessionsSchema>
