@@ -7,6 +7,7 @@ import {
   setClassTeacherAction,
 } from '@/lib/classes/actions'
 import { SessionsManager } from '@/lib/sessions/components/SessionsManager'
+import { StudentSearchSelect } from '@/lib/classes/components/StudentSearchSelect'
 
 export default async function ClassDetailPage({
   params,
@@ -87,21 +88,10 @@ export default async function ClassDetailPage({
         </ul>
         <form action={addClassStudentAction} className="flex gap-2 pt-2 border-t">
           <input type="hidden" name="class_id" value={cls.id} />
-          <select
-            name="student_id"
-            className="flex-1 border rounded px-3 py-2 text-sm"
-            required
-          >
-            <option value="">학생 선택...</option>
-            {availableStudents.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-          <Button type="submit" disabled={availableStudents.length === 0}>
-            추가
-          </Button>
+          <StudentSearchSelect
+            key={availableStudents.length}
+            availableStudents={availableStudents}
+          />
         </form>
       </section>
 
