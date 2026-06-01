@@ -1,6 +1,13 @@
 'use client'
 
-import { useMemo, useState, type KeyboardEvent } from 'react'
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import type { StudentOption } from '@/lib/classes/types'
@@ -19,6 +26,16 @@ export function StudentSearchSelect({ availableStudents }: Props) {
   const [selected, setSelected] = useState<StudentOption | null>(null)
   const [open, setOpen] = useState(false)
   const [highlight, setHighlight] = useState(0)
+  const listboxId = useId()
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // blur 닫기 타이머는 remount(key 변경) 시 누수되지 않도록 정리.
+  useEffect(
+    () => () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current)
+    },
+    []
+  )
 
   const disabled = availableStudents.length === 0
 
@@ -64,6 +81,10 @@ export function StudentSearchSelect({ availableStudents }: Props) {
           role="combobox"
           aria-expanded={open}
           aria-autocomplete="list"
+          aria-controls={listboxId}
+          aria-activedescendant={
+            open && filtered[highlight] ? `${listboxId}-opt-${highlight}` : undefined
+          }
           disabled={disabled}
           placeholder={disabled ? '추가 가능한 학생 없음' : '학생 이름 검색...'}
           value={query}
@@ -78,12 +99,13 @@ export function StudentSearchSelect({ availableStudents }: Props) {
           }}
           onBlur={() => {
             // 목록 항목 클릭 처리 후 닫기
-            setTimeout(() => setOpen(false), 120)
+            closeTimer.current = setTimeout(() => setOpen(false), 120)
           }}
           onKeyDown={onKeyDown}
         />
         {open && !disabled && (
           <ul
+            id={listboxId}
             role="listbox"
             className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded border border-slate-200 bg-white shadow-sm"
           >
@@ -94,6 +116,7 @@ export function StudentSearchSelect({ availableStudents }: Props) {
                 <li key={s.id}>
                   <button
                     type="button"
+                    id={`${listboxId}-opt-${i}`}
                     role="option"
                     aria-selected={i === highlight}
                     onMouseDown={(e) => e.preventDefault()} // blur보다 클릭 먼저
