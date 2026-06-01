@@ -260,8 +260,8 @@ async def approve(application_id: str, admin_user_id: str) -> ApprovalResult:
 
 
 # --- 보상 트랜잭션 helper (cleanup용. 실패해도 raise 안 함, 로그만) ---
-# academy/users 행 삭제는 academies_service.delete_academy/delete_owner_profile
-# 가 담당한다. 여기엔 applications 가 소유한 auth 라이프사이클(invite)만 남긴다.
+# academy 행 삭제는 academies_service.delete_academy 가 담당한다.
+# 여기엔 applications 가 소유한 auth 라이프사이클(invite)만 남긴다.
 
 
 async def _safe_delete_auth_user(client, user_id: str) -> None:

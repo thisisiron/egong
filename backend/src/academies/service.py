@@ -126,15 +126,6 @@ async def create_owner_profile(
         ) from None
 
 
-async def delete_owner_profile(user_id: str) -> None:
-    """Best-effort delete of a users row (rollback). Never raises — logs only."""
-    client = await get_admin_client()
-    try:
-        await client.table("users").delete().eq("id", user_id).execute()
-    except Exception:
-        logger.exception("rollback: delete owner profile failed (id=%s)", user_id)
-
-
 async def create_academy_with_owner(
     admin_user_id: str, payload: AcademyCreate
 ) -> AcademyOut:
