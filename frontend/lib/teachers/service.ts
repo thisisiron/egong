@@ -37,3 +37,18 @@ export async function countTeachers(): Promise<number> {
   if (error) throw new Error(error.message)
   return count ?? 0
 }
+
+/** 선생님이 해당 학원 소속인지 (담임 배정 소유권 재검증용). */
+export async function teacherBelongsToAcademy(
+  teacherId: string,
+  academyId: string
+): Promise<boolean> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('teachers')
+    .select('academy_id')
+    .eq('id', teacherId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return !!data && data.academy_id === academyId
+}

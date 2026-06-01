@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole, getSessionUser } from '@/lib/auth'
 import { resolveParentIdByEmail } from '@/lib/parents/service'
+import { classBelongsToAcademy } from '@/lib/classes/service'
 import {
   createStudentSchema,
   updateStudentSchema,
@@ -133,10 +134,14 @@ export async function removeParentLinkAction(formData: FormData) {
 }
 
 export async function assignToClassAction(formData: FormData) {
-  await requireRole(['owner'])
+  const owner = await requireRole(['owner'])
+  if (!owner.academyId) throw new Error('소속 학원 정보가 없습니다.')
   const studentId = String(formData.get('student_id'))
   const classId = String(formData.get('class_id'))
   await verifyStudentOwnership(studentId)
+  if (!(await classBelongsToAcademy(classId, owner.academyId))) {
+    throw new Error('권한이 없습니다.')
+  }
 
   const supabase = await createClient()
   const { error } = await supabase
@@ -158,6 +163,7 @@ export async function unassignFromClassAction(formData: FormData) {
     .from('class_students')
     .update({ left_at: today })
     .eq('id', assignmentId)
+    .eq('student_id', studentId)
   if (error) throw new Error(error.message)
   revalidatePath(`/owner/students/${studentId}`)
 }

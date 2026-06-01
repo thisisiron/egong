@@ -165,3 +165,18 @@ export async function getStudentProfile(
     .maybeSingle()
   return data ?? null
 }
+
+/** 학생이 해당 학원 소속인지 (배정 액션의 소유권 재검증용, defense-in-depth). */
+export async function studentBelongsToAcademy(
+  studentId: string,
+  academyId: string
+): Promise<boolean> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('students')
+    .select('academy_id')
+    .eq('id', studentId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return !!data && data.academy_id === academyId
+}

@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole, getSessionUser } from '@/lib/auth'
+import { studentBelongsToAcademy } from '@/lib/students/service'
+import { teacherBelongsToAcademy } from '@/lib/teachers/service'
 import { createClassSchema } from './schemas'
 
 /** owner의 학원에 속한 반인지 확인. 아니면 throw. (RLS 위 2차 방어선) */
@@ -46,11 +48,15 @@ export async function createClassAction(formData: FormData) {
 }
 
 export async function setClassTeacherAction(formData: FormData) {
-  await requireRole(['owner'])
+  const owner = await requireRole(['owner'])
+  if (!owner.academyId) throw new Error('소속 학원 정보가 없습니다.')
   const classId = String(formData.get('class_id'))
   const newTeacherId = String(formData.get('teacher_id'))
   const currentTeacherId = formData.get('current_teacher_id')
   await verifyClassOwnership(classId)
+  if (!(await teacherBelongsToAcademy(newTeacherId, owner.academyId))) {
+    throw new Error('권한이 없습니다.')
+  }
 
   const supabase = await createClient()
   if (currentTeacherId) {
@@ -71,10 +77,14 @@ export async function setClassTeacherAction(formData: FormData) {
 }
 
 export async function addClassStudentAction(formData: FormData) {
-  await requireRole(['owner'])
+  const owner = await requireRole(['owner'])
+  if (!owner.academyId) throw new Error('소속 학원 정보가 없습니다.')
   const classId = String(formData.get('class_id'))
   const studentId = String(formData.get('student_id'))
   await verifyClassOwnership(classId)
+  if (!(await studentBelongsToAcademy(studentId, owner.academyId))) {
+    throw new Error('권한이 없습니다.')
+  }
 
   const supabase = await createClient()
   const { error } = await supabase
@@ -96,6 +106,7 @@ export async function removeClassStudentAction(formData: FormData) {
     .from('class_students')
     .update({ left_at: today })
     .eq('id', assignmentId)
+    .eq('class_id', classId)
   if (error) throw new Error(error.message)
   revalidatePath(`/owner/classes/${classId}`)
 }
