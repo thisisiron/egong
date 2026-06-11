@@ -6,12 +6,13 @@ import { createClient } from '@/lib/supabase/server'
 import { requireRole, getSessionUser } from '@/lib/auth'
 import { resolveParentIdByEmail } from '@/lib/parents/service'
 import { classBelongsToAcademy } from '@/lib/classes/service'
-import { getMyTeachingClasses } from '@/lib/sessions/service'
+import { studentTaughtByMe } from './service'
 import {
   createStudentSchema,
   updateStudentSchema,
   addParentLinkSchema,
   addStudentNoteSchema,
+  studentNoteIdSchema,
 } from './schemas'
 
 export type ImportActionResult = {
@@ -170,20 +171,9 @@ export async function unassignFromClassAction(formData: FormData) {
   revalidatePath(`/owner/students/${studentId}`)
 }
 
-/** teacher가 이 학생의 담당(현재 배정된 반의 담당)인지 확인. 아니면 throw. */
+/** teacher가 이 학생의 담당인지 확인. 아니면 throw. */
 async function verifyTeacherStudentAccess(studentId: string): Promise<void> {
-  const myClasses = await getMyTeachingClasses()
-  if (myClasses.length === 0) throw new Error('권한이 없습니다.')
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('class_students')
-    .select('id')
-    .eq('student_id', studentId)
-    .in('class_id', myClasses.map((c) => c.id))
-    .is('left_at', null)
-    .limit(1)
-  if (error) throw new Error(error.message)
-  if (!data || data.length === 0) throw new Error('권한이 없습니다.')
+  if (!(await studentTaughtByMe(studentId))) throw new Error('권한이 없습니다.')
 }
 
 export async function addStudentNoteAction(formData: FormData) {
@@ -214,7 +204,7 @@ export async function addStudentNoteAction(formData: FormData) {
 
 export async function deleteStudentNoteAction(formData: FormData) {
   const user = await requireRole(['owner', 'teacher'])
-  const noteId = String(formData.get('note_id'))
+  const noteId = studentNoteIdSchema.parse(formData.get('note_id'))
 
   const supabase = await createClient()
   const { data, error } = await supabase

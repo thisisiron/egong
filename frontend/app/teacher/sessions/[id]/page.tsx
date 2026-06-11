@@ -2,7 +2,7 @@ import { getSessionForTeacher } from '@/lib/sessions/service'
 import { getClassRoster } from '@/lib/classes/service'
 import { getSessionAttendance } from '@/lib/attendance/service'
 import { getSessionUser } from '@/lib/auth'
-import { listStudentNotes } from '@/lib/students/service'
+import { listStudentNotesByStudent } from '@/lib/students/service'
 import { StudentNotes } from '@/lib/students/components/StudentNotes'
 import { updateVideoUrlAction } from '@/lib/sessions/actions'
 import { AttendanceRow } from './_components/AttendanceRow'
@@ -24,13 +24,10 @@ export default async function TeacherSessionPage({
     getSessionAttendance(id),
   ])
 
-  const user = await getSessionUser()
-  const notesEntries = await Promise.all(
-    studentRows.map(
-      async (s) => [s.id, await listStudentNotes(s.id)] as const
-    )
-  )
-  const notesByStudent = new Map(notesEntries)
+  const [user, notesByStudent] = await Promise.all([
+    getSessionUser(),
+    listStudentNotesByStudent(studentRows.map((s) => s.id)),
+  ])
 
   const attMap = new Map(attendance.map((a) => [a.student_id, a]))
   const filledCount = studentRows.filter((s) => attMap.has(s.id)).length

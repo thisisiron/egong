@@ -49,3 +49,7 @@ export const addStudentNoteSchema = z.object({
 })
 
 export type AddStudentNoteInput = z.infer<typeof addStudentNoteSchema>
+
+export const studentNoteIdSchema = z
+  .string({ message: '잘못된 메모 ID 입니다.' })
+  .uuid('잘못된 메모 ID 입니다.')

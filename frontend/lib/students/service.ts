@@ -2,6 +2,7 @@ import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
 import { getSessionUser } from '@/lib/auth'
+import { getMyTeachingClasses } from '@/lib/sessions/service'
 import type {
   StudentRow,
   StudentDetailView,
@@ -192,4 +193,39 @@ export async function listStudentNotes(studentId: string): Promise<StudentNote[]
     .order('created_at', { ascending: false })
   if (error) throw new Error(error.message)
   return (data ?? []) as StudentNote[]
+}
+
+/** 여러 학생의 상담 메모를 한 번에 (학생별 최신순 그룹). teacher 출결 화면용. */
+export async function listStudentNotesByStudent(
+  studentIds: string[]
+): Promise<Map<string, StudentNote[]>> {
+  const map = new Map<string, StudentNote[]>(studentIds.map((id) => [id, []]))
+  if (studentIds.length === 0) return map
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('student_notes')
+    .select('id, student_id, body, created_by, author_name, created_at')
+    .in('student_id', studentIds)
+    .order('created_at', { ascending: false })
+  if (error) throw new Error(error.message)
+  for (const note of (data ?? []) as StudentNote[]) {
+    map.get(note.student_id)?.push(note)
+  }
+  return map
+}
+
+/** 현재 사용자(teacher)가 이 학생을 현재 담당하는지 (담당 반에 활성 배정 존재). */
+export async function studentTaughtByMe(studentId: string): Promise<boolean> {
+  const myClasses = await getMyTeachingClasses()
+  if (myClasses.length === 0) return false
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('class_students')
+    .select('id')
+    .eq('student_id', studentId)
+    .in('class_id', myClasses.map((c) => c.id))
+    .is('left_at', null)
+    .limit(1)
+  if (error) throw new Error(error.message)
+  return (data ?? []).length > 0
 }

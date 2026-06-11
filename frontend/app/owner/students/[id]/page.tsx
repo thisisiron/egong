@@ -18,12 +18,10 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [view, notes, user] = await Promise.all([
-    getStudentDetail(id),
-    listStudentNotes(id),
-    getSessionUser(),
-  ])
-  if (!view || !user) notFound()
+  const view = await getStudentDetail(id)
+  if (!view) notFound()
+  const [notes, user] = await Promise.all([listStudentNotes(id), getSessionUser()])
+  if (!user) notFound()
   const { student, parentLinks } = view
 
   return (
