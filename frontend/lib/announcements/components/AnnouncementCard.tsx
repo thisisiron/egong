@@ -22,12 +22,13 @@ export function AnnouncementCard({ announcement: a, canManage }: Props) {
       <div className="flex items-center gap-2">
         <span
           className={`text-xs px-2 py-0.5 rounded-full ${
-            a.class_name
+            a.class_id
               ? 'bg-slate-100 text-slate-600'
               : 'bg-amber-100 text-amber-700'
           }`}
         >
-          {a.class_name ?? '학원 전체'}
+          {/* 반별 공지인데 RLS로 반 이름을 못 읽는 경우(teacher의 비담당 반) → 중립 표기 */}
+          {a.class_id ? (a.class_name ?? '반 공지') : '학원 전체'}
         </span>
         <span className="text-xs text-slate-400">
           {a.author_name} · {formatDateTimeKR(a.created_at)}
