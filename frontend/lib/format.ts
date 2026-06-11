@@ -25,3 +25,19 @@ export function formatPhoneKR(phone: string | null | undefined, fallback = '-'):
   // 형식이 안 맞으면 원본 (편집 가능하게)
   return phone
 }
+
+/**
+ * ISO timestamp → "2026. 6. 12. 오후 2:30" 형태의 한국어 일시.
+ * 잘못된 입력은 원본 그대로 반환.
+ */
+export function formatDateTimeKR(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleString('ko-KR', {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
