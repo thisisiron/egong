@@ -23,6 +23,7 @@ export function AnnouncementCard({ announcement: a, canManage }: Props) {
   function handleEditSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
+    formData.set('id', a.id) // hidden input 대신 명시 — 서버 액션이 id를 파싱함
 
     // 클라이언트 선검증 — 프로덕션에서 서버 throw 메시지가 마스킹되므로 여기서 친절한 에러
     const parsed = updateAnnouncementSchema.safeParse({
