@@ -2,13 +2,15 @@ import { notFound } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { getStudentDetail } from '@/lib/students/service'
+import { getSessionUser } from '@/lib/auth'
+import { getStudentDetail, listStudentNotes } from '@/lib/students/service'
 import {
   addParentLinkAction,
   removeParentLinkAction,
   updateStudentAction,
 } from '@/lib/students/actions'
 import { ChildAssignment } from './_components/ChildAssignment'
+import { StudentNotes } from '@/lib/students/components/StudentNotes'
 
 export default async function StudentDetailPage({
   params,
@@ -16,8 +18,12 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const view = await getStudentDetail(id)
-  if (!view) notFound()
+  const [view, notes, user] = await Promise.all([
+    getStudentDetail(id),
+    listStudentNotes(id),
+    getSessionUser(),
+  ])
+  if (!view || !user) notFound()
   const { student, parentLinks } = view
 
   return (
@@ -113,6 +119,12 @@ export default async function StudentDetailPage({
       </section>
 
       <ChildAssignment studentId={student.id} />
+      <StudentNotes
+        studentId={student.id}
+        notes={notes}
+        currentUserId={user.id}
+        isOwner
+      />
     </div>
   )
 }
