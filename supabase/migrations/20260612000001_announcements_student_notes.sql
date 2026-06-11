@@ -95,7 +95,10 @@ CREATE POLICY student_notes_owner_all ON student_notes FOR ALL TO authenticated
         current_user_role() = 'owner'
         AND app_student_academy(student_id) = current_user_academy()
     )
-    WITH CHECK (app_student_academy(student_id) = current_user_academy());
+    WITH CHECK (
+        current_user_role() = 'owner'
+        AND app_student_academy(student_id) = current_user_academy()
+    );
 
 CREATE POLICY student_notes_teacher_read ON student_notes FOR SELECT TO authenticated
     USING (
