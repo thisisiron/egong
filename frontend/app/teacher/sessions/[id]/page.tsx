@@ -1,6 +1,9 @@
 import { getSessionForTeacher } from '@/lib/sessions/service'
 import { getClassRoster } from '@/lib/classes/service'
 import { getSessionAttendance } from '@/lib/attendance/service'
+import { getSessionUser } from '@/lib/auth'
+import { listStudentNotes } from '@/lib/students/service'
+import { StudentNotes } from '@/lib/students/components/StudentNotes'
 import { updateVideoUrlAction } from '@/lib/sessions/actions'
 import { AttendanceRow } from './_components/AttendanceRow'
 import { BulkPresentButton } from './_components/BulkPresentButton'
@@ -20,6 +23,14 @@ export default async function TeacherSessionPage({
     getClassRoster(session.class_id),
     getSessionAttendance(id),
   ])
+
+  const user = await getSessionUser()
+  const notesEntries = await Promise.all(
+    studentRows.map(
+      async (s) => [s.id, await listStudentNotes(s.id)] as const
+    )
+  )
+  const notesByStudent = new Map(notesEntries)
 
   const attMap = new Map(attendance.map((a) => [a.student_id, a]))
   const filledCount = studentRows.filter((s) => attMap.has(s.id)).length
@@ -87,6 +98,16 @@ export default async function TeacherSessionPage({
               initialStatus={att?.status ?? null}
               initialReason={att?.excused_reason ?? null}
               initialNeedsMakeup={att?.needs_makeup ?? false}
+              notesSlot={
+                user ? (
+                  <StudentNotes
+                    studentId={s.id}
+                    notes={notesByStudent.get(s.id) ?? []}
+                    currentUserId={user.id}
+                    isOwner={false}
+                  />
+                ) : null
+              }
             />
           )
         })}

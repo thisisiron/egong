@@ -1,7 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type ReactNode } from 'react'
 import { upsertAttendanceAction } from '@/lib/attendance/actions'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 
 type Status = 'present' | 'late' | 'absent' | 'excused'
 type PickableStatus = 'present' | 'late' | 'absent'
@@ -12,6 +18,8 @@ type Props = {
   initialStatus: Status | null
   initialReason: string | null
   initialNeedsMakeup: boolean
+  /** 페이지(RSC)에서 주입하는 상담 메모 패널 */
+  notesSlot?: ReactNode
 }
 
 const STATUS_LABEL: Record<PickableStatus, string> = {
@@ -86,6 +94,24 @@ export function AttendanceRow(props: Props) {
             {props.student.school ?? '-'}
           </div>
         </div>
+        {props.notesSlot ? (
+          <Dialog>
+            <DialogTrigger asChild>
+              <button
+                type="button"
+                className="text-xs text-slate-400 hover:text-slate-900 underline shrink-0"
+              >
+                메모
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[80vh] overflow-y-auto">
+              <DialogTitle className="sr-only">
+                {props.student.name} 상담 메모
+              </DialogTitle>
+              {props.notesSlot}
+            </DialogContent>
+          </Dialog>
+        ) : null}
         <div className="flex gap-1">
           {(['present', 'late', 'absent'] as PickableStatus[]).map((s) => (
             <button
