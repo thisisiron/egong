@@ -29,11 +29,13 @@ export function formatPhoneKR(phone: string | null | undefined, fallback = '-'):
 /**
  * ISO timestamp → "2026. 6. 12. 오후 2:30" 형태의 한국어 일시.
  * 잘못된 입력은 원본 그대로 반환.
+ * 서버/클라이언트 어디서 실행돼도 KST 기준 (timeZone 고정).
  */
 export function formatDateTimeKR(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return iso
   return d.toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
     year: 'numeric',
     month: 'numeric',
     day: 'numeric',

@@ -5,7 +5,11 @@ import { createClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth'
 import { classBelongsToAcademy } from '@/lib/classes/service'
 import { getMyTeachingClasses } from '@/lib/sessions/service'
-import { createAnnouncementSchema, updateAnnouncementSchema } from './schemas'
+import {
+  announcementIdSchema,
+  createAnnouncementSchema,
+  updateAnnouncementSchema,
+} from './schemas'
 
 /** 공지가 노출되는 경로 일괄 재검증. */
 function revalidateAnnouncements() {
@@ -50,13 +54,15 @@ export async function createAnnouncementAction(formData: FormData) {
   revalidateAnnouncements()
 }
 
-/** 타겟 공지 소유권 확인 — owner: 학원 일치, teacher: 본인 작성. 아니면 throw. */
-async function verifyAnnouncementOwnership(id: string): Promise<void> {
+/** 타겟 공지 소유권 확인 — owner: 학원 일치, teacher: 본인 작성. 통과 시 row 반환. */
+async function verifyAnnouncementOwnership(
+  id: string
+): Promise<{ academy_id: string; created_by: string | null; class_id: string | null }> {
   const user = await requireRole(['owner', 'teacher'])
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('announcements')
-    .select('academy_id, created_by')
+    .select('academy_id, created_by, class_id')
     .eq('id', id)
     .maybeSingle()
   if (error) throw new Error(error.message)
@@ -65,7 +71,8 @@ async function verifyAnnouncementOwnership(id: string): Promise<void> {
     (user.role === 'owner'
       ? data.academy_id === user.academyId
       : data.created_by === user.id)
-  if (!allowed) throw new Error('권한이 없습니다.')
+  if (!allowed || !data) throw new Error('권한이 없습니다.')
+  return data
 }
 
 export async function updateAnnouncementAction(formData: FormData) {
@@ -74,7 +81,18 @@ export async function updateAnnouncementAction(formData: FormData) {
     title: formData.get('title'),
     body: formData.get('body'),
   })
-  await verifyAnnouncementOwnership(parsed.id)
+  const target = await verifyAnnouncementOwnership(parsed.id)
+
+  // RLS teacher_update WITH CHECK(담당 반)와 정렬 — 미리 한국어 에러로 차단
+  const user = await requireRole(['owner', 'teacher'])
+  if (user.role === 'teacher' && target.class_id) {
+    const mine = await getMyTeachingClasses()
+    if (!mine.some((c) => c.id === target.class_id)) {
+      throw new Error(
+        '더 이상 담당하지 않는 반의 공지는 수정할 수 없습니다. 삭제 후 다시 작성해주세요.'
+      )
+    }
+  }
 
   const supabase = await createClient()
   const { error } = await supabase
@@ -90,7 +108,7 @@ export async function updateAnnouncementAction(formData: FormData) {
 }
 
 export async function deleteAnnouncementAction(formData: FormData) {
-  const id = String(formData.get('id'))
+  const id = announcementIdSchema.parse(formData.get('id'))
   await verifyAnnouncementOwnership(id)
 
   const supabase = await createClient()

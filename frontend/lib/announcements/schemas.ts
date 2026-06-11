@@ -18,6 +18,11 @@ const classIdSchema = z
   .transform((v) => (v === '' ? null : v))
   .pipe(z.string().uuid('잘못된 반 ID 입니다.').nullable())
 
+/** 삭제 등 단건 타겟팅용 공지 ID. */
+export const announcementIdSchema = z
+  .string({ message: '잘못된 공지 ID 입니다.' })
+  .uuid('잘못된 공지 ID 입니다.')
+
 export const createAnnouncementSchema = z.object({
   title: titleSchema,
   body: bodySchema,
