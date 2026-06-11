@@ -15,6 +15,7 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
             <Link href="/owner/teachers" className="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-amber-50">선생님</Link>
             <Link href="/owner/parents" className="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-amber-50">학부모</Link>
             <Link href="/owner/classes" className="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-amber-50">반</Link>
+            <Link href="/owner/announcements" className="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-amber-50">공지</Link>
           </div>
           <div className="flex-1" />
           <form action="/auth/logout" method="post">
