@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDateTimeKR } from '@/lib/format'
 import { deleteAnnouncementAction, updateAnnouncementAction } from '../actions'
+import { updateAnnouncementSchema } from '../schemas'
 import type { AnnouncementWithClass } from '../types'
 
 type Props = {
@@ -16,6 +17,48 @@ type Props = {
 
 export function AnnouncementCard({ announcement: a, canManage }: Props) {
   const [editing, setEditing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  function handleEditSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+
+    // 클라이언트 선검증 — 프로덕션에서 서버 throw 메시지가 마스킹되므로 여기서 친절한 에러
+    const parsed = updateAnnouncementSchema.safeParse({
+      id: a.id,
+      title: formData.get('title'),
+      body: formData.get('body'),
+    })
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? '입력을 확인해주세요.')
+      return
+    }
+
+    startTransition(async () => {
+      try {
+        await updateAnnouncementAction(formData)
+        setEditing(false)
+        setError(null)
+      } catch (err) {
+        // 폼은 열린 채 유지 — 입력 유실 방지
+        setError(err instanceof Error ? err.message : '수정에 실패했습니다.')
+      }
+    })
+  }
+
+  function handleDelete() {
+    startTransition(async () => {
+      try {
+        const fd = new FormData()
+        fd.set('id', a.id)
+        await deleteAnnouncementAction(fd)
+        setError(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '삭제에 실패했습니다.')
+      }
+    })
+  }
 
   return (
     <article className="bg-white border border-amber-100 rounded-lg p-4 space-y-2">
@@ -43,28 +86,36 @@ export function AnnouncementCard({ announcement: a, canManage }: Props) {
             >
               수정
             </button>
-            <form action={deleteAnnouncementAction}>
-              <input type="hidden" name="id" value={a.id} />
-              <button className="text-sm text-red-600 hover:underline">삭제</button>
-            </form>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={pending}
+              className="text-sm text-red-600 hover:underline disabled:opacity-50"
+            >
+              삭제
+            </button>
           </>
         ) : null}
       </div>
 
       {editing ? (
-        <form
-          action={async (formData: FormData) => {
-            await updateAnnouncementAction(formData)
-            setEditing(false)
-          }}
-          className="space-y-2"
-        >
-          <input type="hidden" name="id" value={a.id} />
+        <form onSubmit={handleEditSubmit} className="space-y-2">
           <Input name="title" defaultValue={a.title} required maxLength={200} />
           <Textarea name="body" defaultValue={a.body} required rows={4} maxLength={5000} />
           <div className="flex gap-2">
-            <Button type="submit" size="sm">저장</Button>
-            <Button type="button" size="sm" variant="outline" onClick={() => setEditing(false)}>
+            <Button type="submit" size="sm" disabled={pending}>
+              {pending ? '저장 중…' : '저장'}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={pending}
+              onClick={() => {
+                setEditing(false)
+                setError(null)
+              }}
+            >
               취소
             </Button>
           </div>
@@ -75,6 +126,12 @@ export function AnnouncementCard({ announcement: a, canManage }: Props) {
           <p className="text-sm text-slate-700 whitespace-pre-wrap">{a.body}</p>
         </>
       )}
+
+      {error ? (
+        <div role="alert" className="text-sm text-red-600">
+          {error}
+        </div>
+      ) : null}
     </article>
   )
 }

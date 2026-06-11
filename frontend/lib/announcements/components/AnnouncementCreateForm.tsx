@@ -1,8 +1,12 @@
+'use client'
+
+import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { createAnnouncementAction } from '../actions'
+import { createAnnouncementSchema } from '../schemas'
 import type { ScopeOption } from '../types'
 
 type Props = {
@@ -12,8 +16,38 @@ type Props = {
 }
 
 export function AnnouncementCreateForm({ scopeOptions, allowAcademyWide }: Props) {
+  const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const form = e.currentTarget
+    const formData = new FormData(form)
+
+    // 클라이언트 선검증 — 프로덕션에서 서버 throw 메시지가 마스킹되므로 여기서 친절한 에러
+    const parsed = createAnnouncementSchema.safeParse({
+      title: formData.get('title'),
+      body: formData.get('body'),
+      class_id: formData.get('class_id') ?? '',
+    })
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? '입력을 확인해주세요.')
+      return
+    }
+
+    startTransition(async () => {
+      try {
+        await createAnnouncementAction(formData)
+        setError(null)
+        form.reset()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '공지 게시에 실패했습니다.')
+      }
+    })
+  }
+
   return (
-    <form action={createAnnouncementAction} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-3">
       <div className="space-y-1">
         <Label htmlFor="ann-class">대상</Label>
         <select
@@ -38,7 +72,14 @@ export function AnnouncementCreateForm({ scopeOptions, allowAcademyWide }: Props
         <Label htmlFor="ann-body">내용</Label>
         <Textarea id="ann-body" name="body" required rows={4} maxLength={5000} />
       </div>
-      <Button type="submit">게시</Button>
+      {error ? (
+        <div role="alert" className="text-sm text-red-600">
+          {error}
+        </div>
+      ) : null}
+      <Button type="submit" disabled={pending}>
+        {pending ? '게시 중…' : '게시'}
+      </Button>
     </form>
   )
 }
