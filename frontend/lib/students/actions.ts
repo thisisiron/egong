@@ -6,10 +6,12 @@ import { createClient } from '@/lib/supabase/server'
 import { requireRole, getSessionUser } from '@/lib/auth'
 import { resolveParentIdByEmail } from '@/lib/parents/service'
 import { classBelongsToAcademy } from '@/lib/classes/service'
+import { getMyTeachingClasses } from '@/lib/sessions/service'
 import {
   createStudentSchema,
   updateStudentSchema,
   addParentLinkSchema,
+  addStudentNoteSchema,
 } from './schemas'
 
 export type ImportActionResult = {
@@ -166,6 +168,77 @@ export async function unassignFromClassAction(formData: FormData) {
     .eq('student_id', studentId)
   if (error) throw new Error(error.message)
   revalidatePath(`/owner/students/${studentId}`)
+}
+
+/** teacher가 이 학생의 담당(현재 배정된 반의 담당)인지 확인. 아니면 throw. */
+async function verifyTeacherStudentAccess(studentId: string): Promise<void> {
+  const myClasses = await getMyTeachingClasses()
+  if (myClasses.length === 0) throw new Error('권한이 없습니다.')
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('class_students')
+    .select('id')
+    .eq('student_id', studentId)
+    .in('class_id', myClasses.map((c) => c.id))
+    .is('left_at', null)
+    .limit(1)
+  if (error) throw new Error(error.message)
+  if (!data || data.length === 0) throw new Error('권한이 없습니다.')
+}
+
+export async function addStudentNoteAction(formData: FormData) {
+  const user = await requireRole(['owner', 'teacher'])
+  const parsed = addStudentNoteSchema.parse({
+    student_id: formData.get('student_id'),
+    body: formData.get('body'),
+  })
+
+  // 소유권 재검증 (RLS 위 2차 방어선)
+  if (user.role === 'owner') {
+    await verifyStudentOwnership(parsed.student_id)
+  } else {
+    await verifyTeacherStudentAccess(parsed.student_id)
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('student_notes').insert({
+    student_id: parsed.student_id,
+    body: parsed.body,
+    created_by: user.id,
+    author_name: user.displayName,
+  })
+  if (error) throw new Error(error.message)
+  revalidatePath(`/owner/students/${parsed.student_id}`)
+  revalidatePath('/teacher/sessions/[id]', 'page')
+}
+
+export async function deleteStudentNoteAction(formData: FormData) {
+  const user = await requireRole(['owner', 'teacher'])
+  const noteId = String(formData.get('note_id'))
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('student_notes')
+    .select('id, student_id, created_by')
+    .eq('id', noteId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data) throw new Error('메모를 찾을 수 없습니다.')
+
+  // owner: 학생이 자기 학원 소속이면 삭제 가능. teacher: 본인 작성분만.
+  if (user.role === 'owner') {
+    await verifyStudentOwnership(data.student_id)
+  } else if (data.created_by !== user.id) {
+    throw new Error('본인이 작성한 메모만 삭제할 수 있습니다.')
+  }
+
+  const { error: delError } = await supabase
+    .from('student_notes')
+    .delete()
+    .eq('id', noteId)
+  if (delError) throw new Error(delError.message)
+  revalidatePath(`/owner/students/${data.student_id}`)
+  revalidatePath('/teacher/sessions/[id]', 'page')
 }
 
 export async function uploadStudentsCsvAction(

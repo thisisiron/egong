@@ -38,3 +38,14 @@ export const addParentLinkSchema = z.object({
 export type CreateStudentInput = z.infer<typeof createStudentSchema>
 export type UpdateStudentInput = z.infer<typeof updateStudentSchema>
 export type AddParentLinkInput = z.infer<typeof addParentLinkSchema>
+
+export const addStudentNoteSchema = z.object({
+  student_id: z.string().uuid('잘못된 학생 ID 입니다.'),
+  body: z
+    .string()
+    .trim()
+    .min(1, '내용을 입력해주세요.')
+    .max(2000, '메모는 2000자 이내로 입력해주세요.'),
+})
+
+export type AddStudentNoteInput = z.infer<typeof addStudentNoteSchema>

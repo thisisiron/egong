@@ -39,3 +39,13 @@ export type StudentAssignmentsView = {
   active: ClassAssignment[]
   history: ClassAssignment[]
 }
+
+/** 상담 메모 (내부용 — 학부모/학생에게 비공개). */
+export type StudentNote = {
+  id: string
+  student_id: string
+  body: string
+  created_by: string | null
+  author_name: string
+  created_at: string
+}

@@ -8,6 +8,7 @@ import type {
   ParentLink,
   StudentAssignmentsView,
   ClassAssignment,
+  StudentNote,
 } from './types'
 
 /** array-or-object join 결과를 단일 객체로 정규화. */
@@ -179,4 +180,16 @@ export async function studentBelongsToAcademy(
     .maybeSingle()
   if (error) throw new Error(error.message)
   return !!data && data.academy_id === academyId
+}
+
+/** 학생 상담 메모 타임라인 (최신순). RLS: owner=자기 학원, teacher=담당 학생만. */
+export async function listStudentNotes(studentId: string): Promise<StudentNote[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('student_notes')
+    .select('id, student_id, body, created_by, author_name, created_at')
+    .eq('student_id', studentId)
+    .order('created_at', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as StudentNote[]
 }
