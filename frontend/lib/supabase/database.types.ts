@@ -187,6 +187,64 @@ export type Database = {
           },
         ]
       }
+      announcements: {
+        Row: {
+          academy_id: string
+          author_name: string
+          body: string
+          class_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          author_name: string
+          body: string
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          author_name?: string
+          body?: string
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcements_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance: {
         Row: {
           excused_reason: string | null
@@ -415,6 +473,48 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_notes: {
+        Row: {
+          author_name: string
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          student_id: string
+        }
+        Insert: {
+          author_name: string
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          student_id: string
+        }
+        Update: {
+          author_name?: string
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
             referencedColumns: ["id"]
           },
         ]
