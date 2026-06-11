@@ -13,6 +13,8 @@ import {
   getStudentAttendanceWithDates,
   getRecentAttendanceSessions,
 } from '@/lib/attendance/service'
+import { listAnnouncementsForStudent } from '@/lib/announcements/service'
+import { AnnouncementCard } from '@/lib/announcements/components/AnnouncementCard'
 
 type AttStatus = 'present' | 'late' | 'absent' | 'excused'
 
@@ -39,13 +41,15 @@ export default async function MyStudentPage({
   const now = new Date()
   const range = monthRange(now)
 
-  const [rate, counts, student, monthAttRaw, recentSessions] = await Promise.all([
-    getAttendanceRate(targetStudentId, range.from, range.to),
-    getAttendanceCounts(targetStudentId, range.from, range.to),
-    getStudentProfile(targetStudentId),
-    getStudentAttendanceWithDates(targetStudentId),
-    getRecentAttendanceSessions(targetStudentId, 6),
-  ])
+  const [rate, counts, student, monthAttRaw, recentSessions, announcements] =
+    await Promise.all([
+      getAttendanceRate(targetStudentId, range.from, range.to),
+      getAttendanceCounts(targetStudentId, range.from, range.to),
+      getStudentProfile(targetStudentId),
+      getStudentAttendanceWithDates(targetStudentId),
+      getRecentAttendanceSessions(targetStudentId, 6),
+      listAnnouncementsForStudent(targetStudentId),
+    ])
 
   // 이번 달로 필터 (PostgREST join 필터가 brittle → JS에서)
   const monthAtt = monthAttRaw.filter((row) => {
@@ -82,6 +86,16 @@ export default async function MyStudentPage({
           <ChildSelector items={children} current={targetStudentId} />
         )}
       </header>
+
+      <section className="space-y-2">
+        <h2 className="font-semibold text-sm">📢 공지사항</h2>
+        {announcements.map((a) => (
+          <AnnouncementCard key={a.id} announcement={a} canManage={false} />
+        ))}
+        {announcements.length === 0 && (
+          <p className="text-sm text-slate-400 text-center py-4">공지사항이 없습니다.</p>
+        )}
+      </section>
 
       <AttendanceStats
         rate={rate}
