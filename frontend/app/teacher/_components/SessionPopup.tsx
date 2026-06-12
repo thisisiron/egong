@@ -29,6 +29,7 @@ export function SessionPopup({ day, cells }: Props) {
       {cells.map(({ session, status, hasVideo }) => {
         const badge = STATUS_BADGE[status]
         const time = new Date(session.scheduled_at).toLocaleTimeString('ko-KR', {
+          timeZone: 'Asia/Seoul',
           hour: '2-digit',
           minute: '2-digit',
         })

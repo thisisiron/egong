@@ -9,6 +9,7 @@ import {
   shiftYm,
   type SessionSummary,
 } from '@/lib/teacher-calendar'
+import { ymdKST } from '@/lib/date'
 import { CalendarWeek } from './CalendarWeek'
 import { CalendarMonth } from './CalendarMonth'
 import { CalendarYear } from './CalendarYear'
@@ -56,8 +57,10 @@ export async function SessionCalendar({ searchParams }: Props) {
   const now = new Date()
   const cells = summaries.map((s) => toCellInfo(s, now))
 
-  // popup용 — 선택된 day 의 cells
-  const popupCells = day ? cells.filter((c) => c.session.scheduled_at.slice(0, 10) === day) : []
+  // popup용 — 선택된 day(KST) 의 cells
+  const popupCells = day
+    ? cells.filter((c) => ymdKST(new Date(c.session.scheduled_at)) === day)
+    : []
 
   // 월 이동 링크용 ym
   const prevYm = shiftYm(ym, -1)

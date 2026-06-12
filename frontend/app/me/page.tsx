@@ -6,7 +6,7 @@ import { buildMonthDays } from '@/lib/attendance/calendar'
 import { ChildSelector } from './_components/ChildSelector'
 import { SessionVideoItem } from './_components/SessionVideoItem'
 
-import { monthRange } from '@/lib/date'
+import { kstParts, monthRange } from '@/lib/date'
 import { getMyChildren, getStudentProfile } from '@/lib/students/service'
 import {
   getAttendanceRate,
@@ -39,6 +39,7 @@ export default async function MyStudentPage({
 
   const now = new Date()
   const range = monthRange(now)
+  const { year, month } = kstParts(now)
 
   const [rate, counts, student, monthAttRaw, recentSessions, announcements] =
     await Promise.all([
@@ -50,7 +51,7 @@ export default async function MyStudentPage({
       listAnnouncementsForStudent(targetStudentId),
     ])
 
-  const days = buildMonthDays(now.getFullYear(), now.getMonth() + 1, monthAttRaw, now)
+  const days = buildMonthDays(year, month, monthAttRaw, now)
 
   return (
     <div className="space-y-6">
@@ -87,11 +88,7 @@ export default async function MyStudentPage({
       />
 
       <section className="bg-white border border-amber-100 rounded-lg p-4">
-        <AttendanceCalendar
-          year={now.getFullYear()}
-          month={now.getMonth() + 1}
-          days={days}
-        />
+        <AttendanceCalendar year={year} month={month} days={days} />
       </section>
 
       <section className="space-y-2">

@@ -1,5 +1,7 @@
 import type { SessionCellInfo } from '@/lib/teacher-calendar'
-import { ymd } from '@/lib/teacher-calendar'
+import { kstParts, ymdKST } from '@/lib/date'
+
+const DAY_MS = 24 * 60 * 60 * 1000
 
 type Props = {
   year: number
@@ -18,8 +20,8 @@ export function CalendarYear({ year, cells }: Props) {
   const byDay = new Map<string, SessionCellInfo['status']>()
   for (const c of cells) {
     const d = new Date(c.session.scheduled_at)
-    if (d.getFullYear() !== year) continue
-    const key = ymd(d)
+    if (kstParts(d).year !== year) continue
+    const key = ymdKST(d)
     const prev = byDay.get(key)
     // priority: empty > in_progress > upcoming > completed
     const priority: Record<SessionCellInfo['status'], number> = {
@@ -29,13 +31,13 @@ export function CalendarYear({ year, cells }: Props) {
   }
 
   // 366 cells (1/1 ~ 12/31). 누락된 leap day는 비어있게.
+  // UTC 자정 인스턴트는 KST 같은 날 09:00 — ymdKST로 읽으면 그대로 그 날짜.
   const cellsArr: { day: string; status: SessionCellInfo['status'] | null }[] = []
-  const start = new Date(year, 0, 1)
+  const start = Date.UTC(year, 0, 1)
   for (let i = 0; i < 366; i += 1) {
-    const d = new Date(start)
-    d.setDate(start.getDate() + i)
-    if (d.getFullYear() !== year) break
-    const key = ymd(d)
+    const d = new Date(start + i * DAY_MS)
+    if (kstParts(d).year !== year) break
+    const key = ymdKST(d)
     cellsArr.push({ day: key, status: byDay.get(key) ?? null })
   }
 

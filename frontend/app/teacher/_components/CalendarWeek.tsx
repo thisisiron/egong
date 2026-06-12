@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { SessionCellInfo } from '@/lib/teacher-calendar'
-import { ymd } from '@/lib/teacher-calendar'
+import { kstParts, ymdKST } from '@/lib/date'
 
 type Props = {
   cells: SessionCellInfo[]
@@ -35,8 +35,14 @@ export function CalendarWeek({ cells, selectedDay }: Props) {
     <ul className="space-y-2">
       {cells.map(({ session, status, hasVideo }) => {
         const d = new Date(session.scheduled_at)
-        const day = ymd(d)
-        const time = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+        const day = ymdKST(d)
+        const p = kstParts(d)
+        const dow = new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay()
+        const time = d.toLocaleTimeString('ko-KR', {
+          timeZone: 'Asia/Seoul',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
         const ring = selectedDay === day ? 'ring-2 ring-amber-500' : ''
         return (
           <li key={session.id}>
@@ -46,7 +52,7 @@ export function CalendarWeek({ cells, selectedDay }: Props) {
             >
               <div className="flex items-center gap-3">
                 <div className="text-xs text-slate-600 w-16 shrink-0">
-                  {WEEKDAY_KO[d.getDay()]} {d.getMonth() + 1}/{d.getDate()}
+                  {WEEKDAY_KO[dow]} {p.month}/{p.day}
                 </div>
                 <div className="flex-1 text-sm font-medium">
                   {time} · {session.class_name} — {session.title}

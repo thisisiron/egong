@@ -6,7 +6,10 @@
  * - 셀 prop 변환 (DB 행 → UI에 필요한 최소 prop)
  *
  * 모두 순수 함수. DB·React 의존 없음.
+ * 날짜 계산은 전부 KST(UTC+9) 고정 — 서버 타임존(UTC 등)과 무관하게 동작.
  */
+
+import { kstParts } from '@/lib/date'
 
 export type SessionStatus = 'completed' | 'in_progress' | 'empty' | 'upcoming'
 
@@ -30,6 +33,12 @@ export type SessionCellInfo = {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000
+
+/** KST 벽시계 (y, m, d) 00:00 → UTC ISO 인스턴트. m·d 오버플로우는 Date.UTC가 정규화. */
+function kstMidnightIso(y: number, m: number, d: number): string {
+  return new Date(Date.UTC(y, m - 1, d) - KST_OFFSET_MS).toISOString()
+}
 
 /**
  * 회차 입력 상태 결정.
@@ -60,47 +69,39 @@ export function toCellInfo(s: SessionSummary, now: Date = new Date()): SessionCe
   }
 }
 
-/** ISO YYYY-MM-DD 로컬 변환 (UTC 변환 없이 로컬 날짜) */
-export function ymd(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-/** "YYYY-MM" → 그 달의 [1일 0시, 다음 달 1일 0시) range (ISO strings) */
+/** "YYYY-MM" → 그 달의 KST [1일 0시, 다음 달 1일 0시) range (UTC ISO strings) */
 export function monthRange(ym: string): { from: string; to: string; label: string } {
   const [y, m] = ym.split('-').map(Number)
-  const from = new Date(y, m - 1, 1, 0, 0, 0, 0)
-  const to = new Date(y, m, 1, 0, 0, 0, 0)
   return {
-    from: from.toISOString(),
-    to: to.toISOString(),
+    from: kstMidnightIso(y, m, 1),
+    to: kstMidnightIso(y, m + 1, 1),
     label: `${y}년 ${m}월`,
   }
 }
 
-/** 어떤 날짜의 그 주 [월요일 0시, 다음 월요일 0시) range */
+/** 어떤 인스턴트가 속한 KST 주의 [월요일 0시, 다음 월요일 0시) range (UTC ISO strings) */
 export function weekRange(date: Date): { from: string; to: string; label: string } {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  const dow = d.getDay()  // 0=Sun..6=Sat
+  const { year, month, day } = kstParts(date)
+  // KST 벽시계 날짜를 UTC 자정으로 표현해 요일·주 시작 계산 (타임존 무관)
+  const wallMidnight = Date.UTC(year, month - 1, day)
+  const dow = new Date(wallMidnight).getUTCDay()  // 0=Sun..6=Sat
   const daysFromMonday = (dow + 6) % 7
-  const monday = new Date(d.getTime() - daysFromMonday * DAY_MS)
-  const nextMonday = new Date(monday.getTime() + 7 * DAY_MS)
+  const monday = new Date(wallMidnight - daysFromMonday * DAY_MS)
   const sunday = new Date(monday.getTime() + 6 * DAY_MS)
   return {
-    from: monday.toISOString(),
-    to: nextMonday.toISOString(),
-    label: `${monday.getMonth() + 1}/${monday.getDate()} ~ ${sunday.getMonth() + 1}/${sunday.getDate()}`,
+    from: new Date(monday.getTime() - KST_OFFSET_MS).toISOString(),
+    to: new Date(monday.getTime() + 7 * DAY_MS - KST_OFFSET_MS).toISOString(),
+    label: `${monday.getUTCMonth() + 1}/${monday.getUTCDate()} ~ ${sunday.getUTCMonth() + 1}/${sunday.getUTCDate()}`,
   }
 }
 
-/** 한 해 [1/1 0시, 다음 해 1/1 0시) range */
+/** 한 해 KST [1/1 0시, 다음 해 1/1 0시) range (UTC ISO strings) */
 export function yearRange(year: number): { from: string; to: string; label: string } {
-  const from = new Date(year, 0, 1, 0, 0, 0, 0)
-  const to = new Date(year + 1, 0, 1, 0, 0, 0, 0)
-  return { from: from.toISOString(), to: to.toISOString(), label: `${year}년` }
+  return {
+    from: kstMidnightIso(year, 1, 1),
+    to: kstMidnightIso(year + 1, 1, 1),
+    label: `${year}년`,
+  }
 }
 
 /** 현재 URL searchParams 에서 view + 날짜 정보 파싱. 누락은 기본값으로. */
@@ -117,9 +118,12 @@ export function parseCalendarParams(sp: {
 } {
   const view: CalendarView =
     sp.view === 'month' || sp.view === 'year' || sp.view === 'week' ? sp.view : 'week'
-  const today = new Date()
-  const ym = sp.ym && /^\d{4}-\d{2}$/.test(sp.ym) ? sp.ym : ymd(today).slice(0, 7)
-  const year = sp.y && /^\d{4}$/.test(sp.y) ? Number(sp.y) : today.getFullYear()
+  const today = kstParts(new Date())
+  const ym =
+    sp.ym && /^\d{4}-\d{2}$/.test(sp.ym)
+      ? sp.ym
+      : `${today.year}-${String(today.month).padStart(2, '0')}`
+  const year = sp.y && /^\d{4}$/.test(sp.y) ? Number(sp.y) : today.year
   const day = sp.day && /^\d{4}-\d{2}-\d{2}$/.test(sp.day) ? sp.day : null
   return { view, ym, year, day }
 }
@@ -133,15 +137,15 @@ export function rangeForView(
 ): { from: string; to: string; label: string } {
   if (view === 'month') return monthRange(ym)
   if (view === 'year') return yearRange(year)
-  // week — day 가 있으면 그 날 기준, 없으면 오늘
+  // week — day 가 있으면 그 날(KST) 기준, 없으면 오늘
   const base =
-    day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? new Date(`${day}T00:00:00`) : new Date()
+    day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? new Date(`${day}T00:00:00+09:00`) : new Date()
   return weekRange(base)
 }
 
 /** 다음/이전 month/year/week 계산 (URL state 이동용) */
 export function shiftYm(ym: string, delta: number): string {
   const [y, m] = ym.split('-').map(Number)
-  const d = new Date(y, m - 1 + delta, 1)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  const d = new Date(Date.UTC(y, m - 1 + delta, 1))
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
 }

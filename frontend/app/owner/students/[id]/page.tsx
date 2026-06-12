@@ -11,7 +11,7 @@ import {
 } from '@/lib/students/actions'
 import { ChildAssignment } from './_components/ChildAssignment'
 import { StudentNotes } from '@/lib/students/components/StudentNotes'
-import { monthFromParam, monthRange } from '@/lib/date'
+import { kstParts, monthFromParam, monthRange } from '@/lib/date'
 import {
   getAttendanceRate,
   getAttendanceCounts,
@@ -34,8 +34,7 @@ export default async function StudentDetailPage({
 
   const monthDate = monthFromParam(monthParam)
   const range = monthRange(monthDate)
-  const year = monthDate.getFullYear()
-  const month = monthDate.getMonth() + 1
+  const { year, month } = kstParts(monthDate)
 
   const [notes, user, rate, countsRaw, attRows] = await Promise.all([
     listStudentNotes(id),

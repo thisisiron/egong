@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { SessionCellInfo } from '@/lib/teacher-calendar'
-import { ymd } from '@/lib/teacher-calendar'
+import { kstParts, ymdKST } from '@/lib/date'
 
 type Props = {
   ym: string  // 'YYYY-MM'
@@ -24,19 +24,18 @@ const ICON: Record<SessionCellInfo['status'], string> = {
 
 export function CalendarMonth({ ym, cells, selectedDay }: Props) {
   const [y, m] = ym.split('-').map(Number)
-  const firstDow = new Date(y, m - 1, 1).getDay()
-  const daysInMonth = new Date(y, m, 0).getDate()
-  const todayYmd = ymd(new Date())
+  const firstDow = new Date(Date.UTC(y, m - 1, 1)).getUTCDay()
+  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate()
+  const todayYmd = ymdKST(new Date())
 
-  // 날짜별로 cells 묶음
+  // 날짜별로 cells 묶음 (KST 기준)
   const byDay = new Map<number, SessionCellInfo[]>()
   for (const c of cells) {
-    const d = new Date(c.session.scheduled_at)
-    if (d.getFullYear() !== y || d.getMonth() + 1 !== m) continue
-    const day = d.getDate()
-    const arr = byDay.get(day) ?? []
+    const p = kstParts(new Date(c.session.scheduled_at))
+    if (p.year !== y || p.month !== m) continue
+    const arr = byDay.get(p.day) ?? []
     arr.push(c)
-    byDay.set(day, arr)
+    byDay.set(p.day, arr)
   }
 
   const cellsArr: ({ day: number } | null)[] = Array(firstDow).fill(null)
