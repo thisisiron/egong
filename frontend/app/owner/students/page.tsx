@@ -14,9 +14,9 @@ export default async function StudentsPage() {
           <Link href="/owner/students/new"><Button>학생 등록</Button></Link>
         </div>
       </div>
-      <div className="bg-white border border-amber-200 rounded-lg overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-amber-50 text-left text-slate-700 border-b border-amber-200">
+          <thead className="bg-gray-50 text-left text-slate-700 border-b border-gray-200">
             <tr>
               <th className="px-4 py-3">이름</th>
               <th className="px-4 py-3">학교</th>
@@ -25,7 +25,7 @@ export default async function StudentsPage() {
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-amber-100">
+          <tbody className="divide-y divide-gray-100">
             {students.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
@@ -34,13 +34,13 @@ export default async function StudentsPage() {
               </tr>
             ) : null}
             {students.map((s) => (
-              <tr key={s.id} className="hover:bg-amber-50/50">
+              <tr key={s.id} className="hover:bg-gray-50/50">
                 <td className="px-4 py-3 font-medium">{s.name}</td>
                 <td className="px-4 py-3">{s.school ?? '-'}</td>
                 <td className="px-4 py-3">{s.grade ?? '-'}</td>
                 <td className="px-4 py-3">{s.status}</td>
                 <td className="px-4 py-3 text-right">
-                  <Link href={`/owner/students/${s.id}`} className="text-amber-700 hover:underline">
+                  <Link href={`/owner/students/${s.id}`} className="text-indigo-700 hover:underline">
                     상세
                   </Link>
                 </td>

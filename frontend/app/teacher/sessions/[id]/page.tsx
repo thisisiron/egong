@@ -35,7 +35,7 @@ export default async function TeacherSessionPage({
 
   return (
     <div className="space-y-4">
-      <header className="bg-white border border-amber-100 rounded-lg p-4">
+      <header className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="text-xs text-slate-500">{session.class_name}</div>
         <div className="text-lg font-semibold mt-1">
           {new Date(session.scheduled_at).toLocaleString('ko-KR')}
@@ -48,7 +48,7 @@ export default async function TeacherSessionPage({
 
       <form
         action={updateVideoUrlAction}
-        className="bg-white border border-amber-100 rounded-lg p-4 space-y-2"
+        className="bg-white border border-gray-200 rounded-lg p-4 space-y-2"
       >
         <input type="hidden" name="session_id" value={session.id} />
         <label className="text-sm font-medium">📹 수업 영상 URL</label>
@@ -68,7 +68,7 @@ export default async function TeacherSessionPage({
           studentIds.length > 0 &&
           studentIds.every((sid) => attMap.get(sid)?.status === 'present')
         return (
-          <div className="bg-white border border-amber-100 rounded-lg p-4">
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
             <BulkPresentButton
               sessionId={session.id}
               studentIds={studentIds}

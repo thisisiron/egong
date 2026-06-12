@@ -85,7 +85,7 @@ export function ApplicationForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-8">
       {/* Section 1: 신청자 */}
-      <section className="space-y-3 bg-white border border-amber-100 rounded-lg p-5">
+      <section className="space-y-3 bg-white border border-gray-200 rounded-lg p-5">
         <h2 className="text-lg font-semibold text-slate-900">1. 신청자 정보</h2>
         <p className="text-xs text-slate-500">학원 원장님(또는 대리인) 연락처</p>
         <div className="space-y-3 pt-1">
@@ -96,7 +96,7 @@ export function ApplicationForm() {
       </section>
 
       {/* Section 2: 학원 */}
-      <section className="space-y-3 bg-white border border-amber-100 rounded-lg p-5">
+      <section className="space-y-3 bg-white border border-gray-200 rounded-lg p-5">
         <h2 className="text-lg font-semibold text-slate-900">2. 학원 정보</h2>
         <div className="space-y-3 pt-1">
           <Field label="학원명" name="academy_name" required placeholder="예: 일도수학" />
@@ -107,13 +107,13 @@ export function ApplicationForm() {
               {STUDENT_COUNT_OPTIONS.map((opt) => (
                 <label
                   key={opt.value}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-slate-200 cursor-pointer hover:border-amber-300 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50 text-sm"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-slate-200 cursor-pointer hover:border-indigo-300 has-[:checked]:border-indigo-400 has-[:checked]:bg-indigo-50 text-sm"
                 >
                   <input
                     type="radio"
                     name="academy_student_count"
                     value={opt.value}
-                    className="accent-amber-500"
+                    className="accent-indigo-500"
                   />
                   {opt.label}
                 </label>
@@ -133,7 +133,7 @@ export function ApplicationForm() {
       </section>
 
       {/* Section 3: 사업자 */}
-      <section className="space-y-3 bg-white border border-amber-100 rounded-lg p-5">
+      <section className="space-y-3 bg-white border border-gray-200 rounded-lg p-5">
         <h2 className="text-lg font-semibold text-slate-900">3. 사업자 정보</h2>
         <p className="text-xs text-slate-500 leading-relaxed">
           직업안정법 제28조에 따라 학원사업자 신원 확인이 필요합니다. 사업자등록증·교습소
@@ -181,7 +181,7 @@ export function ApplicationForm() {
             type="checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-0.5 accent-amber-500"
+            className="mt-0.5 accent-indigo-500"
           />
           <span>
             개인정보 수집·이용에 동의합니다. 수집된 정보는 도입 검토·연락 목적으로만 사용되며,

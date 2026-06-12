@@ -43,7 +43,7 @@ export function CalendarWeek({ cells, selectedDay }: Props) {
           hour: '2-digit',
           minute: '2-digit',
         })
-        const ring = selectedDay === day ? 'ring-2 ring-amber-500' : ''
+        const ring = selectedDay === day ? 'ring-2 ring-indigo-500' : ''
         return (
           <li key={session.id}>
             <Link

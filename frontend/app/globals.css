@@ -4,14 +4,14 @@
   --background: #ffffff;
   --foreground: #171717;
 
-  /* Egg theme — amber-based shadcn tokens (light only) */
-  --primary: hsl(45 96% 56%);
-  --primary-foreground: hsl(222 47% 11%);
-  --ring: hsl(45 96% 56%);
-  --accent: hsl(54 92% 87%);
-  --accent-foreground: hsl(28 73% 26%);
-  --muted: hsl(48 100% 96%);
-  --muted-foreground: hsl(215 16% 47%);
+  /* White-base theme — indigo point, neutral surfaces (light only) */
+  --primary: hsl(243 75% 59%);            /* indigo-600 #4f46e5 */
+  --primary-foreground: #ffffff;
+  --ring: hsl(239 84% 67%);               /* indigo-500 */
+  --accent: hsl(226 100% 97%);            /* indigo-50 */
+  --accent-foreground: hsl(245 58% 51%);  /* indigo-700 #4338ca */
+  --muted: hsl(210 20% 98%);              /* gray-50 */
+  --muted-foreground: hsl(215 16% 47%);   /* slate-500 */
   --card: #ffffff;
   --card-foreground: #171717;
   --popover: #ffffff;

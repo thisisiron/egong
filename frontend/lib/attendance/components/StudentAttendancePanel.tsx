@@ -22,14 +22,14 @@ export function StudentAttendancePanel({ year, month, rate, counts, days }: Prop
   const label = `${year}년 ${month}월`
 
   return (
-    <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-4">
+    <section className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">출결</h2>
         <div className="flex items-center gap-2 text-sm">
           <Link
             href={`?month=${prev}`}
             scroll={false}
-            className="px-2 py-1 rounded hover:bg-amber-50 text-slate-500"
+            className="px-2 py-1 rounded hover:bg-gray-50 text-slate-500"
             aria-label="이전 달"
           >
             ←
@@ -38,7 +38,7 @@ export function StudentAttendancePanel({ year, month, rate, counts, days }: Prop
           <Link
             href={`?month=${next}`}
             scroll={false}
-            className="px-2 py-1 rounded hover:bg-amber-50 text-slate-500"
+            className="px-2 py-1 rounded hover:bg-gray-50 text-slate-500"
             aria-label="다음 달"
           >
             →

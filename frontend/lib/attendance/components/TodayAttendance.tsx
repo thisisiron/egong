@@ -8,7 +8,7 @@ type Props = { items: TodaySessionSummary[] }
 export function TodayAttendance({ items }: Props) {
   if (items.length === 0) {
     return (
-      <p className="text-sm text-slate-400 bg-white border border-amber-100 rounded-lg p-6 text-center">
+      <p className="text-sm text-slate-400 bg-white border border-gray-200 rounded-lg p-6 text-center">
         오늘 수업이 없습니다.
       </p>
     )
@@ -25,7 +25,7 @@ export function TodayAttendance({ items }: Props) {
             className={`block border rounded-lg p-3 transition-colors ${
               unmarked
                 ? 'border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100'
-                : 'border-amber-100 bg-white hover:bg-amber-50'
+                : 'border-gray-200 bg-white hover:bg-gray-50'
             }`}
           >
             <div className="flex items-center justify-between">

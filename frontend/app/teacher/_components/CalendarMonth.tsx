@@ -60,7 +60,7 @@ export function CalendarMonth({ ym, cells, selectedDay }: Props) {
             return (
               <div
                 key={i}
-                className={`text-center py-2 text-slate-300 rounded ${isToday ? 'ring-2 ring-amber-300' : ''}`}
+                className={`text-center py-2 text-slate-300 rounded ${isToday ? 'ring-2 ring-indigo-300' : ''}`}
               >
                 {c.day}
               </div>
@@ -78,7 +78,7 @@ export function CalendarMonth({ ym, cells, selectedDay }: Props) {
             <Link
               key={i}
               href={`/teacher?view=month&ym=${ym}&day=${dayYmd}`}
-              className={`text-center py-2 rounded font-semibold transition hover:opacity-80 ${DAY_COLOR[priorityStatus]} ${isToday ? 'ring-2 ring-amber-500' : ''} ${isSelected ? 'outline outline-2 outline-amber-600' : ''}`}
+              className={`text-center py-2 rounded font-semibold transition hover:opacity-80 ${DAY_COLOR[priorityStatus]} ${isToday ? 'ring-2 ring-indigo-500' : ''} ${isSelected ? 'outline outline-2 outline-indigo-600' : ''}`}
             >
               {c.day}
               {ICON[priorityStatus] && <span className="ml-0.5">{ICON[priorityStatus]}</span>}

@@ -23,9 +23,9 @@ export default async function AdminApplicationsPage() {
         <span className="text-sm text-slate-500">총 {applications.length}건</span>
       </div>
 
-      <div className="bg-white border border-amber-200 rounded-lg overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-amber-50 text-left text-slate-700 border-b border-amber-200">
+          <thead className="bg-gray-50 text-left text-slate-700 border-b border-gray-200">
             <tr>
               <th className="px-4 py-3">신청일</th>
               <th className="px-4 py-3">상태</th>
@@ -37,7 +37,7 @@ export default async function AdminApplicationsPage() {
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-amber-100">
+          <tbody className="divide-y divide-gray-100">
             {applications.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
@@ -46,7 +46,7 @@ export default async function AdminApplicationsPage() {
               </tr>
             ) : null}
             {applications.map((a) => (
-              <tr key={a.id} className="hover:bg-amber-50/50">
+              <tr key={a.id} className="hover:bg-gray-50/50">
                 <td className="px-4 py-3 text-slate-600">
                   {new Date(a.created_at).toLocaleString('ko-KR', {
                     year: '2-digit',
@@ -93,7 +93,7 @@ export default async function AdminApplicationsPage() {
                 <td className="px-4 py-3 text-right">
                   <Link
                     href={`/admin/applications/${a.id}`}
-                    className="text-amber-700 hover:underline"
+                    className="text-indigo-700 hover:underline"
                   >
                     상세
                   </Link>

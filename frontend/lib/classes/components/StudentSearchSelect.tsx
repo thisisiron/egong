@@ -124,8 +124,8 @@ export function StudentSearchSelect({ availableStudents }: Props) {
                     onClick={() => choose(s)}
                     className={`w-full px-3 py-2 text-left text-sm ${
                       i === highlight
-                        ? 'bg-amber-100 text-slate-900'
-                        : 'hover:bg-amber-50'
+                        ? 'bg-indigo-100 text-slate-900'
+                        : 'hover:bg-gray-50'
                     }`}
                   >
                     {s.name}

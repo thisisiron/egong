@@ -80,7 +80,7 @@ export function FileUpload({ onUploaded, currentPath, optional }: Props) {
             className={`inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium ${
               uploading
                 ? 'bg-slate-100 text-slate-400 cursor-wait'
-                : 'border border-slate-200 bg-white text-slate-700 hover:bg-amber-50 hover:border-amber-300'
+                : 'border border-slate-200 bg-white text-slate-700 hover:bg-gray-50 hover:border-gray-300'
             }`}
           >
             {uploading ? '업로드 중...' : currentPath ? '다른 파일 선택' : '파일 첨부'}

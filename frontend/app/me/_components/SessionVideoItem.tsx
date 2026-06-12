@@ -16,7 +16,7 @@ const STATUS_LABEL: Record<NonNullable<Props['status']>, string> = {
 export function SessionVideoItem({ title, scheduledAt, status, videoUrl }: Props) {
   const dateStr = new Date(scheduledAt).toLocaleDateString('ko-KR')
   return (
-    <div className="border border-amber-100 rounded-lg p-3 flex items-center gap-3 bg-white">
+    <div className="border border-gray-200 rounded-lg p-3 flex items-center gap-3 bg-white">
       <div className="w-14 h-10 bg-slate-800 text-white rounded flex items-center justify-center">
         ▶
       </div>
@@ -31,7 +31,7 @@ export function SessionVideoItem({ title, scheduledAt, status, videoUrl }: Props
           href={videoUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs px-3 py-1.5 bg-amber-400 text-slate-900 hover:bg-amber-500 rounded font-medium"
+          className="text-xs px-3 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded font-medium"
         >
           보기
         </a>

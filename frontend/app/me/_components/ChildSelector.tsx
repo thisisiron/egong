@@ -21,7 +21,7 @@ export function ChildSelector({
         next.set('child', e.target.value)
         router.push(`/me?${next.toString()}`)
       }}
-      className="border border-amber-300 rounded px-2 py-1 text-sm bg-white"
+      className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
     >
       {items.map((c) => (
         <option key={c.id} value={c.id}>

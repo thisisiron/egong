@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
+import { kstParts, monthRange } from '@/lib/date'
 import type {
   Session,
   SessionWithClass,
@@ -96,6 +97,23 @@ export async function getSessionForTeacher(id: string): Promise<{
     class_id: cls.id,
     class_name: cls.name,
   }
+}
+
+/** 이번 달(KST) 수업이 있는 일(day) 목록 — owner 대시보드 캘린더용.
+ * RLS(sessions_owner_all)가 학원 범위 적용. [달 시작, 다음 달 시작) 반개구간.
+ */
+export async function listSessionDaysForMonth(now = new Date()): Promise<number[]> {
+  const supabase = await createClient()
+  const { fromIso, toIso } = monthRange(now)
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('scheduled_at')
+    .gte('scheduled_at', fromIso)
+    .lt('scheduled_at', toIso)
+  if (error) throw new Error(error.message)
+  const days = new Set<number>()
+  for (const row of data ?? []) days.add(kstParts(new Date(row.scheduled_at)).day)
+  return [...days].sort((a, b) => a - b)
 }
 
 /** 선생님 캘린더용 — 기간 내 본인 반 세션 (RLS가 본인 반만). */

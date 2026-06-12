@@ -33,7 +33,7 @@ export function ImpersonationBanner() {
   if (!isImpersonating) return null
 
   return (
-    <div className="bg-red-600 text-white text-center text-sm py-2 sticky top-0 z-50">
+    <div className="bg-red-600 text-white text-center text-sm py-2">
       ⚠ Admin Impersonation 모드 —{' '}
       <form action="/auth/logout" method="post" className="inline">
         <button type="submit" className="underline ml-2">
