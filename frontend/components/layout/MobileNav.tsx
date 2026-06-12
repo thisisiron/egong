@@ -25,12 +25,24 @@ export function MobileNav({ navKey, role, displayName, academyName }: Props) {
     startTransition(() => setOpen(false))
   }, [pathname])
 
+  // 드로어 열림 동안 배경 스크롤 잠금
+  useEffect(() => {
+    if (!open) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [open])
+
   return (
     <div className="sticky top-0 z-40 border-b border-gray-200 bg-white lg:hidden">
       <div className="flex items-center gap-2 px-4 py-3">
         <button
+          type="button"
           onClick={() => setOpen(true)}
           aria-label="메뉴 열기"
+          aria-expanded={open}
           className="rounded-md p-1.5 text-slate-600 hover:bg-gray-100"
         >
           <Menu className="h-5 w-5" />
@@ -49,6 +61,7 @@ export function MobileNav({ navKey, role, displayName, academyName }: Props) {
             <div className="flex items-center justify-between px-4 py-4">
               <Logo subtitle={academyName ?? ROLE_LABEL[role]} />
               <button
+                type="button"
                 onClick={() => setOpen(false)}
                 aria-label="메뉴 닫기"
                 className="rounded-md p-1.5 text-slate-500 hover:bg-gray-100"

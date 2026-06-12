@@ -70,6 +70,7 @@ export function Sidebar({ navKey, role, displayName, academyName, initialCollaps
           </form>
         </div>
         <button
+          type="button"
           onClick={toggle}
           aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
           className={cn(
