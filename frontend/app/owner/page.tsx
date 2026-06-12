@@ -1,12 +1,15 @@
 import { countStudents } from '@/lib/students/service'
 import { countTeachers } from '@/lib/teachers/service'
 import { countClasses } from '@/lib/classes/service'
+import { getTodaySessionsSummary } from '@/lib/attendance/service'
+import { TodayAttendance } from '@/lib/attendance/components/TodayAttendance'
 
 export default async function OwnerDashboard() {
-  const [students, teachers, classes] = await Promise.all([
+  const [students, teachers, classes, today] = await Promise.all([
     countStudents(),
     countTeachers(),
     countClasses(),
+    getTodaySessionsSummary(),
   ])
 
   return (
@@ -17,6 +20,10 @@ export default async function OwnerDashboard() {
         <Stat label="선생님" value={teachers} />
         <Stat label="반" value={classes} />
       </div>
+      <section className="space-y-2">
+        <h2 className="font-semibold">오늘 출결 현황</h2>
+        <TodayAttendance items={today} />
+      </section>
     </div>
   )
 }
