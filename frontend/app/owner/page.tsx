@@ -6,11 +6,13 @@ import { todayAttendanceRate } from '@/lib/attendance/stats'
 import { TodayAttendance } from '@/lib/attendance/components/TodayAttendance'
 import { getSessionUser } from '@/lib/auth'
 import { countClasses } from '@/lib/classes/service'
+import { listSessionDaysForMonth } from '@/lib/sessions/service'
+import { MonthCalendarCard } from '@/lib/sessions/components/MonthCalendarCard'
 import { countStudents } from '@/lib/students/service'
 import { countTeachers } from '@/lib/teachers/service'
 
 export default async function OwnerDashboard() {
-  const [user, academyName, students, teachers, classes, today] = await Promise.all([
+  const [user, academyName, students, teachers, classes, today, monthDays] = await Promise.all([
     getSessionUser(), // layout의 requireRole과 React cache 공유 — 추가 쿼리 없음
     getMyAcademyName(),
     countStudents(),
@@ -19,6 +21,10 @@ export default async function OwnerDashboard() {
     // fail-soft — 출결 카드 하나의 실패가 대시보드 전체를 죽이지 않게
     getTodaySessionsSummary().catch((e: unknown) => {
       console.error('오늘 출결 현황 조회 실패:', e)
+      return null
+    }),
+    listSessionDaysForMonth().catch((e: unknown) => {
+      console.error('월 세션 조회 실패:', e)
       return null
     }),
   ])
@@ -32,35 +38,44 @@ export default async function OwnerDashboard() {
         <p className="mt-0.5 text-sm text-slate-500">원장 · {user?.displayName}</p>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          href="/owner/students"
-          badge="학생"
-          label="학생 수"
-          value={`${students}명`}
-          tone="rose"
-        />
-        <StatCard
-          href="/owner/teachers"
-          badge="선생님"
-          label="선생님 수"
-          value={`${teachers}명`}
-          tone="sky"
-        />
-        <StatCard
-          href="/owner/classes"
-          badge="반"
-          label="반 수"
-          value={`${classes}개`}
-          tone="emerald"
-        />
-        <StatCard
-          badge="출결"
-          label="오늘 출석률"
-          value={rate.pct === null ? '—' : `${rate.pct}%`}
-          sub={rate.detail}
-          tone="violet"
-        />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 content-start">
+          <StatCard
+            href="/owner/students"
+            badge="학생"
+            label="학생 수"
+            value={`${students}명`}
+            tone="rose"
+          />
+          <StatCard
+            href="/owner/teachers"
+            badge="선생님"
+            label="선생님 수"
+            value={`${teachers}명`}
+            tone="sky"
+          />
+          <StatCard
+            href="/owner/classes"
+            badge="반"
+            label="반 수"
+            value={`${classes}개`}
+            tone="emerald"
+          />
+          <StatCard
+            badge="출결"
+            label="오늘 출석률"
+            value={rate.pct === null ? '—' : `${rate.pct}%`}
+            sub={rate.detail}
+            tone="violet"
+          />
+        </div>
+        {monthDays ? (
+          <MonthCalendarCard days={monthDays} />
+        ) : (
+          <p className="rounded-xl border border-gray-200 bg-white p-6 text-center text-sm text-slate-400">
+            이번 달 수업을 불러오지 못했습니다.
+          </p>
+        )}
       </div>
 
       <section className="space-y-2">
