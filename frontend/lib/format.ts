@@ -52,6 +52,7 @@ export function formatTimeKR(iso: string): string {
     timeZone: 'Asia/Seoul',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false,
+    // hour12: false는 일부 ICU에서 h24로 매핑되어 자정이 '24:00'이 되는 quirk가 있음
+    hourCycle: 'h23',
   })
 }

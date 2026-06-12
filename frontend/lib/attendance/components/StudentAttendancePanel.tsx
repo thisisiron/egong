@@ -28,6 +28,7 @@ export function StudentAttendancePanel({ year, month, rate, counts, days }: Prop
         <div className="flex items-center gap-2 text-sm">
           <Link
             href={`?month=${prev}`}
+            scroll={false}
             className="px-2 py-1 rounded hover:bg-amber-50 text-slate-500"
             aria-label="이전 달"
           >
@@ -36,6 +37,7 @@ export function StudentAttendancePanel({ year, month, rate, counts, days }: Prop
           <span className="font-medium">{label}</span>
           <Link
             href={`?month=${next}`}
+            scroll={false}
             className="px-2 py-1 rounded hover:bg-amber-50 text-slate-500"
             aria-label="다음 달"
           >
