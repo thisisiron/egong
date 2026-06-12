@@ -140,5 +140,9 @@ function StatCard({
       {sub && <div className="mt-1 text-xs text-slate-500">{sub}</div>}
     </div>
   )
-  return href ? <Link href={href}>{body}</Link> : body
+  return href ? (
+    <Link href={href} className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+      {body}
+    </Link>
+  ) : body
 }
