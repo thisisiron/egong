@@ -51,7 +51,7 @@ export const NAV = {
     },
   ],
   me: [{ items: [{ href: '/me', label: '홈', icon: Home }] }],
-} satisfies Record<string, NavSection[]>
+} as Record<string, NavSection[]>
 
 export type NavKey = keyof typeof NAV
 
