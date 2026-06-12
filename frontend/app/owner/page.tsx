@@ -1,11 +1,18 @@
+import Link from 'next/link'
+
+import { getMyAcademyName } from '@/lib/academy/service'
+import { getTodaySessionsSummary } from '@/lib/attendance/service'
+import { todayAttendanceRate } from '@/lib/attendance/stats'
+import { TodayAttendance } from '@/lib/attendance/components/TodayAttendance'
+import { getSessionUser } from '@/lib/auth'
+import { countClasses } from '@/lib/classes/service'
 import { countStudents } from '@/lib/students/service'
 import { countTeachers } from '@/lib/teachers/service'
-import { countClasses } from '@/lib/classes/service'
-import { getTodaySessionsSummary } from '@/lib/attendance/service'
-import { TodayAttendance } from '@/lib/attendance/components/TodayAttendance'
 
 export default async function OwnerDashboard() {
-  const [students, teachers, classes, today] = await Promise.all([
+  const [user, academyName, students, teachers, classes, today] = await Promise.all([
+    getSessionUser(), // layout의 requireRole과 React cache 공유 — 추가 쿼리 없음
+    getMyAcademyName(),
     countStudents(),
     countTeachers(),
     countClasses(),
@@ -16,20 +23,52 @@ export default async function OwnerDashboard() {
     }),
   ])
 
+  const rate = todayAttendanceRate(today)
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">대시보드</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Stat label="학생" value={students} />
-        <Stat label="선생님" value={teachers} />
-        <Stat label="반" value={classes} />
+      <header>
+        <h1 className="text-2xl font-semibold text-slate-900">{academyName ?? 'Egong'}</h1>
+        <p className="mt-0.5 text-sm text-slate-500">원장 · {user?.displayName}</p>
+      </header>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          href="/owner/students"
+          badge="학생"
+          label="학생 수"
+          value={`${students}명`}
+          tone="rose"
+        />
+        <StatCard
+          href="/owner/teachers"
+          badge="선생님"
+          label="선생님 수"
+          value={`${teachers}명`}
+          tone="sky"
+        />
+        <StatCard
+          href="/owner/classes"
+          badge="반"
+          label="반 수"
+          value={`${classes}개`}
+          tone="emerald"
+        />
+        <StatCard
+          badge="출결"
+          label="오늘 출석률"
+          value={rate.pct === null ? '—' : `${rate.pct}%`}
+          sub={rate.detail}
+          tone="violet"
+        />
       </div>
+
       <section className="space-y-2">
-        <h2 className="font-semibold">오늘 출결 현황</h2>
+        <h2 className="font-semibold text-slate-900">오늘 출결 현황</h2>
         {today ? (
           <TodayAttendance items={today} />
         ) : (
-          <p className="text-sm text-slate-400 bg-white border border-amber-100 rounded-lg p-6 text-center">
+          <p className="rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-slate-400">
             오늘 출결 현황을 불러오지 못했습니다. 잠시 후 새로고침해주세요.
           </p>
         )}
@@ -38,11 +77,38 @@ export default async function OwnerDashboard() {
   )
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="bg-white border border-amber-100 rounded-lg p-5">
-      <div className="text-sm text-slate-500">{label}</div>
-      <div className="text-3xl font-semibold mt-1">{value}</div>
+const TONES = {
+  rose: { card: 'bg-rose-50 border-rose-100', badge: 'bg-rose-100 text-rose-700' },
+  sky: { card: 'bg-sky-50 border-sky-100', badge: 'bg-sky-100 text-sky-700' },
+  emerald: { card: 'bg-emerald-50 border-emerald-100', badge: 'bg-emerald-100 text-emerald-700' },
+  violet: { card: 'bg-violet-50 border-violet-100', badge: 'bg-violet-100 text-violet-700' },
+} as const
+
+function StatCard({
+  href,
+  badge,
+  label,
+  value,
+  sub,
+  tone,
+}: {
+  href?: string
+  badge: string
+  label: string
+  value: string
+  sub?: string
+  tone: keyof typeof TONES
+}) {
+  const t = TONES[tone]
+  const body = (
+    <div className={`rounded-xl border p-5 transition-shadow hover:shadow-sm ${t.card}`}>
+      <div className="flex items-start justify-between">
+        <div className="text-sm text-slate-600">{label}</div>
+        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${t.badge}`}>{badge}</span>
+      </div>
+      <div className="mt-2 text-3xl font-semibold text-slate-900">{value}</div>
+      {sub && <div className="mt-1 text-xs text-slate-500">{sub}</div>}
     </div>
   )
+  return href ? <Link href={href}>{body}</Link> : body
 }
