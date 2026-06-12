@@ -1,6 +1,8 @@
 import Link from 'next/link'
 
 import { getMyAcademyName } from '@/lib/academy/service'
+import { listAnnouncements } from '@/lib/announcements/service'
+import { RecentAnnouncementsCard } from '@/lib/announcements/components/RecentAnnouncementsCard'
 import { getTodaySessionsSummary } from '@/lib/attendance/service'
 import { todayAttendanceRate } from '@/lib/attendance/stats'
 import { TodayAttendance } from '@/lib/attendance/components/TodayAttendance'
@@ -12,22 +14,27 @@ import { countStudents } from '@/lib/students/service'
 import { countTeachers } from '@/lib/teachers/service'
 
 export default async function OwnerDashboard() {
-  const [user, academyName, students, teachers, classes, today, monthDays] = await Promise.all([
-    getSessionUser(), // layout의 requireRole과 React cache 공유 — 추가 쿼리 없음
-    getMyAcademyName(),
-    countStudents(),
-    countTeachers(),
-    countClasses(),
-    // fail-soft — 출결 카드 하나의 실패가 대시보드 전체를 죽이지 않게
-    getTodaySessionsSummary().catch((e: unknown) => {
-      console.error('오늘 출결 현황 조회 실패:', e)
-      return null
-    }),
-    listSessionDaysForMonth().catch((e: unknown) => {
-      console.error('월 세션 조회 실패:', e)
-      return null
-    }),
-  ])
+  const [user, academyName, students, teachers, classes, today, monthDays, announcements] =
+    await Promise.all([
+      getSessionUser(), // layout의 requireRole과 React cache 공유 — 추가 쿼리 없음
+      getMyAcademyName(),
+      countStudents(),
+      countTeachers(),
+      countClasses(),
+      // fail-soft — 출결 카드 하나의 실패가 대시보드 전체를 죽이지 않게
+      getTodaySessionsSummary().catch((e: unknown) => {
+        console.error('오늘 출결 현황 조회 실패:', e)
+        return null
+      }),
+      listSessionDaysForMonth().catch((e: unknown) => {
+        console.error('월 세션 조회 실패:', e)
+        return null
+      }),
+      listAnnouncements(5).catch((e: unknown) => {
+        console.error('최근 공지 조회 실패:', e)
+        return null
+      }),
+    ])
 
   const rate = todayAttendanceRate(today)
 
@@ -88,6 +95,14 @@ export default async function OwnerDashboard() {
           </p>
         )}
       </section>
+
+      {announcements ? (
+        <RecentAnnouncementsCard items={announcements} />
+      ) : (
+        <p className="rounded-xl border border-gray-200 bg-white p-6 text-center text-sm text-slate-400">
+          최근 공지를 불러오지 못했습니다.
+        </p>
+      )}
     </div>
   )
 }

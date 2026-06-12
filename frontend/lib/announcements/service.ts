@@ -13,13 +13,17 @@ function withClassName(row: JoinedRow): AnnouncementWithClass {
   return { ...announcement, class_name: classes?.name ?? null }
 }
 
-/** 공지 목록 (최신순). RLS가 역할별 범위 적용 — owner/teacher 페이지 공용. */
-export async function listAnnouncements(): Promise<AnnouncementWithClass[]> {
+/** 공지 목록 (최신순). RLS가 역할별 범위 적용 — owner/teacher 페이지 공용.
+ * limit 지정 시 최근 N개만 (대시보드 위젯용).
+ */
+export async function listAnnouncements(limit?: number): Promise<AnnouncementWithClass[]> {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  let query = supabase
     .from('announcements')
     .select(`${COLUMNS}, classes(name)`)
     .order('created_at', { ascending: false })
+  if (limit !== undefined) query = query.limit(limit)
+  const { data, error } = await query
   if (error) throw new Error(error.message)
   return (data ?? []).map(withClassName)
 }
