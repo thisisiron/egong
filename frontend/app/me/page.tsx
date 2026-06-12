@@ -1,11 +1,12 @@
 import { getSessionUser } from '@/lib/auth'
 
-import { AttendanceCalendar } from './_components/AttendanceCalendar'
-import { AttendanceStats } from './_components/AttendanceStats'
+import { AttendanceCalendar } from '@/lib/attendance/components/AttendanceCalendar'
+import { AttendanceStats } from '@/lib/attendance/components/AttendanceStats'
+import { buildMonthDays } from '@/lib/attendance/calendar'
 import { ChildSelector } from './_components/ChildSelector'
 import { SessionVideoItem } from './_components/SessionVideoItem'
 
-import { monthRange, ymd } from '@/lib/date'
+import { monthRange } from '@/lib/date'
 import { getMyChildren, getStudentProfile } from '@/lib/students/service'
 import {
   getAttendanceRate,
@@ -15,8 +16,6 @@ import {
 } from '@/lib/attendance/service'
 import { listAnnouncementsForStudent } from '@/lib/announcements/service'
 import { AnnouncementCard } from '@/lib/announcements/components/AnnouncementCard'
-
-type AttStatus = 'present' | 'late' | 'absent' | 'excused'
 
 export default async function MyStudentPage({
   searchParams,
@@ -51,24 +50,7 @@ export default async function MyStudentPage({
       listAnnouncementsForStudent(targetStudentId),
     ])
 
-  // 이번 달로 필터 (PostgREST join 필터가 brittle → JS에서)
-  const monthAtt = monthAttRaw.filter((row) => {
-    const d = new Date(row.scheduled_at)
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
-  })
-
-  const todayYmd = ymd(now)
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const statusByDay: Record<number, AttStatus> = {}
-  for (const row of monthAtt) {
-    const d = new Date(row.scheduled_at).getDate()
-    statusByDay[d] = row.status as AttStatus
-  }
-  const days = Array.from({ length: daysInMonth }, (_, i) => ({
-    day: i + 1,
-    status: statusByDay[i + 1] ?? null,
-    isToday: ymd(new Date(now.getFullYear(), now.getMonth(), i + 1)) === todayYmd,
-  }))
+  const days = buildMonthDays(now.getFullYear(), now.getMonth() + 1, monthAttRaw, now)
 
   return (
     <div className="space-y-6">

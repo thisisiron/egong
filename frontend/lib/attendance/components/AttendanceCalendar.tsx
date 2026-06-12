@@ -1,8 +1,4 @@
-type DayCell = {
-  day: number
-  status: 'present' | 'late' | 'absent' | 'excused' | null
-  isToday: boolean
-}
+import type { DayCell } from '../calendar'
 
 const COLORS: Record<NonNullable<DayCell['status']>, string> = {
   present: 'bg-green-100 text-green-800',
