@@ -9,7 +9,7 @@
   --primary-foreground: #ffffff;
   --ring: hsl(239 84% 67%);               /* indigo-500 */
   --accent: hsl(226 100% 97%);            /* indigo-50 */
-  --accent-foreground: hsl(244 55% 41%);  /* indigo-700 */
+  --accent-foreground: hsl(245 58% 51%);  /* indigo-700 #4338ca */
   --muted: hsl(210 20% 98%);              /* gray-50 */
   --muted-foreground: hsl(215 16% 47%);   /* slate-500 */
   --card: #ffffff;
