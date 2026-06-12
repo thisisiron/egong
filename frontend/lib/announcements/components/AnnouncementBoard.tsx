@@ -22,7 +22,7 @@ export function AnnouncementBoard({
   return (
     <div className="space-y-6">
       {canCreate ? (
-        <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-3">
+        <section className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
           <h2 className="font-semibold">새 공지 작성</h2>
           <AnnouncementCreateForm
             scopeOptions={scopeOptions}

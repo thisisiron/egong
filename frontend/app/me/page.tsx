@@ -61,8 +61,8 @@ export default async function MyStudentPage({
 
   return (
     <div className="space-y-6">
-      <header className="bg-white border border-amber-100 rounded-lg p-4 flex items-center gap-4">
-        <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-semibold">
+      <header className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-4">
+        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-slate-700 font-semibold">
           {student?.name?.[0] ?? '학'}
         </div>
         <div className="flex-1">
@@ -95,7 +95,7 @@ export default async function MyStudentPage({
             absent={attendance[1].absent_count + attendance[1].excused_count}
           />
 
-          <section className="bg-white border border-amber-100 rounded-lg p-4">
+          <section className="bg-white border border-gray-200 rounded-lg p-4">
             <AttendanceCalendar
               year={year}
               month={month}
@@ -104,7 +104,7 @@ export default async function MyStudentPage({
           </section>
         </>
       ) : (
-        <section className="bg-white border border-amber-100 rounded-lg p-4 text-sm text-slate-400 text-center">
+        <section className="bg-white border border-gray-200 rounded-lg p-4 text-sm text-slate-400 text-center">
           출결 정보를 불러오지 못했습니다. 잠시 후 새로고침해주세요.
         </section>
       )}

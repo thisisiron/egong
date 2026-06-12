@@ -9,14 +9,14 @@ export const metadata = {
 
 export default function ApplyDonePage() {
   return (
-    <div className="min-h-screen bg-amber-50 flex flex-col">
-      <nav className="bg-white border-b border-amber-100">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <nav className="bg-white border-b border-gray-200">
         <div className="max-w-3xl mx-auto px-4 py-3">
           <Logo />
         </div>
       </nav>
       <main className="flex-1 flex items-center justify-center px-4">
-        <div className="max-w-md bg-white border border-amber-100 rounded-lg p-8 text-center">
+        <div className="max-w-md bg-white border border-gray-200 rounded-lg p-8 text-center">
           <div className="text-5xl mb-4">🥚</div>
           <h1 className="text-2xl font-bold text-slate-900">신청이 접수되었습니다</h1>
           <p className="mt-4 text-sm text-slate-600 leading-relaxed">

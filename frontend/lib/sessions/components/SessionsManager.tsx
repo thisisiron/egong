@@ -17,7 +17,7 @@ export async function SessionsManager({ classId }: Props) {
   const counts = await getAttendanceCountsBySessionIds(sessions.map((s) => s.id))
 
   return (
-    <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-3">
+    <section className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">최근 회차 ({sessions.length})</h2>
         <SessionEditDialog

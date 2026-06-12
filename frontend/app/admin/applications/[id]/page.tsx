@@ -72,7 +72,7 @@ export default async function ApplicationDetailPage({
                 href={fileInfo.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-amber-700 hover:underline"
+                className="text-indigo-700 hover:underline"
               >
                 다운로드 ({fileInfo.expires_in}초 유효)
               </a>
@@ -119,11 +119,11 @@ export default async function ApplicationDetailPage({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="bg-white border border-amber-100 rounded-lg p-5 space-y-3">
+    <section className="bg-white border border-gray-200 rounded-lg p-5 space-y-3">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
         {title}
       </h2>
-      <dl className="divide-y divide-amber-50">{children}</dl>
+      <dl className="divide-y divide-gray-100">{children}</dl>
     </section>
   )
 }

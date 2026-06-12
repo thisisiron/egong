@@ -82,11 +82,11 @@ export function DecisionPanel({ application }: Props) {
   return (
     <div className="space-y-3">
       {showConfirm ? (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
-          <p className="font-semibold text-amber-900">
+        <div className="rounded-lg border border-indigo-300 bg-indigo-50 p-4">
+          <p className="font-semibold text-indigo-900">
             정말 승인하시겠습니까?
           </p>
-          <ul className="mt-2 space-y-0.5 text-sm text-amber-800">
+          <ul className="mt-2 space-y-0.5 text-sm text-indigo-800">
             <li>• 학원 &quot;{application.academy_name}&quot; 생성됨</li>
             <li>• {application.applicant_email}로 초대 메일 발송</li>
             <li>• 이 작업은 되돌릴 수 없습니다</li>

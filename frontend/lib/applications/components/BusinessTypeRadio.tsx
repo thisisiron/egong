@@ -22,8 +22,8 @@ export function BusinessTypeRadio({ value, onChange, name = 'business_type' }: P
               onClick={() => onChange(opt.value)}
               className={`text-left p-4 rounded-lg border transition ${
                 selected
-                  ? 'border-amber-400 bg-amber-50 ring-2 ring-amber-200'
-                  : 'border-slate-200 bg-white hover:border-amber-300 hover:bg-amber-50/30'
+                  ? 'border-indigo-400 bg-indigo-50 ring-2 ring-indigo-200'
+                  : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/30'
               }`}
               aria-pressed={selected}
             >
@@ -33,7 +33,7 @@ export function BusinessTypeRadio({ value, onChange, name = 'business_type' }: P
               </div>
               <p className="mt-2 text-xs text-slate-600 leading-relaxed">{opt.description}</p>
               {!opt.requiresFile && (
-                <p className="mt-2 text-[11px] text-amber-700 font-semibold">
+                <p className="mt-2 text-[11px] text-indigo-700 font-semibold">
                   * 별도 서류 없이 신청 가능
                 </p>
               )}

@@ -40,7 +40,7 @@ export function SessionListItem({ session, attendanceCount, showClassName }: Pro
           trigger={
             <button
               type="button"
-              className="px-2 py-1 text-xs rounded hover:bg-amber-50"
+              className="px-2 py-1 text-xs rounded hover:bg-gray-50"
               aria-label="수정"
             >
               ✏️

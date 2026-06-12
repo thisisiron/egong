@@ -251,7 +251,7 @@ export function SessionEditDialog(props: Props) {
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
-                  className="accent-amber-500"
+                  className="accent-indigo-500"
                   checked={repeatOn}
                   onChange={(e) => {
                     setRepeatOn(e.target.checked)

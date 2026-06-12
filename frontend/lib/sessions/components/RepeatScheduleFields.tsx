@@ -119,8 +119,8 @@ export function RepeatScheduleFields({ value, onChange }: Props) {
                 onClick={() => toggleWeekday(d.value)}
                 className={`px-3 py-2 rounded text-sm border ${
                   value.weekdays.includes(d.value)
-                    ? 'bg-amber-400 text-slate-900 border-amber-400 font-semibold'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-amber-50 hover:border-amber-300'
+                    ? 'bg-indigo-600 text-white border-indigo-600 font-semibold'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-gray-50 hover:border-gray-300'
                 }`}
               >
                 {d.label}
@@ -142,8 +142,8 @@ export function RepeatScheduleFields({ value, onChange }: Props) {
                 onClick={() => toggleMonthDay(d)}
                 className={`py-1.5 rounded text-xs border ${
                   value.monthDays.includes(d)
-                    ? 'bg-amber-400 text-slate-900 border-amber-400 font-semibold'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-amber-50 hover:border-amber-300'
+                    ? 'bg-indigo-600 text-white border-indigo-600 font-semibold'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-gray-50 hover:border-gray-300'
                 }`}
               >
                 {d}
@@ -151,7 +151,7 @@ export function RepeatScheduleFields({ value, onChange }: Props) {
             ))}
           </div>
           {showMonthlyWarning && (
-            <p className="text-xs text-amber-700 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               ⚠ 29·30·31일은 해당 일자가 없는 달(2월 등)에는 생성되지 않습니다.
             </p>
           )}

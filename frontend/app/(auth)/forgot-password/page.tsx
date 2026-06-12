@@ -22,8 +22,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-amber-50 p-4">
-      <div className="w-full max-w-sm bg-white rounded-xl shadow-sm border border-amber-100 p-6 space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-sm bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
         <h1 className="text-2xl font-semibold">비밀번호 재설정</h1>
         {sent ? (
           <p className="text-sm text-green-700">{email}로 재설정 메일을 보냈습니다.</p>

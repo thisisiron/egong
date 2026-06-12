@@ -116,7 +116,7 @@ export function BusinessVerification({ onChange }: Props) {
   const style = result ? VALID_STYLE[result.valid_kind] : null
 
   return (
-    <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50/40 p-4">
+    <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/40 p-4">
       <p className="text-xs text-slate-600">
         국세청에 등록된 사업자등록증 정보 3개를 입력해주세요. 진위확인 통과 시에만 신청이 진행됩니다.
       </p>

@@ -59,7 +59,7 @@ export function StudentNotes({ studentId, notes, currentUserId, isOwner }: Props
   }
 
   return (
-    <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-3">
+    <section className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
       <div>
         <h2 className="font-semibold">상담 메모</h2>
         <p className="text-xs text-slate-400 mt-0.5">

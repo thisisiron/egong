@@ -8,7 +8,7 @@ export async function MyRecentSessions() {
   const counts = await getAttendanceCountsBySessionIds(sessions.map((s) => s.id))
 
   return (
-    <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-3">
+    <section className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
       <h2 className="font-semibold">내 최근 세션 (최근 14일, {sessions.length}개)</h2>
       <p className="text-xs text-slate-500">
         ✏️ 로 수정, 🗑️ 로 삭제. 출결이 입력된 세션은 삭제 시 출결 row도 함께 사라집니다.

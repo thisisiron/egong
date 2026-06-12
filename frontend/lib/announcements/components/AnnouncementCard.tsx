@@ -62,13 +62,13 @@ export function AnnouncementCard({ announcement: a, canManage }: Props) {
   }
 
   return (
-    <article className="bg-white border border-amber-100 rounded-lg p-4 space-y-2">
+    <article className="bg-white border border-gray-200 rounded-lg p-4 space-y-2">
       <div className="flex items-center gap-2">
         <span
           className={`text-xs px-2 py-0.5 rounded-full ${
             a.class_id
               ? 'bg-slate-100 text-slate-600'
-              : 'bg-amber-100 text-amber-700'
+              : 'bg-indigo-100 text-indigo-700'
           }`}
         >
           {/* 반별 공지인데 RLS로 반 이름을 못 읽는 경우(teacher의 비담당 반) → 중립 표기 */}

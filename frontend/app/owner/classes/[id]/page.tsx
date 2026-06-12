@@ -28,7 +28,7 @@ export default async function ClassDetailPage({
         {cls.description ? ` · ${cls.description}` : ''}
       </p>
 
-      <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-3">
+      <section className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
         <h2 className="font-semibold">담임 선생님</h2>
         {currentTeacher ? (
           <p className="text-sm">
@@ -63,7 +63,7 @@ export default async function ClassDetailPage({
         </form>
       </section>
 
-      <section className="bg-white border border-amber-100 rounded-lg p-6 space-y-3">
+      <section className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
         <h2 className="font-semibold">배정된 학생 ({students.length})</h2>
         <ul className="space-y-1">
           {students.length === 0 ? (
