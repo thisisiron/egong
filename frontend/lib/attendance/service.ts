@@ -1,7 +1,9 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
-import type { AttendanceRecord, AttendanceStatus } from './types'
+import { todayRangeKST } from '@/lib/date'
+import { getClassSizes } from '@/lib/classes/service'
+import type { AttendanceRecord, AttendanceStatus, TodaySessionSummary } from './types'
 
 /** 한 세션의 출결 기록 전체. */
 export async function getSessionAttendance(
@@ -131,4 +133,62 @@ export async function getRecentAttendanceSessions(
         new Date(b.session.scheduled_at).getTime() -
         new Date(a.session.scheduled_at).getTime()
     )
+}
+
+/** 오늘(KST) 세션별 출결 집계 — owner 대시보드용. RLS(sessions_owner_all)가 학원 범위 적용. */
+export async function getTodaySessionsSummary(): Promise<TodaySessionSummary[]> {
+  const supabase = await createClient()
+  const { fromIso, toIso } = todayRangeKST()
+
+  const { data: sessions, error } = await supabase
+    .from('sessions')
+    .select('id, class_id, scheduled_at, title, classes(name)')
+    .gte('scheduled_at', fromIso)
+    .lt('scheduled_at', toIso)
+    .order('scheduled_at')
+  if (error) throw new Error(error.message)
+  if (!sessions || sessions.length === 0) return []
+
+  const sessionIds = sessions.map((s) => s.id)
+  const classIds = [...new Set(sessions.map((s) => s.class_id))]
+
+  // 명단 수(classes 도메인 service 재사용)와 출결 행을 병렬로
+  const [sizes, attRes] = await Promise.all([
+    getClassSizes(classIds),
+    supabase
+      .from('attendance')
+      .select('session_id, status')
+      .in('session_id', sessionIds),
+  ])
+  if (attRes.error) throw new Error(attRes.error.message)
+
+  const agg = new Map<
+    string,
+    { present: number; late: number; absent: number; marked: number }
+  >()
+  for (const a of attRes.data ?? []) {
+    const cur =
+      agg.get(a.session_id) ?? { present: 0, late: 0, absent: 0, marked: 0 }
+    cur.marked += 1
+    if (a.status === 'present') cur.present += 1
+    else if (a.status === 'late') cur.late += 1
+    else cur.absent += 1 // absent + 레거시 excused 합산
+    agg.set(a.session_id, cur)
+  }
+
+  return sessions.map((s) => {
+    const a = agg.get(s.id) ?? { present: 0, late: 0, absent: 0, marked: 0 }
+    return {
+      session_id: s.id,
+      class_id: s.class_id,
+      class_name: s.classes?.name ?? '-',
+      scheduled_at: s.scheduled_at,
+      title: s.title,
+      roster_count: sizes.get(s.class_id) ?? 0,
+      marked: a.marked,
+      present: a.present,
+      late: a.late,
+      absent: a.absent,
+    }
+  })
 }
