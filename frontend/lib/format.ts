@@ -43,3 +43,15 @@ export function formatDateTimeKR(iso: string): string {
     minute: '2-digit',
   })
 }
+
+/** ISO timestamp → "14:00" (KST 고정 — 서버/클라이언트 어디서든 동일). */
+export function formatTimeKR(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleTimeString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}
