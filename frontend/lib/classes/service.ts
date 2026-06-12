@@ -126,6 +126,29 @@ export async function getClassSizes(classIds: string[]): Promise<Map<string, num
   return result
 }
 
+/** 여러 반의 현재 배정 학생 id 집합. Map<class_id, Set<student_id>>.
+ * (출결 집계처럼 '현재 명단 소속 여부' 판정이 필요한 곳용 — 수만 필요하면 getClassSizes.)
+ */
+export async function getClassRosterIds(
+  classIds: string[]
+): Promise<Map<string, Set<string>>> {
+  const result = new Map<string, Set<string>>()
+  if (classIds.length === 0) return result
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('class_students')
+    .select('class_id, student_id')
+    .in('class_id', classIds)
+    .is('left_at', null)
+  if (error) throw new Error(error.message)
+  for (const r of data ?? []) {
+    const set = result.get(r.class_id) ?? new Set<string>()
+    set.add(r.student_id)
+    result.set(r.class_id, set)
+  }
+  return result
+}
+
 /** 반 수 (RLS가 학원 범위). */
 export async function countClasses(): Promise<number> {
   const supabase = await createClient()

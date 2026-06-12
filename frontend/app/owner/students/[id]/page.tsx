@@ -36,15 +36,23 @@ export default async function StudentDetailPage({
   const range = monthRange(monthDate)
   const { year, month } = kstParts(monthDate)
 
-  const [notes, user, rate, countsRaw, attRows] = await Promise.all([
-    listStudentNotes(id),
-    getSessionUser(),
+  // 출결 3종은 묶어서 fail-soft — 부가 패널의 실패가 학생 상세 전체를 죽이지 않게.
+  // (DB 에러는 service가 throw — 0건과 구분되어 여기서 잡힘)
+  const attendancePromise = Promise.all([
     getAttendanceRate(id, range.from, range.to),
     getAttendanceCounts(id, range.from, range.to),
-    getStudentAttendanceWithDates(id),
+    getStudentAttendanceWithDates(id, range.fromIso, range.toIso),
+  ]).catch((e: unknown) => {
+    console.error('학생 출결 패널 조회 실패:', e)
+    return null
+  })
+
+  const [notes, user, attendance] = await Promise.all([
+    listStudentNotes(id),
+    getSessionUser(),
+    attendancePromise,
   ])
   if (!user) notFound()
-  const days = buildMonthDays(year, month, attRows)
   const { student, parentLinks } = view
 
   return (
@@ -139,17 +147,26 @@ export default async function StudentDetailPage({
         </form>
       </section>
 
-      <StudentAttendancePanel
-        year={year}
-        month={month}
-        rate={rate}
-        counts={{
-          present: countsRaw.present_count,
-          late: countsRaw.late_count,
-          absent: countsRaw.absent_count + countsRaw.excused_count,
-        }}
-        days={days}
-      />
+      {attendance ? (
+        <StudentAttendancePanel
+          year={year}
+          month={month}
+          rate={attendance[0]}
+          counts={{
+            present: attendance[1].present_count,
+            late: attendance[1].late_count,
+            absent: attendance[1].absent_count + attendance[1].excused_count,
+          }}
+          days={buildMonthDays(year, month, attendance[2])}
+        />
+      ) : (
+        <section className="bg-white border border-amber-100 rounded-lg p-6">
+          <h2 className="font-semibold">출결</h2>
+          <p className="text-sm text-slate-400 mt-2">
+            출결 정보를 불러오지 못했습니다. 잠시 후 새로고침해주세요.
+          </p>
+        </section>
+      )}
       <ChildAssignment studentId={student.id} />
       <StudentNotes
         studentId={student.id}

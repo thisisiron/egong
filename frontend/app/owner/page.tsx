@@ -9,7 +9,11 @@ export default async function OwnerDashboard() {
     countStudents(),
     countTeachers(),
     countClasses(),
-    getTodaySessionsSummary(),
+    // fail-soft — 출결 카드 하나의 실패가 대시보드 전체를 죽이지 않게
+    getTodaySessionsSummary().catch((e: unknown) => {
+      console.error('오늘 출결 현황 조회 실패:', e)
+      return null
+    }),
   ])
 
   return (
@@ -22,7 +26,13 @@ export default async function OwnerDashboard() {
       </div>
       <section className="space-y-2">
         <h2 className="font-semibold">오늘 출결 현황</h2>
-        <TodayAttendance items={today} />
+        {today ? (
+          <TodayAttendance items={today} />
+        ) : (
+          <p className="text-sm text-slate-400 bg-white border border-amber-100 rounded-lg p-6 text-center">
+            오늘 출결 현황을 불러오지 못했습니다. 잠시 후 새로고침해주세요.
+          </p>
+        )}
       </section>
     </div>
   )

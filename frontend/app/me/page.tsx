@@ -41,17 +41,23 @@ export default async function MyStudentPage({
   const range = monthRange(now)
   const { year, month } = kstParts(now)
 
-  const [rate, counts, student, monthAttRaw, recentSessions, announcements] =
+  // 출결 3종은 묶어서 fail-soft — 출결 조회 실패가 대시보드 전체를 죽이지 않게.
+  const attendancePromise = Promise.all([
+    getAttendanceRate(targetStudentId, range.from, range.to),
+    getAttendanceCounts(targetStudentId, range.from, range.to),
+    getStudentAttendanceWithDates(targetStudentId, range.fromIso, range.toIso),
+  ]).catch((e: unknown) => {
+    console.error('출결 조회 실패:', e)
+    return null
+  })
+
+  const [student, recentSessions, announcements, attendance] =
     await Promise.all([
-      getAttendanceRate(targetStudentId, range.from, range.to),
-      getAttendanceCounts(targetStudentId, range.from, range.to),
       getStudentProfile(targetStudentId),
-      getStudentAttendanceWithDates(targetStudentId),
       getRecentAttendanceSessions(targetStudentId, 6),
       listAnnouncementsForStudent(targetStudentId),
+      attendancePromise,
     ])
-
-  const days = buildMonthDays(year, month, monthAttRaw, now)
 
   return (
     <div className="space-y-6">
@@ -80,16 +86,28 @@ export default async function MyStudentPage({
         )}
       </section>
 
-      <AttendanceStats
-        rate={rate}
-        present={counts.present_count}
-        late={counts.late_count}
-        absent={counts.absent_count + counts.excused_count}
-      />
+      {attendance ? (
+        <>
+          <AttendanceStats
+            rate={attendance[0]}
+            present={attendance[1].present_count}
+            late={attendance[1].late_count}
+            absent={attendance[1].absent_count + attendance[1].excused_count}
+          />
 
-      <section className="bg-white border border-amber-100 rounded-lg p-4">
-        <AttendanceCalendar year={year} month={month} days={days} />
-      </section>
+          <section className="bg-white border border-amber-100 rounded-lg p-4">
+            <AttendanceCalendar
+              year={year}
+              month={month}
+              days={buildMonthDays(year, month, attendance[2], now)}
+            />
+          </section>
+        </>
+      ) : (
+        <section className="bg-white border border-amber-100 rounded-lg p-4 text-sm text-slate-400 text-center">
+          출결 정보를 불러오지 못했습니다. 잠시 후 새로고침해주세요.
+        </section>
+      )}
 
       <section className="space-y-2">
         <h2 className="font-semibold text-sm">🎬 최근 수업 영상</h2>
