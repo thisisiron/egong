@@ -40,7 +40,7 @@ export function TodayAttendance({ items }: Props) {
                     ? 'text-green-600'
                     : unmarked
                       ? 'text-slate-400'
-                      : 'text-indigo-600 font-medium'
+                      : 'text-amber-700 font-medium'
                 }`}
               >
                 {complete

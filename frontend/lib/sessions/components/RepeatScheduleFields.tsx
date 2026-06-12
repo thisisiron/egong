@@ -151,7 +151,7 @@ export function RepeatScheduleFields({ value, onChange }: Props) {
             ))}
           </div>
           {showMonthlyWarning && (
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-amber-700 mt-1">
               ⚠ 29·30·31일은 해당 일자가 없는 달(2월 등)에는 생성되지 않습니다.
             </p>
           )}
