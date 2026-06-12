@@ -38,7 +38,7 @@ export function Sidebar({ navKey, role, displayName, academyName, initialCollaps
     >
       <div className={cn('flex items-center gap-2 px-3 py-4', collapsed && 'justify-center px-2')}>
         {collapsed ? (
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-base">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-base shadow-sm">
             🥚
           </span>
         ) : (
