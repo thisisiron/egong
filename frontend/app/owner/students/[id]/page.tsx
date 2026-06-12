@@ -11,17 +11,41 @@ import {
 } from '@/lib/students/actions'
 import { ChildAssignment } from './_components/ChildAssignment'
 import { StudentNotes } from '@/lib/students/components/StudentNotes'
+import { monthFromParam, monthRange } from '@/lib/date'
+import {
+  getAttendanceRate,
+  getAttendanceCounts,
+  getStudentAttendanceWithDates,
+} from '@/lib/attendance/service'
+import { buildMonthDays } from '@/lib/attendance/calendar'
+import { StudentAttendancePanel } from '@/lib/attendance/components/StudentAttendancePanel'
 
 export default async function StudentDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ month?: string }>
 }) {
   const { id } = await params
+  const { month: monthParam } = await searchParams
   const view = await getStudentDetail(id)
   if (!view) notFound()
-  const [notes, user] = await Promise.all([listStudentNotes(id), getSessionUser()])
+
+  const monthDate = monthFromParam(monthParam)
+  const range = monthRange(monthDate)
+  const year = monthDate.getFullYear()
+  const month = monthDate.getMonth() + 1
+
+  const [notes, user, rate, countsRaw, attRows] = await Promise.all([
+    listStudentNotes(id),
+    getSessionUser(),
+    getAttendanceRate(id, range.from, range.to),
+    getAttendanceCounts(id, range.from, range.to),
+    getStudentAttendanceWithDates(id),
+  ])
   if (!user) notFound()
+  const days = buildMonthDays(year, month, attRows)
   const { student, parentLinks } = view
 
   return (
@@ -116,6 +140,17 @@ export default async function StudentDetailPage({
         </form>
       </section>
 
+      <StudentAttendancePanel
+        year={year}
+        month={month}
+        rate={rate}
+        counts={{
+          present: countsRaw.present_count,
+          late: countsRaw.late_count,
+          absent: countsRaw.absent_count + countsRaw.excused_count,
+        }}
+        days={days}
+      />
       <ChildAssignment studentId={student.id} />
       <StudentNotes
         studentId={student.id}
