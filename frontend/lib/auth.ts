@@ -51,3 +51,8 @@ export function roleHome(role: UserRole): string {
     case 'parent': return '/me'
   }
 }
+
+/** 스태프(owner/teacher) 라우트 base. 액션의 redirect/revalidate 경로를 역할에 맞춤. */
+export function staffBasePath(role: UserRole): '/owner' | '/teacher' {
+  return role === 'teacher' ? '/teacher' : '/owner'
+}
