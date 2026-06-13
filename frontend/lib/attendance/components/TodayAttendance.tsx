@@ -2,10 +2,10 @@ import Link from 'next/link'
 import { formatTimeKR } from '@/lib/format'
 import type { TodaySessionSummary } from '../types'
 
-type Props = { items: TodaySessionSummary[] }
+type Props = { items: TodaySessionSummary[]; basePath: string }
 
 /** 오늘 세션 카드 리스트 — 완료(실선·녹색)/부분(실선·amber)/미입력(점선·회색) 3종. */
-export function TodayAttendance({ items }: Props) {
+export function TodayAttendance({ items, basePath }: Props) {
   if (items.length === 0) {
     return (
       <p className="text-sm text-slate-400 bg-white border border-gray-200 rounded-lg p-6 text-center">
@@ -21,7 +21,7 @@ export function TodayAttendance({ items }: Props) {
         return (
           <Link
             key={s.session_id}
-            href={`/owner/classes/${s.class_id}`}
+            href={`${basePath}/classes/${s.class_id}`}
             className={`block border rounded-lg p-3 transition-colors ${
               unmarked
                 ? 'border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100'

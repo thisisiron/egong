@@ -68,6 +68,7 @@ function revalidateAll(classId: string) {
   revalidatePath(`/owner/classes/${classId}`)
   revalidatePath('/owner/schedule')
   revalidatePath('/teacher')
+  revalidatePath('/teacher/schedule')
 }
 
 export async function createSessionAction(

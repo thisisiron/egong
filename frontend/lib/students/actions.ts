@@ -106,7 +106,7 @@ export async function addParentLinkAction(formData: FormData) {
   const parentId = await resolveParentIdByEmail(parsed.parent_email)
   if (!parentId) {
     throw new Error(
-      `해당 이메일의 학부모를 찾을 수 없습니다: ${parsed.parent_email}. 먼저 /owner/parents/new 에서 학부모를 등록하세요.`
+      `해당 이메일의 학부모를 찾을 수 없습니다: ${parsed.parent_email}. 먼저 ${staffBasePath(user.role)}/parents/new 에서 학부모를 등록하세요.`
     )
   }
 

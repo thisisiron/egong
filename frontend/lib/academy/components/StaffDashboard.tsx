@@ -97,7 +97,7 @@ export async function StaffDashboard({ basePath, roleLabel }: StaffDashboardProp
       <section className="space-y-2">
         <h2 className="font-semibold text-slate-900">오늘 출결 현황</h2>
         {today ? (
-          <TodayAttendance items={today} />
+          <TodayAttendance items={today} basePath={basePath} />
         ) : (
           <p className="rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-slate-400">
             오늘 출결 현황을 불러오지 못했습니다. 잠시 후 새로고침해주세요.
@@ -106,7 +106,7 @@ export async function StaffDashboard({ basePath, roleLabel }: StaffDashboardProp
       </section>
 
       {announcements ? (
-        <RecentAnnouncementsCard items={announcements} />
+        <RecentAnnouncementsCard items={announcements} announcementsPath={`${basePath}/announcements`} />
       ) : (
         <p className="rounded-xl border border-gray-200 bg-white p-6 text-center text-sm text-slate-400">
           최근 공지를 불러오지 못했습니다.
