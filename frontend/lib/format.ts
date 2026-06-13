@@ -29,19 +29,29 @@ export function formatPhoneKR(phone: string | null | undefined, fallback = '-'):
 /**
  * ISO timestamp → "2026. 6. 12. 오후 2:30" 형태의 한국어 일시.
  * 잘못된 입력은 원본 그대로 반환.
- * 서버/클라이언트 어디서 실행돼도 KST 기준 (timeZone 고정).
+ * 서버/클라이언트 어디서 실행돼도 동일 (KST 고정 + 오전/오후 직접 계산).
+ *
+ * 오전/오후(dayPeriod)는 ICU 빌드에 의존(서버 small-icu는 "PM", 브라우저는 "오후")해
+ * hydration mismatch를 일으키므로, hourCycle 'h23'으로 24시간 값을 받아 직접 조립한다.
  */
 export function formatDateTimeKR(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleString('ko-KR', {
+  const parts = new Intl.DateTimeFormat('ko-KR', {
     timeZone: 'Asia/Seoul',
     year: 'numeric',
     month: 'numeric',
     day: 'numeric',
-    hour: 'numeric',
+    hour: '2-digit',
     minute: '2-digit',
-  })
+    hourCycle: 'h23',
+  }).formatToParts(d)
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? ''
+  const h24 = Number(get('hour'))
+  const period = h24 < 12 ? '오전' : '오후'
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12
+  return `${get('year')}. ${get('month')}. ${get('day')}. ${period} ${h12}:${get('minute')}`
 }
 
 /** ISO timestamp → "14:00" (KST 고정 — 서버/클라이언트 어디서든 동일). */
