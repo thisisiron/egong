@@ -9,6 +9,8 @@ type Props = {
   items: Notification[]
   /** 항목 클릭 시(드롭다운 닫기 등) */
   onNavigate?: () => void
+  /** 읽지 않은 항목 클릭 시 뱃지 감소 */
+  onItemRead?: () => void
 }
 
 /** 상대 시각 — "방금 전 / N분 전 / N시간 전 / M월 D일". */
@@ -22,7 +24,7 @@ function relTime(iso: string): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일`
 }
 
-export function NotificationList({ items, onNavigate }: Props) {
+export function NotificationList({ items, onNavigate, onItemRead }: Props) {
   const [, startTransition] = useTransition()
 
   if (items.length === 0) {
@@ -36,7 +38,10 @@ export function NotificationList({ items, onNavigate }: Props) {
           <Link
             href={n.link}
             onClick={() => {
-              if (!n.read_at) startTransition(() => markNotificationReadAction(n.id))
+              if (!n.read_at) {
+                startTransition(() => markNotificationReadAction(n.id))
+                onItemRead?.()
+              }
               onNavigate?.()
             }}
             className="flex flex-col gap-0.5 border-b border-gray-100 px-4 py-3 hover:bg-gray-50"

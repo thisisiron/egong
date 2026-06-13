@@ -9,9 +9,10 @@ import { NotificationList } from './NotificationList'
 type Props = {
   initialItems: Notification[]
   initialUnread: number
+  align?: 'left' | 'right'
 }
 
-export function NotificationBell({ initialItems, initialUnread }: Props) {
+export function NotificationBell({ initialItems, initialUnread, align = 'right' }: Props) {
   const [open, setOpen] = useState(false)
   const [unread, setUnread] = useState(initialUnread)
   const [, startTransition] = useTransition()
@@ -32,6 +33,10 @@ export function NotificationBell({ initialItems, initialUnread }: Props) {
     startTransition(() => markAllReadAction())
   }
 
+  function handleItemRead() {
+    setUnread((prev) => Math.max(0, prev - 1))
+  }
+
   return (
     <div ref={ref} className="relative">
       <button
@@ -50,7 +55,7 @@ export function NotificationBell({ initialItems, initialUnread }: Props) {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-72 rounded-lg border border-gray-200 bg-white shadow-lg">
+        <div className={`absolute ${align === 'left' ? 'left-0' : 'right-0'} z-50 mt-2 w-72 rounded-lg border border-gray-200 bg-white shadow-lg`}>
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2">
             <span className="text-sm font-medium text-slate-700">알림</span>
             {unread > 0 && (
@@ -63,7 +68,7 @@ export function NotificationBell({ initialItems, initialUnread }: Props) {
               </button>
             )}
           </div>
-          <NotificationList items={initialItems} onNavigate={() => setOpen(false)} />
+          <NotificationList items={initialItems} onNavigate={() => setOpen(false)} onItemRead={handleItemRead} />
         </div>
       )}
     </div>
