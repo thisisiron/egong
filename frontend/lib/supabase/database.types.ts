@@ -197,6 +197,7 @@ export type Database = {
           created_by: string | null
           id: string
           title: string
+          type: string
           updated_at: string
         }
         Insert: {
@@ -208,6 +209,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           title: string
+          type?: string
           updated_at?: string
         }
         Update: {
@@ -219,6 +221,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           title?: string
+          type?: string
           updated_at?: string
         }
         Relationships: [
@@ -239,6 +242,57 @@ export type Database = {
           {
             foreignKeyName: "announcements_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          academy_id: string
+          created_at: string
+          id: string
+          link: string
+          read_at: string | null
+          source_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          id?: string
+          link: string
+          read_at?: string | null
+          source_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          id?: string
+          link?: string
+          read_at?: string | null
+          source_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -763,6 +817,10 @@ export type Database = {
       }
       attendance_rate: {
         Args: { p_from: string; p_student_id: string; p_to: string }
+        Returns: number
+      }
+      create_announcement_notifications: {
+        Args: { p_announcement_id: string; p_roles: string[] }
         Returns: number
       }
       current_user_academy: { Args: never; Returns: string }
