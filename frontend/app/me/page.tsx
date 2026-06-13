@@ -88,7 +88,12 @@ export default async function MyStudentPage({
       </header>
 
       <section className="space-y-2">
-        <h2 className="font-semibold text-sm">📢 공지사항</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-sm">📢 공지사항</h2>
+          <a href="/me/board" className="text-xs text-indigo-600 hover:underline">
+            게시판 전체보기 →
+          </a>
+        </div>
         {announcements.map((a) => (
           <AnnouncementCard key={a.id} announcement={a} canManage={false} />
         ))}

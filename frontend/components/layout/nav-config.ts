@@ -1,6 +1,7 @@
 import {
   Building2,
   CalendarDays,
+  ClipboardList,
   FileText,
   GraduationCap,
   Home,
@@ -56,7 +57,14 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
       ],
     },
   ],
-  me: [{ items: [{ href: '/me', label: '홈', icon: Home }] }],
+  me: [
+    {
+      items: [
+        { href: '/me', label: '홈', icon: Home },
+        { href: '/me/board', label: '게시판', icon: ClipboardList },
+      ],
+    },
+  ],
 }
 
 export type NavKey = keyof typeof NAV

@@ -6,9 +6,11 @@ type Child = { id: string; name: string; grade: string | null }
 export function ChildSelector({
   items,
   current,
+  basePath = '/me',
 }: {
   items: Child[]
   current: string
+  basePath?: string
 }) {
   const router = useRouter()
   const params = useSearchParams()
@@ -19,7 +21,7 @@ export function ChildSelector({
       onChange={(e) => {
         const next = new URLSearchParams(params.toString())
         next.set('child', e.target.value)
-        router.push(`/me?${next.toString()}`)
+        router.push(`${basePath}?${next.toString()}`)
       }}
       className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
     >
