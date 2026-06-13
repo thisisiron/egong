@@ -16,11 +16,11 @@ import {
 } from '../types'
 import { BusinessVerification as BusinessVerificationPanel } from './BusinessVerification'
 import { BusinessTypeRadio } from './BusinessTypeRadio'
-import { FileUpload } from './FileUpload'
+import { StorageFileUpload, type UploadedFile } from '@/components/ui/StorageFileUpload'
 
 export function ApplicationForm() {
   const [businessType, setBusinessType] = useState<BusinessType | null>(null)
-  const [filePath, setFilePath] = useState<string | null>(null)
+  const [files, setFiles] = useState<UploadedFile[]>([])
   const [verification, setVerification] = useState<BusinessVerification | null>(null)
   const [agreed, setAgreed] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -43,7 +43,7 @@ export function ApplicationForm() {
       setError('사업자 유형을 선택하세요')
       return
     }
-    if (fileRequired && !filePath) {
+    if (fileRequired && files.length === 0) {
       setError('사업자등록증 파일을 첨부하세요')
       return
     }
@@ -151,12 +151,14 @@ export function ApplicationForm() {
               <Label>
                 사업자등록증 첨부 {fileRequired ? '*' : <span className="text-slate-400">(선택)</span>}
               </Label>
-              <FileUpload
-                currentPath={filePath}
-                onUploaded={setFilePath}
-                optional={!fileRequired}
+              <StorageFileUpload
+                bucket="business-docs"
+                pathPrefix="pending"
+                value={files}
+                onChange={setFiles}
+                multiple={false}
               />
-              <input type="hidden" name="registration_file_path" value={filePath ?? ''} />
+              <input type="hidden" name="registration_file_path" value={files[0]?.path ?? ''} />
             </div>
 
             <Field
