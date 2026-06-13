@@ -18,15 +18,39 @@ function revalidateAssignments() {
   revalidatePath('/me/assignments')
 }
 
-/** owner면 academy 일치, teacher면 담당 반인지. 통과 시 academyId 반환. */
+/** owner면 class가 자기 학원 소속인지, teacher면 담당 반인지 재검증. 통과 시 academyId 반환. */
 async function assertCanAssignToClass(classId: string): Promise<string> {
   const user = await requireRole(['owner', 'teacher'])
   if (!user.academyId) throw new Error('소속 학원 정보가 없습니다.')
   if (user.role === 'teacher') {
     const mine = await getMyTeachingClasses()
     if (!mine.some((c) => c.id === classId)) throw new Error('담당 반이 아닙니다.')
+  } else {
+    const supabase = await createClient()
+    const { data: cls } = await supabase
+      .from('classes').select('academy_id').eq('id', classId).maybeSingle()
+    if (!cls || cls.academy_id !== user.academyId) throw new Error('잘못된 반입니다.')
   }
   return user.academyId
+}
+
+/** 타겟 과제 소유권 확인 — owner: 학원 일치, teacher: 본인 작성. 통과 시 row 반환. */
+async function verifyAssignmentOwnership(
+  id: string
+): Promise<{ academy_id: string; created_by: string | null; class_id: string }> {
+  const user = await requireRole(['owner', 'teacher'])
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('assignments')
+    .select('academy_id, created_by, class_id')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  const allowed =
+    !!data &&
+    (user.role === 'owner' ? data.academy_id === user.academyId : data.created_by === user.id)
+  if (!allowed || !data) throw new Error('권한이 없습니다.')
+  return data
 }
 
 export async function createAssignmentAction(formData: FormData) {
@@ -76,7 +100,7 @@ export async function updateAssignmentAction(formData: FormData) {
     description: formData.get('description'),
     due_at: formData.get('due_at'),
   })
-  await requireRole(['owner', 'teacher']) // RLS가 소유권 강제 (owner academy / teacher created_by)
+  await verifyAssignmentOwnership(parsed.id)
   const supabase = await createClient()
   const { error } = await supabase
     .from('assignments')
@@ -88,7 +112,7 @@ export async function updateAssignmentAction(formData: FormData) {
 
 export async function deleteAssignmentAction(formData: FormData) {
   const id = assignmentIdSchema.parse(formData.get('id'))
-  await requireRole(['owner', 'teacher'])
+  await verifyAssignmentOwnership(id)
   const supabase = await createClient()
   const { error } = await supabase.from('assignments').delete().eq('id', id)
   if (error) throw new Error(error.message)
@@ -118,7 +142,7 @@ export async function submitAssignmentAction(formData: FormData) {
       {
         assignment_id: parsed.assignment_id,
         student_id: stu.id,
-        academy_id: asg.academy_id,
+        academy_id: stu.academy_id,
         class_id: asg.class_id,
         memo: parsed.memo,
         file_paths: parsed.file_paths,
