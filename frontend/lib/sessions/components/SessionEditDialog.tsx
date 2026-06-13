@@ -18,13 +18,19 @@ import {
   createSessionAction,
   updateSessionAction,
   bulkCreateSessionsAction,
+  setSessionCancelledAction,
 } from '@/lib/sessions/actions'
 import { buildRepeatSessions } from '@/lib/sessions/repeat'
 import {
   RepeatScheduleFields,
   type RepeatFieldsValue,
 } from './RepeatScheduleFields'
-import type { Session, TeachingClassOption } from '@/lib/sessions/types'
+import {
+  SESSION_TYPE_META,
+  type Session,
+  type SessionType,
+  type TeachingClassOption,
+} from '@/lib/sessions/types'
 
 // Discriminated union — edit 모드에서는 `existing`이 컴파일타임에 강제됨.
 // (이전 단일 Props 타입은 edit + existing=undefined를 허용해 submit()이 silent no-op
@@ -84,6 +90,8 @@ export function SessionEditDialog(props: Props) {
     classId ?? existing?.class_id ?? teachingClasses?.[0]?.id ?? ''
   )
   const [title, setTitle] = useState(existing?.title ?? '')
+  const [type, setType] = useState<SessionType>(existing?.type ?? 'regular')
+  const [conflictPending, setConflictPending] = useState(false)
   const [scheduledAt, setScheduledAt] = useState(
     existing ? isoToLocalInput(existing.scheduled_at) : nextHourLocal()
   )
@@ -121,6 +129,7 @@ export function SessionEditDialog(props: Props) {
         setUnit(existing.unit ?? '')
         setVideoUrl(existing.video_url ?? '')
         setVideoNotes(existing.video_notes ?? '')
+        setType(existing.type)
       }
     }
   }
@@ -128,6 +137,7 @@ export function SessionEditDialog(props: Props) {
   function reset() {
     setError(null)
     setRepeatResult(null)
+    setConflictPending(false)
     if (mode === 'create') {
       setTitle('')
       setScheduledAt(nextHourLocal())
@@ -180,24 +190,39 @@ export function SessionEditDialog(props: Props) {
     startTransition(async () => {
       try {
         if (mode === 'create') {
-          await createSessionAction({
+          const r = await createSessionAction({
             class_id: selectedClassId,
             title,
             scheduled_at: isoScheduledAt,
             unit: unit.trim() || null,
+            type,
+            force: conflictPending,
           })
+          if (r && 'conflict' in r) {
+            setConflictPending(true)
+            setError('같은 반에 같은 시각 수업이 이미 있습니다. 한 번 더 누르면 그대로 등록합니다.')
+            return
+          }
         } else {
           // TS narrows: mode === 'edit' ⇒ props.existing is Session (non-null).
-          await updateSessionAction({
+          const r = await updateSessionAction({
             id: props.existing.id,
             title,
             scheduled_at: isoScheduledAt,
             unit: unit.trim() || null,
             video_url: videoUrl.trim() || null,
             video_notes: videoNotes.trim() || null,
+            type,
+            force: conflictPending,
           })
+          if (r && 'conflict' in r) {
+            setConflictPending(true)
+            setError('같은 반에 같은 시각 수업이 이미 있습니다. 한 번 더 누르면 그대로 등록합니다.')
+            return
+          }
         }
         setOpen(false)
+        setConflictPending(false)
         reset()
       } catch (e) {
         setError(e instanceof Error ? e.message : '저장에 실패했습니다.')
@@ -264,6 +289,27 @@ export function SessionEditDialog(props: Props) {
             )}
 
             <div className="space-y-1">
+              <Label>수업 종류</Label>
+              <div className="flex gap-2">
+                {(['regular', 'makeup', 'special'] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setType(t)}
+                    className={
+                      'rounded-md px-3 py-1.5 text-sm border ' +
+                      (type === t
+                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-medium'
+                        : 'border-gray-200 text-slate-600 hover:bg-gray-50')
+                    }
+                  >
+                    {SESSION_TYPE_META[t].label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
               <Label htmlFor="title">{repeatOn ? '수업 제목 (접두어)' : '수업 제목'}</Label>
               <Input
                 id="title"
@@ -325,6 +371,37 @@ export function SessionEditDialog(props: Props) {
                   />
                 </div>
               </>
+            )}
+
+            {mode === 'edit' && (
+              <div className="rounded-md border border-gray-200 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-700">
+                    {props.existing.cancelled ? '현재 휴강 처리됨' : '이 수업을 휴강 처리'}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() => {
+                      startTransition(async () => {
+                        try {
+                          await setSessionCancelledAction({
+                            id: props.existing.id,
+                            cancelled: !props.existing.cancelled,
+                            cancel_reason: null,
+                          })
+                          setOpen(false)
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : '처리에 실패했습니다.')
+                        }
+                      })
+                    }}
+                  >
+                    {props.existing.cancelled ? '휴강 해제' : '휴강 처리'}
+                  </Button>
+                </div>
+              </div>
             )}
 
             {error && (
