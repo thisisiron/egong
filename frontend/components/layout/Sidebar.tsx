@@ -6,6 +6,8 @@ import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Logo } from '@/components/Logo'
 import { cn } from '@/lib/utils'
 import type { UserRole } from '@/lib/auth'
+import { NotificationBell } from '@/lib/notifications/components/NotificationBell'
+import type { Notification } from '@/lib/notifications/types'
 import { NavList } from './NavList'
 import { ROLE_LABEL, type NavKey } from './nav-config'
 
@@ -15,11 +17,13 @@ type Props = {
   displayName: string
   academyName: string | null
   initialCollapsed: boolean
+  notifications: Notification[]
+  unreadCount: number
 }
 
 const COOKIE = 'sidebar_collapsed'
 
-export function Sidebar({ navKey, role, displayName, academyName, initialCollapsed }: Props) {
+export function Sidebar({ navKey, role, displayName, academyName, initialCollapsed, notifications, unreadCount }: Props) {
   const [collapsed, setCollapsed] = useState(initialCollapsed)
 
   function toggle() {
@@ -42,7 +46,12 @@ export function Sidebar({ navKey, role, displayName, academyName, initialCollaps
             🥚
           </span>
         ) : (
-          <Logo subtitle={academyName ?? ROLE_LABEL[role]} />
+          <>
+            <Logo subtitle={academyName ?? ROLE_LABEL[role]} />
+            <div className="ml-auto">
+              <NotificationBell initialItems={notifications} initialUnread={unreadCount} />
+            </div>
+          </>
         )}
       </div>
 

@@ -6,6 +6,8 @@ import { LogOut, Menu, X } from 'lucide-react'
 
 import { Logo } from '@/components/Logo'
 import type { UserRole } from '@/lib/auth'
+import { NotificationBell } from '@/lib/notifications/components/NotificationBell'
+import type { Notification } from '@/lib/notifications/types'
 import { NavList } from './NavList'
 import { ROLE_LABEL, type NavKey } from './nav-config'
 
@@ -14,9 +16,11 @@ type Props = {
   role: UserRole
   displayName: string
   academyName: string | null
+  notifications: Notification[]
+  unreadCount: number
 }
 
-export function MobileNav({ navKey, role, displayName, academyName }: Props) {
+export function MobileNav({ navKey, role, displayName, academyName, notifications, unreadCount }: Props) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
@@ -48,6 +52,9 @@ export function MobileNav({ navKey, role, displayName, academyName }: Props) {
           <Menu className="h-5 w-5" />
         </button>
         <Logo subtitle={academyName ?? ROLE_LABEL[role]} />
+        <div className="ml-auto">
+          <NotificationBell initialItems={notifications} initialUnread={unreadCount} />
+        </div>
       </div>
 
       {open && (
