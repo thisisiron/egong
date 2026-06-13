@@ -10,6 +10,7 @@
  */
 
 import { kstParts } from '@/lib/date'
+import type { SessionType } from '@/lib/sessions/types'
 
 export type SessionStatus = 'completed' | 'in_progress' | 'empty' | 'upcoming'
 
@@ -24,6 +25,8 @@ export type SessionSummary = {
   video_url: string | null
   filled_count: number  // attendance row 수
   class_size: number    // 그 반의 활성 학생 수
+  type: SessionType
+  cancelled: boolean
 }
 
 export type SessionCellInfo = {
