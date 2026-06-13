@@ -129,6 +129,16 @@ export async function submitAssignmentAction(formData: FormData) {
     .from('assignments').select('class_id, academy_id').eq('id', parsed.assignment_id).maybeSingle()
   if (!asg) throw new Error('과제를 찾을 수 없습니다.')
 
+  // 수강 등록 재검증 (RLS 위 2차 방어선) — 읽기 RLS에만 의존하지 않고 그 반 재원생인지 명시 확인.
+  const { data: enrolled } = await supabase
+    .from('class_students')
+    .select('id')
+    .eq('class_id', asg.class_id)
+    .eq('student_id', stu.id)
+    .is('left_at', null)
+    .maybeSingle()
+  if (!enrolled) throw new Error('이 과제를 제출할 권한이 없습니다.')
+
   const { data: saved, error } = await supabase
     .from('assignment_submissions')
     .upsert(
