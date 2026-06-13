@@ -3,7 +3,7 @@ import { getSessionUser } from '@/lib/auth'
 import { getStudentDetail, listStudentNotes } from '@/lib/students/service'
 import { StudentDetailView } from '@/lib/students/components/StudentDetailView'
 
-export default async function StudentDetailPage({
+export default async function TeacherStudentDetailPage({
   params,
   searchParams,
 }: {
