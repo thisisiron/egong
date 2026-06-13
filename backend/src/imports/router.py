@@ -10,7 +10,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
-from src.auth.dependencies import CurrentUser, require_owner
+from src.auth.dependencies import CurrentUser, require_owner_or_teacher
 from src.imports.schemas import ImportResult
 from src.imports.service import (
     ParseError,
@@ -41,7 +41,7 @@ def _academy_id(owner: CurrentUser) -> str:
 @router.post("/students", response_model=ImportResult)
 async def import_students(
     file: Annotated[UploadFile, File()],
-    owner: Annotated[CurrentUser, Depends(require_owner)],
+    owner: Annotated[CurrentUser, Depends(require_owner_or_teacher)],
 ):
     try:
         rows = parse_students_csv(await _read_csv(file))
@@ -54,7 +54,7 @@ async def import_students(
 @router.post("/teachers", response_model=ImportResult)
 async def import_teachers(
     file: Annotated[UploadFile, File()],
-    owner: Annotated[CurrentUser, Depends(require_owner)],
+    owner: Annotated[CurrentUser, Depends(require_owner_or_teacher)],
 ):
     try:
         rows = parse_teachers_csv(await _read_csv(file))
@@ -67,7 +67,7 @@ async def import_teachers(
 @router.post("/classes", response_model=ImportResult)
 async def import_classes(
     file: Annotated[UploadFile, File()],
-    owner: Annotated[CurrentUser, Depends(require_owner)],
+    owner: Annotated[CurrentUser, Depends(require_owner_or_teacher)],
 ):
     try:
         rows = parse_classes_csv(await _read_csv(file))
