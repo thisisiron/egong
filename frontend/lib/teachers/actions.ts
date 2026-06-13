@@ -2,10 +2,10 @@
 
 import { redirect } from 'next/navigation'
 import { apiFetch } from '@/lib/api/client'
-import { requireRole } from '@/lib/auth'
+import { requireRole, staffBasePath } from '@/lib/auth'
 
 export async function createTeacherAction(formData: FormData) {
-  await requireRole(['owner'])
+  const user = await requireRole(['owner', 'teacher'])
 
   await apiFetch('/owner/teachers', {
     method: 'POST',
@@ -16,5 +16,5 @@ export async function createTeacherAction(formData: FormData) {
       phone: String(formData.get('phone') || '') || null,
     }),
   })
-  redirect('/owner/teachers')
+  redirect(`${staffBasePath(user.role)}/teachers`)
 }

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { requireRole, getSessionUser } from '@/lib/auth'
+import { requireRole, getSessionUser, staffBasePath } from '@/lib/auth'
 import { studentBelongsToAcademy } from '@/lib/students/service'
 import { teacherBelongsToAcademy } from '@/lib/teachers/service'
 import { createClassSchema } from './schemas'
@@ -23,8 +23,8 @@ async function verifyClassOwnership(classId: string): Promise<void> {
 }
 
 export async function createClassAction(formData: FormData) {
-  const owner = await requireRole(['owner'])
-  if (!owner.academyId) throw new Error('소속 학원 정보가 없습니다.')
+  const user = await requireRole(['owner', 'teacher'])
+  if (!user.academyId) throw new Error('소속 학원 정보가 없습니다.')
 
   const parsed = createClassSchema.parse({
     name: formData.get('name'),
@@ -36,7 +36,7 @@ export async function createClassAction(formData: FormData) {
   const { data, error } = await supabase
     .from('classes')
     .insert({
-      academy_id: owner.academyId,
+      academy_id: user.academyId,
       name: parsed.name,
       level: parsed.level,
       description: parsed.description,
@@ -44,17 +44,17 @@ export async function createClassAction(formData: FormData) {
     .select('id')
     .single()
   if (error) throw new Error(error.message)
-  redirect(`/owner/classes/${data.id}`)
+  redirect(`${staffBasePath(user.role)}/classes/${data.id}`)
 }
 
 export async function setClassTeacherAction(formData: FormData) {
-  const owner = await requireRole(['owner'])
-  if (!owner.academyId) throw new Error('소속 학원 정보가 없습니다.')
+  const user = await requireRole(['owner', 'teacher'])
+  if (!user.academyId) throw new Error('소속 학원 정보가 없습니다.')
   const classId = String(formData.get('class_id'))
   const newTeacherId = String(formData.get('teacher_id'))
   const currentTeacherId = formData.get('current_teacher_id')
   await verifyClassOwnership(classId)
-  if (!(await teacherBelongsToAcademy(newTeacherId, owner.academyId))) {
+  if (!(await teacherBelongsToAcademy(newTeacherId, user.academyId))) {
     throw new Error('권한이 없습니다.')
   }
 
@@ -73,16 +73,16 @@ export async function setClassTeacherAction(formData: FormData) {
     .from('class_teachers')
     .insert({ class_id: classId, teacher_id: newTeacherId })
   if (error) throw new Error(error.message)
-  revalidatePath(`/owner/classes/${classId}`)
+  revalidatePath(`${staffBasePath(user.role)}/classes/${classId}`)
 }
 
 export async function addClassStudentAction(formData: FormData) {
-  const owner = await requireRole(['owner'])
-  if (!owner.academyId) throw new Error('소속 학원 정보가 없습니다.')
+  const user = await requireRole(['owner', 'teacher'])
+  if (!user.academyId) throw new Error('소속 학원 정보가 없습니다.')
   const classId = String(formData.get('class_id'))
   const studentId = String(formData.get('student_id'))
   await verifyClassOwnership(classId)
-  if (!(await studentBelongsToAcademy(studentId, owner.academyId))) {
+  if (!(await studentBelongsToAcademy(studentId, user.academyId))) {
     throw new Error('권한이 없습니다.')
   }
 
@@ -91,11 +91,11 @@ export async function addClassStudentAction(formData: FormData) {
     .from('class_students')
     .insert({ class_id: classId, student_id: studentId })
   if (error) throw new Error(error.message)
-  revalidatePath(`/owner/classes/${classId}`)
+  revalidatePath(`${staffBasePath(user.role)}/classes/${classId}`)
 }
 
 export async function removeClassStudentAction(formData: FormData) {
-  await requireRole(['owner'])
+  const user = await requireRole(['owner', 'teacher'])
   const assignmentId = String(formData.get('assignment_id'))
   const classId = String(formData.get('class_id'))
   await verifyClassOwnership(classId)
@@ -108,5 +108,5 @@ export async function removeClassStudentAction(formData: FormData) {
     .eq('id', assignmentId)
     .eq('class_id', classId)
   if (error) throw new Error(error.message)
-  revalidatePath(`/owner/classes/${classId}`)
+  revalidatePath(`${staffBasePath(user.role)}/classes/${classId}`)
 }

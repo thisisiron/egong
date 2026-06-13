@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { requireRole, getSessionUser } from '@/lib/auth'
+import { requireRole, getSessionUser, staffBasePath } from '@/lib/auth'
 import { resolveParentIdByEmail } from '@/lib/parents/service'
 import { classBelongsToAcademy } from '@/lib/classes/service'
 import { studentTaughtByMe } from './service'
@@ -41,8 +41,8 @@ async function verifyStudentOwnership(studentId: string): Promise<void> {
 }
 
 export async function createStudentAction(formData: FormData) {
-  const owner = await requireRole(['owner'])
-  if (!owner.academyId) throw new Error('소속 학원 정보가 없습니다.')
+  const user = await requireRole(['owner', 'teacher'])
+  if (!user.academyId) throw new Error('소속 학원 정보가 없습니다.')
 
   const parsed = createStudentSchema.parse({
     name: formData.get('name'),
@@ -54,7 +54,7 @@ export async function createStudentAction(formData: FormData) {
   const { data, error } = await supabase
     .from('students')
     .insert({
-      academy_id: owner.academyId,
+      academy_id: user.academyId,
       name: parsed.name,
       school: parsed.school,
       grade: parsed.grade,
@@ -64,11 +64,11 @@ export async function createStudentAction(formData: FormData) {
     .single()
   if (error) throw new Error(error.message)
 
-  redirect(`/owner/students/${data.id}`)
+  redirect(`${staffBasePath(user.role)}/students/${data.id}`)
 }
 
 export async function updateStudentAction(formData: FormData) {
-  await requireRole(['owner'])
+  const user = await requireRole(['owner', 'teacher'])
   const parsed = updateStudentSchema.parse({
     id: formData.get('id'),
     name: formData.get('name'),
@@ -89,11 +89,11 @@ export async function updateStudentAction(formData: FormData) {
     })
     .eq('id', parsed.id)
   if (error) throw new Error(error.message)
-  revalidatePath(`/owner/students/${parsed.id}`)
+  revalidatePath(`${staffBasePath(user.role)}/students/${parsed.id}`)
 }
 
 export async function addParentLinkAction(formData: FormData) {
-  await requireRole(['owner'])
+  const user = await requireRole(['owner', 'teacher'])
   const parsed = addParentLinkSchema.parse({
     student_id: formData.get('student_id'),
     parent_email: formData.get('parent_email'),
@@ -117,11 +117,11 @@ export async function addParentLinkAction(formData: FormData) {
     relationship: parsed.relationship,
   })
   if (error) throw new Error(error.message)
-  revalidatePath(`/owner/students/${parsed.student_id}`)
+  revalidatePath(`${staffBasePath(user.role)}/students/${parsed.student_id}`)
 }
 
 export async function removeParentLinkAction(formData: FormData) {
-  await requireRole(['owner'])
+  const user = await requireRole(['owner', 'teacher'])
   const studentId = String(formData.get('student_id'))
   const parentId = String(formData.get('parent_id'))
   await verifyStudentOwnership(studentId)
@@ -133,16 +133,16 @@ export async function removeParentLinkAction(formData: FormData) {
     .eq('student_id', studentId)
     .eq('parent_id', parentId)
   if (error) throw new Error(error.message)
-  revalidatePath(`/owner/students/${studentId}`)
+  revalidatePath(`${staffBasePath(user.role)}/students/${studentId}`)
 }
 
 export async function assignToClassAction(formData: FormData) {
-  const owner = await requireRole(['owner'])
-  if (!owner.academyId) throw new Error('소속 학원 정보가 없습니다.')
+  const user = await requireRole(['owner', 'teacher'])
+  if (!user.academyId) throw new Error('소속 학원 정보가 없습니다.')
   const studentId = String(formData.get('student_id'))
   const classId = String(formData.get('class_id'))
   await verifyStudentOwnership(studentId)
-  if (!(await classBelongsToAcademy(classId, owner.academyId))) {
+  if (!(await classBelongsToAcademy(classId, user.academyId))) {
     throw new Error('권한이 없습니다.')
   }
 
@@ -151,11 +151,11 @@ export async function assignToClassAction(formData: FormData) {
     .from('class_students')
     .insert({ class_id: classId, student_id: studentId })
   if (error) throw new Error(error.message)
-  revalidatePath(`/owner/students/${studentId}`)
+  revalidatePath(`${staffBasePath(user.role)}/students/${studentId}`)
 }
 
 export async function unassignFromClassAction(formData: FormData) {
-  await requireRole(['owner'])
+  const user = await requireRole(['owner', 'teacher'])
   const assignmentId = String(formData.get('assignment_id'))
   const studentId = String(formData.get('student_id'))
   await verifyStudentOwnership(studentId)
@@ -168,7 +168,7 @@ export async function unassignFromClassAction(formData: FormData) {
     .eq('id', assignmentId)
     .eq('student_id', studentId)
   if (error) throw new Error(error.message)
-  revalidatePath(`/owner/students/${studentId}`)
+  revalidatePath(`${staffBasePath(user.role)}/students/${studentId}`)
 }
 
 /** teacher가 이 학생의 담당인지 확인. 아니면 throw. */
@@ -198,7 +198,7 @@ export async function addStudentNoteAction(formData: FormData) {
     author_name: user.displayName,
   })
   if (error) throw new Error(error.message)
-  revalidatePath(`/owner/students/${parsed.student_id}`)
+  revalidatePath(`${staffBasePath(user.role)}/students/${parsed.student_id}`)
   revalidatePath('/teacher/sessions/[id]', 'page')
 }
 
@@ -227,14 +227,14 @@ export async function deleteStudentNoteAction(formData: FormData) {
     .delete()
     .eq('id', noteId)
   if (delError) throw new Error(delError.message)
-  revalidatePath(`/owner/students/${data.student_id}`)
+  revalidatePath(`${staffBasePath(user.role)}/students/${data.student_id}`)
   revalidatePath('/teacher/sessions/[id]', 'page')
 }
 
 export async function uploadStudentsCsvAction(
   formData: FormData
 ): Promise<ImportActionResult> {
-  await requireRole(['owner'])
+  await requireRole(['owner', 'teacher'])
 
   const supabase = await createClient()
   const {
