@@ -1,4 +1,5 @@
 import type { DayCell } from '../calendar'
+import { EVENT_TYPE_META } from '@/lib/events/types'
 
 const COLORS: Record<NonNullable<DayCell['status']>, string> = {
   present: 'bg-green-100 text-green-800',
@@ -38,26 +39,53 @@ export function AttendanceCalendar({
           return (
             <div
               key={i}
-              className={`text-center py-2 rounded font-medium ${cls} ${today}`}
+              className={`relative text-center py-2 rounded font-medium ${cls} ${today}`}
             >
               {c.day}
+              {c.eventTypes.length > 0 && (
+                <div className="flex justify-center gap-0.5 mt-0.5">
+                  {c.eventTypes.map((t) => (
+                    <span
+                      key={t}
+                      className={`inline-block w-1.5 h-1.5 rounded-full ${EVENT_TYPE_META[t].dot}`}
+                      title={EVENT_TYPE_META[t].label}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )
         })}
       </div>
-      <div className="flex gap-3 mt-2 text-xs text-slate-600">
+      <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-600">
         <Legend color="bg-green-100" label="출석" />
         <Legend color="bg-amber-100" label="지각" />
         <Legend color="bg-red-100" label="결석" />
+        <Legend color="bg-rose-500" label="시험" dot />
+        <Legend color="bg-emerald-500" label="상담" dot />
       </div>
     </div>
   )
 }
 
-function Legend({ color, label }: { color: string; label: string }) {
+function Legend({
+  color,
+  label,
+  dot = false,
+}: {
+  color: string
+  label: string
+  dot?: boolean
+}) {
   return (
     <span className="flex items-center gap-1">
-      <span className={`inline-block w-3 h-3 ${color} border`} />
+      <span
+        className={
+          dot
+            ? `inline-block w-2 h-2 rounded-full ${color}`
+            : `inline-block w-3 h-3 ${color} border`
+        }
+      />
       {label}
     </span>
   )

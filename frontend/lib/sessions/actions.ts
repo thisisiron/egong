@@ -7,13 +7,16 @@ import {
   sessionCreateSchema,
   sessionUpdateSchema,
   sessionDeleteSchema,
+  sessionCancelSchema,
   bulkCreateSessionsSchema,
 } from './schemas'
 import type {
   SessionCreateInput,
   SessionUpdateInput,
   SessionDeleteInput,
+  SessionCancelInput,
 } from './schemas'
+import { hasSessionConflict } from './service'
 
 /** owner 또는 teacher만 가능. 추가 권한 검증은 verifyClassAccess가 담당. */
 async function requireOwnerOrTeacher() {
@@ -63,34 +66,43 @@ async function verifyClassAccess(classId: string): Promise<void> {
 /** revalidate 대상 페이지들. owner 페이지·teacher 페이지 둘 다 안전하게 갱신. */
 function revalidateAll(classId: string) {
   revalidatePath(`/owner/classes/${classId}`)
+  revalidatePath('/owner/schedule')
   revalidatePath('/teacher')
 }
 
-export async function createSessionAction(input: SessionCreateInput) {
+export async function createSessionAction(
+  input: SessionCreateInput
+): Promise<{ conflict: true } | void> {
   await requireOwnerOrTeacher()
   const parsed = sessionCreateSchema.parse(input)
   await verifyClassAccess(parsed.class_id)
 
-  const supabase = await createClient()
-  // datetime-local 'YYYY-MM-DDTHH:mm' 은 로컬 시각 → UTC ISO 변환
   const isoScheduledAt = new Date(parsed.scheduled_at).toISOString()
 
+  // 충돌 경고: force가 아니면 같은 반·같은 시각 비휴강 세션 존재 시 중단
+  if (!parsed.force && (await hasSessionConflict(parsed.class_id, isoScheduledAt))) {
+    return { conflict: true }
+  }
+
+  const supabase = await createClient()
   const { error } = await supabase.from('sessions').insert({
     class_id: parsed.class_id,
     title: parsed.title,
     scheduled_at: isoScheduledAt,
     unit: parsed.unit,
+    type: parsed.type,
   })
   if (error) throw new Error(error.message)
 
   revalidateAll(parsed.class_id)
 }
 
-export async function updateSessionAction(input: SessionUpdateInput) {
+export async function updateSessionAction(
+  input: SessionUpdateInput
+): Promise<{ conflict: true } | void> {
   await requireOwnerOrTeacher()
   const parsed = sessionUpdateSchema.parse(input)
 
-  // 권한 검증: 해당 세션의 class_id로 검증
   const supabase = await createClient()
   const { data: existing, error: lookupErr } = await supabase
     .from('sessions')
@@ -103,6 +115,10 @@ export async function updateSessionAction(input: SessionUpdateInput) {
 
   const isoScheduledAt = new Date(parsed.scheduled_at).toISOString()
 
+  if (!parsed.force && (await hasSessionConflict(existing.class_id, isoScheduledAt, parsed.id))) {
+    return { conflict: true }
+  }
+
   const { error } = await supabase
     .from('sessions')
     .update({
@@ -111,6 +127,7 @@ export async function updateSessionAction(input: SessionUpdateInput) {
       unit: parsed.unit,
       video_url: parsed.video_url,
       video_notes: parsed.video_notes,
+      type: parsed.type,
     })
     .eq('id', parsed.id)
   if (error) throw new Error(error.message)
@@ -214,4 +231,31 @@ export async function bulkCreateSessionsAction(input: {
   revalidatePath(`/owner/classes/${parsed.class_id}`)
   revalidatePath('/teacher')
   return { created: data?.length ?? 0, skipped }
+}
+
+/** 휴강 토글 — 삭제 대신 cancelled 플래그. owner/teacher, 소유권 재검증. */
+export async function setSessionCancelledAction(input: SessionCancelInput) {
+  await requireOwnerOrTeacher()
+  const parsed = sessionCancelSchema.parse(input)
+
+  const supabase = await createClient()
+  const { data: existing, error: lookupErr } = await supabase
+    .from('sessions')
+    .select('class_id')
+    .eq('id', parsed.id)
+    .maybeSingle()
+  if (lookupErr) throw new Error(lookupErr.message)
+  if (!existing) throw new Error('세션을 찾을 수 없습니다.')
+  await verifyClassAccess(existing.class_id)
+
+  const { error } = await supabase
+    .from('sessions')
+    .update({
+      cancelled: parsed.cancelled,
+      cancel_reason: parsed.cancelled ? parsed.cancel_reason : null,
+    })
+    .eq('id', parsed.id)
+  if (error) throw new Error(error.message)
+
+  revalidateAll(existing.class_id)
 }

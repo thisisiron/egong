@@ -155,11 +155,13 @@ export async function getTodaySessionsSummary(): Promise<TodaySessionSummary[]> 
   const supabase = await createClient()
   const { fromIso, toIso } = todayRangeKST()
 
+  // 휴강 세션은 출결 모집단에서 제외
   const { data: sessions, error } = await supabase
     .from('sessions')
     .select('id, class_id, scheduled_at, classes(name)')
     .gte('scheduled_at', fromIso)
     .lt('scheduled_at', toIso)
+    .eq('cancelled', false)
     .order('scheduled_at')
   if (error) throw new Error(error.message)
   if (!sessions || sessions.length === 0) return []

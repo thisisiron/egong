@@ -16,6 +16,7 @@ import {
 } from '@/lib/attendance/service'
 import { listAnnouncementsForStudent } from '@/lib/announcements/service'
 import { AnnouncementCard } from '@/lib/announcements/components/AnnouncementCard'
+import { getEventsInRange } from '@/lib/events/service'
 
 export default async function MyStudentPage({
   searchParams,
@@ -51,12 +52,22 @@ export default async function MyStudentPage({
     return null
   })
 
-  const [student, recentSessions, announcements, attendance] =
+  // 이벤트(시험/상담) 읽기 전용 오버레이 — RLS가 자기 반 + 학원 전체만 반환.
+  // fail-soft: 이벤트 조회 실패가 대시보드를 죽이지 않게.
+  const eventsPromise = getEventsInRange(range.from, range.to).catch(
+    (e: unknown) => {
+      console.error('이벤트 조회 실패:', e)
+      return []
+    }
+  )
+
+  const [student, recentSessions, announcements, attendance, events] =
     await Promise.all([
       getStudentProfile(targetStudentId),
       getRecentAttendanceSessions(targetStudentId, 6),
       listAnnouncementsForStudent(targetStudentId),
       attendancePromise,
+      eventsPromise,
     ])
 
   return (
@@ -99,7 +110,7 @@ export default async function MyStudentPage({
             <AttendanceCalendar
               year={year}
               month={month}
-              days={buildMonthDays(year, month, attendance[2], now)}
+              days={buildMonthDays(year, month, attendance[2], now, events)}
             />
           </section>
         </>

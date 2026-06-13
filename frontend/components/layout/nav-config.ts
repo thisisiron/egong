@@ -1,5 +1,6 @@
 import {
   Building2,
+  CalendarDays,
   FileText,
   GraduationCap,
   Home,
@@ -19,7 +20,12 @@ export type NavSection = { label?: string; items: NavItem[] }
 /** 역할군별 메뉴. 클라이언트 컴포넌트가 직접 import (아이콘은 직렬화 불가 — prop 전달 금지). */
 export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
   owner: [
-    { items: [{ href: '/owner', label: '대시보드', icon: LayoutDashboard }] },
+    {
+      items: [
+        { href: '/owner', label: '대시보드', icon: LayoutDashboard },
+        { href: '/owner/schedule', label: '일정', icon: CalendarDays },
+      ],
+    },
     {
       label: '학사관리',
       items: [
@@ -37,7 +43,7 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
   teacher: [
     {
       items: [
-        { href: '/teacher', label: '내 수업', icon: LayoutDashboard },
+        { href: '/teacher', label: '일정', icon: LayoutDashboard },
         { href: '/teacher/announcements', label: '공지', icon: Megaphone },
       ],
     },

@@ -436,33 +436,106 @@ export type Database = {
           },
         ]
       }
+      schedule_events: {
+        Row: {
+          academy_id: string
+          author_name: string
+          class_id: string | null
+          created_at: string
+          created_by: string | null
+          event_date: string
+          id: string
+          memo: string | null
+          title: string
+          type: Database["public"]["Enums"]["event_type"]
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          author_name: string
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_date: string
+          id?: string
+          memo?: string | null
+          title: string
+          type: Database["public"]["Enums"]["event_type"]
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          author_name?: string
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_date?: string
+          id?: string
+          memo?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["event_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_events_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_events_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions: {
         Row: {
+          cancel_reason: string | null
+          cancelled: boolean
           class_id: string
           created_at: string
           id: string
           scheduled_at: string
           title: string
+          type: Database["public"]["Enums"]["session_type"]
           unit: string | null
           video_notes: string | null
           video_url: string | null
         }
         Insert: {
+          cancel_reason?: string | null
+          cancelled?: boolean
           class_id: string
           created_at?: string
           id?: string
           scheduled_at: string
           title: string
+          type?: Database["public"]["Enums"]["session_type"]
           unit?: string | null
           video_notes?: string | null
           video_url?: string | null
         }
         Update: {
+          cancel_reason?: string | null
+          cancelled?: boolean
           class_id?: string
           created_at?: string
           id?: string
           scheduled_at?: string
           title?: string
+          type?: Database["public"]["Enums"]["session_type"]
           unit?: string | null
           video_notes?: string | null
           video_url?: string | null
@@ -706,7 +779,9 @@ export type Database = {
       attendance_status: "present" | "late" | "absent" | "excused"
       business_type: "individual" | "corporate" | "tutoring" | "planned"
       class_level: "elementary" | "middle" | "high"
+      event_type: "exam" | "consultation"
       parent_relationship: "mother" | "father" | "other"
+      session_type: "regular" | "makeup" | "special"
       student_status: "enrolled" | "paused" | "graduated"
       user_role: "admin" | "owner" | "teacher" | "student" | "parent"
     }
@@ -842,7 +917,9 @@ export const Constants = {
       attendance_status: ["present", "late", "absent", "excused"],
       business_type: ["individual", "corporate", "tutoring", "planned"],
       class_level: ["elementary", "middle", "high"],
+      event_type: ["exam", "consultation"],
       parent_relationship: ["mother", "father", "other"],
+      session_type: ["regular", "makeup", "special"],
       student_status: ["enrolled", "paused", "graduated"],
       user_role: ["admin", "owner", "teacher", "student", "parent"],
     },

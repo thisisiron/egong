@@ -1,16 +1,17 @@
 import { ScheduleCalendar } from '@/lib/schedule/components/ScheduleCalendar'
-import { TeacherSessionAddButton } from '@/lib/sessions/components/TeacherSessionAddButton'
-import { MyRecentSessions } from '@/lib/sessions/components/MyRecentSessions'
-import { getTeacherSessionsInRange } from '@/lib/sessions/service'
+import { SessionEditDialog } from '@/lib/sessions/components/SessionEditDialog'
+import { EventEditDialog } from '@/lib/events/components/EventEditDialog'
+import { Button } from '@/components/ui/button'
+import { getAcademySessionsInRange } from '@/lib/sessions/service'
 import { getEventsInRange } from '@/lib/events/service'
 import { getAttendanceCountsBySessionIds } from '@/lib/attendance/service'
-import { getClassSizes } from '@/lib/classes/service'
+import { getClassSizes, listClasses } from '@/lib/classes/service'
 import { parseCalendarParams, rangeForView, toCellInfo, type SessionSummary } from '@/lib/teacher-calendar'
 import { ymdKST } from '@/lib/date'
 
 type SearchParams = { view?: string; ym?: string; y?: string; day?: string }
 
-export default async function TeacherSchedule({
+export default async function OwnerSchedule({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>
@@ -19,15 +20,16 @@ export default async function TeacherSchedule({
   const { view, ym, year, day } = parseCalendarParams(sp)
   const range = rangeForView(view, ym, year, day)
 
-  const sessions = await getTeacherSessionsInRange(range.from, range.to)
+  const sessions = await getAcademySessionsInRange(range.from, range.to)
   const sessionIds = sessions.map((s) => s.id)
   const classIds = Array.from(new Set(sessions.map((s) => s.class_id).filter(Boolean)))
 
-  const [attCount, sizeByClass, events] = await Promise.all([
+  const [attCount, sizeByClass, events, classes] = await Promise.all([
     getAttendanceCountsBySessionIds(sessionIds),
     getClassSizes(classIds),
     // 이벤트는 날짜 범위(KST)로 — range.from/to는 ISO이므로 ymdKST로 date 경계 산출
     getEventsInRange(ymdKST(new Date(range.from)), ymdKST(new Date(new Date(range.to).getTime() - 1))),
+    listClasses(),
   ])
 
   const summaries: SessionSummary[] = sessions.map((s) => ({
@@ -44,21 +46,27 @@ export default async function TeacherSchedule({
   }))
   const now = new Date()
   const cells = summaries.map((s) => toCellInfo(s, now))
+  const classOptions = classes.map((c) => ({ id: c.id, name: c.name }))
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">일정</h1>
-        <TeacherSessionAddButton />
+        <h1 className="text-2xl font-semibold text-slate-900">일정</h1>
+        <div className="flex gap-2">
+          <SessionEditDialog
+            mode="create"
+            teachingClasses={classOptions}
+            trigger={<Button variant="outline">수업 추가</Button>}
+          />
+          <EventEditDialog
+            mode="create"
+            classes={classOptions}
+            allowAcademyWide
+            trigger={<Button>일정 추가</Button>}
+          />
+        </div>
       </div>
-      <ScheduleCalendar
-        basePath="/teacher"
-        sessionLinkBase="/teacher"
-        searchParams={sp}
-        cells={cells}
-        events={events}
-      />
-      <MyRecentSessions />
+      <ScheduleCalendar basePath="/owner/schedule" searchParams={sp} cells={cells} events={events} />
     </div>
   )
 }

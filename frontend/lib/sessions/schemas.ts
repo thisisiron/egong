@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+const sessionTypeSchema = z.enum(['regular', 'makeup', 'special'])
+
 const titleSchema = z
   .string()
   .trim()
@@ -42,6 +44,8 @@ export const sessionCreateSchema = z.object({
   title: titleSchema,
   scheduled_at: scheduledAtSchema,
   unit: unitSchema,
+  type: sessionTypeSchema.default('regular'),
+  force: z.boolean().optional(),
 })
 
 export const sessionUpdateSchema = z.object({
@@ -51,6 +55,8 @@ export const sessionUpdateSchema = z.object({
   unit: unitSchema,
   video_url: videoUrlSchema,
   video_notes: videoNotesSchema,
+  type: sessionTypeSchema,
+  force: z.boolean().optional(),
 })
 
 export const sessionDeleteSchema = z.object({
@@ -77,3 +83,16 @@ export const bulkCreateSessionsSchema = z.object({
 })
 
 export type BulkCreateSessionsInput = z.infer<typeof bulkCreateSessionsSchema>
+
+export const sessionCancelSchema = z.object({
+  id: z.string().uuid('잘못된 세션 ID 입니다.'),
+  cancelled: z.boolean(),
+  cancel_reason: z
+    .string()
+    .trim()
+    .max(200, '사유는 200자 이내로 입력해주세요.')
+    .optional()
+    .nullable()
+    .transform((v) => (v && v.length > 0 ? v : null)),
+})
+export type SessionCancelInput = z.infer<typeof sessionCancelSchema>
