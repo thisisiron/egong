@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { kstParts, monthRange } from '@/lib/date'
 import type {
   Session,
+  SessionType,
   SessionWithClass,
   TeachingClassOption,
 } from './types'
@@ -16,7 +17,7 @@ export async function getClassSessions(
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('sessions')
-    .select('id, class_id, scheduled_at, title, unit, video_url, video_notes')
+    .select('id, class_id, scheduled_at, title, unit, video_url, video_notes, type, cancelled, cancel_reason')
     .eq('class_id', classId)
     .order('scheduled_at', { ascending: false })
     .limit(limit)
@@ -47,7 +48,7 @@ export async function getMyRecentSessions(
   const { data, error } = await supabase
     .from('sessions')
     .select(
-      'id, class_id, scheduled_at, title, unit, video_url, video_notes, classes!inner(id, name)'
+      'id, class_id, scheduled_at, title, unit, video_url, video_notes, type, cancelled, cancel_reason, classes!inner(id, name)'
     )
     .gte('scheduled_at', since.toISOString())
     .order('scheduled_at', { ascending: false })
@@ -62,6 +63,9 @@ export async function getMyRecentSessions(
       unit: s.unit,
       video_url: s.video_url,
       video_notes: s.video_notes,
+      type: s.type,
+      cancelled: s.cancelled,
+      cancel_reason: s.cancel_reason,
       class_name: cls?.name ?? '-',
     }
   })
@@ -126,6 +130,8 @@ export async function getTeacherSessionsInRange(
     scheduled_at: string
     title: string
     video_url: string | null
+    type: SessionType
+    cancelled: boolean
     class_id: string
     class_name: string
   }>
@@ -133,11 +139,11 @@ export async function getTeacherSessionsInRange(
   const supabase = await createClient()
   const { data } = await supabase
     .from('sessions')
-    .select('id, scheduled_at, title, video_url, classes!inner(id, name)')
+    .select('id, scheduled_at, title, video_url, type, cancelled, classes!inner(id, name)')
     .gte('scheduled_at', fromIso)
     .lt('scheduled_at', toIso)
     .order('scheduled_at')
-  return (data ?? []).map((s: { id: string; scheduled_at: string; title: string; video_url: string | null; classes: unknown }) => {
+  return (data ?? []).map((s: { id: string; scheduled_at: string; title: string; video_url: string | null; type: SessionType; cancelled: boolean; classes: unknown }) => {
     const cls = (Array.isArray(s.classes) ? s.classes[0] : s.classes) as
       | { id: string; name: string }
       | null
@@ -146,8 +152,69 @@ export async function getTeacherSessionsInRange(
       scheduled_at: s.scheduled_at,
       title: s.title,
       video_url: s.video_url,
+      type: s.type,
+      cancelled: s.cancelled,
       class_id: cls?.id ?? '',
       class_name: cls?.name ?? '-',
     }
   })
+}
+
+/** 원장 일정 페이지 — 학원 전체 반의 기간 내 세션. RLS(sessions_owner_all)가 학원 범위. */
+export async function getAcademySessionsInRange(
+  fromIso: string,
+  toIso: string
+): Promise<
+  Array<{
+    id: string
+    scheduled_at: string
+    title: string
+    video_url: string | null
+    type: SessionType
+    cancelled: boolean
+    class_id: string
+    class_name: string
+  }>
+> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('sessions')
+    .select('id, scheduled_at, title, video_url, type, cancelled, classes!inner(id, name)')
+    .gte('scheduled_at', fromIso)
+    .lt('scheduled_at', toIso)
+    .order('scheduled_at')
+  return (data ?? []).map(
+    (s: { id: string; scheduled_at: string; title: string; video_url: string | null; type: SessionType; cancelled: boolean; classes: unknown }) => {
+      const cls = (Array.isArray(s.classes) ? s.classes[0] : s.classes) as { id: string; name: string } | null
+      return {
+        id: s.id,
+        scheduled_at: s.scheduled_at,
+        title: s.title,
+        video_url: s.video_url,
+        type: s.type,
+        cancelled: s.cancelled,
+        class_id: cls?.id ?? '',
+        class_name: cls?.name ?? '-',
+      }
+    }
+  )
+}
+
+/** 충돌 검사 — 같은 반에 같은 시각(분 단위) 비휴강 세션이 있는지. excludeId는 수정 시 자기 자신 제외. */
+export async function hasSessionConflict(
+  classId: string,
+  isoScheduledAt: string,
+  excludeId?: string
+): Promise<boolean> {
+  const supabase = await createClient()
+  let q = supabase
+    .from('sessions')
+    .select('id')
+    .eq('class_id', classId)
+    .eq('scheduled_at', isoScheduledAt)
+    .eq('cancelled', false)
+  if (excludeId) q = q.neq('id', excludeId)
+  const { data, error } = await q.limit(1)
+  if (error) throw new Error(error.message)
+  return (data ?? []).length > 0
 }
