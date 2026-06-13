@@ -116,7 +116,7 @@ BEGIN
         p_announcement_id
     FROM recipients r
     JOIN users u ON u.id = r.uid
-    WHERE r.uid IS NOT NULL AND r.uid <> v_created_by;
+    WHERE r.uid IS NOT NULL AND (v_created_by IS NULL OR r.uid <> v_created_by);
 
     GET DIAGNOSTICS v_count = ROW_COUNT;
     RETURN v_count;
