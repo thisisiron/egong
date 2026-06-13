@@ -9,6 +9,8 @@ type Props = {
   /** 그 날의 회차들 (없으면 empty state) */
   cells: SessionCellInfo[]
   basePath: string
+  /** 세션 상세 링크 base (예: '/teacher'). 없으면 링크 없이 정보만 표시. */
+  sessionLinkBase?: string
   /** 그 날의 이벤트들 (시험/상담) */
   events?: ScheduleEventWithClass[]
 }
@@ -20,7 +22,7 @@ const STATUS_BADGE: Record<SessionCellInfo['status'], { label: string; cls: stri
   upcoming: { label: '📅 예정', cls: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
 }
 
-export function SessionPopup({ day, cells, basePath, events = [] }: Props) {
+export function SessionPopup({ day, cells, sessionLinkBase, events = [] }: Props) {
   if (cells.length === 0 && events.length === 0) {
     return (
       <div className="mt-3 rounded-lg border border-gray-200 bg-white p-4 text-sm text-slate-500">
@@ -79,9 +81,9 @@ export function SessionPopup({ day, cells, basePath, events = [] }: Props) {
                 <span className="text-xs text-slate-400">휴강된 회차예요.</span>
               ) : status === 'upcoming' ? (
                 <span className="text-xs text-slate-400">예정된 회차 — 출결 입력은 수업 시간부터 가능</span>
-              ) : (
+              ) : sessionLinkBase ? (
                 <Link
-                  href={`${basePath}/sessions/${session.id}`}
+                  href={`${sessionLinkBase}/sessions/${session.id}`}
                   className={
                     status === 'empty' || status === 'in_progress'
                       ? 'inline-block px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded hover:bg-indigo-700'
@@ -92,7 +94,7 @@ export function SessionPopup({ day, cells, basePath, events = [] }: Props) {
                     ? '출결 입력하기 →'
                     : '회차 보기'}
                 </Link>
-              )}
+              ) : null}
             </div>
           </div>
         )

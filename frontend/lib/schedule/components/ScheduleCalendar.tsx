@@ -10,11 +10,12 @@ import { SessionPopup } from './SessionPopup'
 import { ScheduleLegend } from './ScheduleLegend'
 
 type Props = {
-  basePath: string                       // '/teacher' 또는 '/owner/schedule'
+  basePath: string                       // '/teacher' 또는 '/owner/schedule' (캘린더 day-URL 네비용)
   searchParams: { view?: string; ym?: string; y?: string; day?: string }
   cells: SessionCellInfo[]
   events: ScheduleEventWithClass[]
   extraParams?: string                   // 링크에 덧붙일 쿼리 (예: '&class=<id>')
+  sessionLinkBase?: string               // 세션 상세 링크 base (예: '/teacher'). 없으면 팝업에 링크 미표시
 }
 
 const VIEW_BTN = (active: boolean) =>
@@ -22,7 +23,7 @@ const VIEW_BTN = (active: boolean) =>
     ? 'px-3 py-1.5 rounded bg-indigo-600 text-white text-sm font-semibold'
     : 'px-3 py-1.5 rounded bg-white border border-gray-200 text-slate-600 text-sm hover:bg-gray-50 hover:border-gray-300'
 
-export function ScheduleCalendar({ basePath, searchParams, cells, events, extraParams = '' }: Props) {
+export function ScheduleCalendar({ basePath, searchParams, cells, events, extraParams = '', sessionLinkBase }: Props) {
   const { view, ym, year, day } = parseCalendarParams(searchParams)
   const range = rangeForView(view, ym, year, day)
   const popupCells = day ? cells.filter((c) => ymdKST(new Date(c.session.scheduled_at)) === day) : []
@@ -65,7 +66,15 @@ export function ScheduleCalendar({ basePath, searchParams, cells, events, extraP
 
       <ScheduleLegend />
 
-      {day && view !== 'year' && <SessionPopup day={day} cells={popupCells} events={dayEvents} basePath={basePath} />}
+      {day && view !== 'year' && (
+        <SessionPopup
+          day={day}
+          cells={popupCells}
+          events={dayEvents}
+          basePath={basePath}
+          sessionLinkBase={sessionLinkBase}
+        />
+      )}
     </div>
   )
 }

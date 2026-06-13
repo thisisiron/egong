@@ -37,7 +37,7 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
   teacher: [
     {
       items: [
-        { href: '/teacher', label: '내 수업', icon: LayoutDashboard },
+        { href: '/teacher', label: '일정', icon: LayoutDashboard },
         { href: '/teacher/announcements', label: '공지', icon: Megaphone },
       ],
     },
