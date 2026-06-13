@@ -4,6 +4,7 @@ export type Announcement = {
   id: string
   academy_id: string
   class_id: string | null // null = 학원 전체
+  type: string
   title: string
   body: string
   created_by: string | null

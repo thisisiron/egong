@@ -10,6 +10,7 @@ import {
   createAnnouncementSchema,
   updateAnnouncementSchema,
 } from './schemas'
+import { dispatchAnnouncementNotifications } from '@/lib/notifications/service'
 
 /** 공지가 노출되는 경로 일괄 재검증. */
 function revalidateAnnouncements() {
@@ -26,6 +27,7 @@ export async function createAnnouncementAction(formData: FormData) {
     title: formData.get('title'),
     body: formData.get('body'),
     class_id: formData.get('class_id') ?? '',
+    notify_roles: formData.getAll('notify_roles'),
   })
 
   // 소유권 재검증 (RLS 위 2차 방어선)
@@ -42,15 +44,29 @@ export async function createAnnouncementAction(formData: FormData) {
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('announcements').insert({
-    academy_id: user.academyId,
-    class_id: parsed.class_id,
-    title: parsed.title,
-    body: parsed.body,
-    created_by: user.id,
-    author_name: user.displayName,
-  })
+  const { data: inserted, error } = await supabase
+    .from('announcements')
+    .insert({
+      academy_id: user.academyId,
+      class_id: parsed.class_id,
+      title: parsed.title,
+      body: parsed.body,
+      created_by: user.id,
+      author_name: user.displayName,
+    })
+    .select('id')
+    .single()
   if (error) throw new Error(error.message)
+
+  // 알림 fan-out — 공지는 이미 저장됨. 실패해도 게시 자체는 롤백하지 않고 로깅만(공지 성공 우선).
+  if (parsed.notify_roles.length > 0) {
+    try {
+      await dispatchAnnouncementNotifications(inserted.id, parsed.notify_roles)
+    } catch (e) {
+      console.error('공지 알림 발송 실패:', e)
+    }
+  }
+
   revalidateAnnouncements()
 }
 

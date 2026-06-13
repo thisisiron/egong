@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { Announcement, AnnouncementWithClass } from './types'
 
 const COLUMNS =
-  'id, academy_id, class_id, title, body, created_by, author_name, created_at, updated_at'
+  'id, academy_id, class_id, type, title, body, created_by, author_name, created_at, updated_at'
 
 type JoinedRow = Announcement & { classes: { name: string } | null }
 

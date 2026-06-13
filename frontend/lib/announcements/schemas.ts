@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { notifyRolesSchema } from '@/lib/notifications/schemas'
 
 const titleSchema = z
   .string()
@@ -27,6 +28,7 @@ export const createAnnouncementSchema = z.object({
   title: titleSchema,
   body: bodySchema,
   class_id: classIdSchema,
+  notify_roles: notifyRolesSchema,
 })
 
 // 수정은 제목/본문만 — 범위(class_id) 변경은 미지원 (삭제 후 재작성)
