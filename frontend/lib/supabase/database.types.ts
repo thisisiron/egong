@@ -248,6 +248,127 @@ export type Database = {
           },
         ]
       }
+      assignment_submissions: {
+        Row: {
+          academy_id: string
+          assignment_id: string
+          class_id: string
+          feedback: string | null
+          feedback_at: string | null
+          feedback_by: string | null
+          feedback_by_name: string | null
+          file_paths: string[]
+          id: string
+          memo: string | null
+          score: string | null
+          student_id: string
+          submitted_at: string
+        }
+        Insert: {
+          academy_id: string
+          assignment_id: string
+          class_id: string
+          feedback?: string | null
+          feedback_at?: string | null
+          feedback_by?: string | null
+          feedback_by_name?: string | null
+          file_paths?: string[]
+          id?: string
+          memo?: string | null
+          score?: string | null
+          student_id: string
+          submitted_at?: string
+        }
+        Update: {
+          academy_id?: string
+          assignment_id?: string
+          class_id?: string
+          feedback?: string | null
+          feedback_at?: string | null
+          feedback_by?: string | null
+          feedback_by_name?: string | null
+          file_paths?: string[]
+          id?: string
+          memo?: string | null
+          score?: string | null
+          student_id?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_submissions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assignments: {
+        Row: {
+          academy_id: string
+          author_name: string
+          class_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_at: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          academy_id: string
+          author_name: string
+          class_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          academy_id?: string
+          author_name?: string
+          class_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           academy_id: string
@@ -821,6 +942,18 @@ export type Database = {
       }
       create_announcement_notifications: {
         Args: { p_announcement_id: string; p_roles: string[] }
+        Returns: number
+      }
+      create_assignment_notifications: {
+        Args: { p_assignment_id: string; p_roles: string[] }
+        Returns: number
+      }
+      notify_assignment_feedback: {
+        Args: { p_submission_id: string }
+        Returns: number
+      }
+      notify_assignment_submitted: {
+        Args: { p_submission_id: string }
         Returns: number
       }
       current_user_academy: { Args: never; Returns: string }
