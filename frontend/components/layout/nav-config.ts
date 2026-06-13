@@ -1,6 +1,7 @@
 import {
   Building2,
   CalendarDays,
+  ClipboardCheck,
   ClipboardList,
   FileText,
   GraduationCap,
@@ -38,7 +39,10 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
     },
     {
       label: '소통',
-      items: [{ href: '/owner/announcements', label: '공지', icon: Megaphone }],
+      items: [
+        { href: '/owner/announcements', label: '공지', icon: Megaphone },
+        { href: '/owner/assignments', label: '과제', icon: ClipboardCheck },
+      ],
     },
   ],
   teacher: [
@@ -46,6 +50,7 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
       items: [
         { href: '/teacher', label: '일정', icon: LayoutDashboard },
         { href: '/teacher/announcements', label: '공지', icon: Megaphone },
+        { href: '/teacher/assignments', label: '과제', icon: ClipboardCheck },
       ],
     },
   ],
@@ -62,6 +67,7 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
       items: [
         { href: '/me', label: '홈', icon: Home },
         { href: '/me/board', label: '게시판', icon: ClipboardList },
+        { href: '/me/assignments', label: '과제', icon: ClipboardCheck },
       ],
     },
   ],
