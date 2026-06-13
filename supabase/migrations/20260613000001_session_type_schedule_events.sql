@@ -1,5 +1,6 @@
 -- 일정 관리: 세션 타입(정규/보강/특강) + 휴강 + 이벤트 마커(시험/상담)
 -- enum은 향후 확장(방학/공휴일 등) 대비 값만 추가 가능하게 설계.
+-- RLS는 20260612000003 공지 하드닝(class_id↔academy 일관성, parent는 자녀 학원 기준)을 반영.
 
 -- ===== ENUMS =====
 DO $$ BEGIN
@@ -42,7 +43,11 @@ CREATE POLICY schedule_events_admin_all ON schedule_events FOR ALL TO authentica
 
 CREATE POLICY schedule_events_owner_all ON schedule_events FOR ALL TO authenticated
     USING (current_user_role() = 'owner' AND academy_id = current_user_academy())
-    WITH CHECK (current_user_role() = 'owner' AND academy_id = current_user_academy());
+    WITH CHECK (
+        current_user_role() = 'owner'
+        AND academy_id = current_user_academy()
+        AND (class_id IS NULL OR app_class_academy(class_id) = academy_id)
+    );
 
 -- teacher: 자기 학원 이벤트 전체 열람
 CREATE POLICY schedule_events_teacher_read ON schedule_events FOR SELECT TO authenticated
@@ -55,6 +60,7 @@ CREATE POLICY schedule_events_teacher_insert ON schedule_events FOR INSERT TO au
         AND academy_id = current_user_academy()
         AND created_by = auth.uid()
         AND class_id IN (SELECT app_my_taught_class_ids())
+        AND app_class_academy(class_id) = academy_id
     );
 
 CREATE POLICY schedule_events_teacher_update ON schedule_events FOR UPDATE TO authenticated
@@ -63,7 +69,12 @@ CREATE POLICY schedule_events_teacher_update ON schedule_events FOR UPDATE TO au
         AND created_by = auth.uid()
         AND academy_id = current_user_academy()
     )
-    WITH CHECK (created_by = auth.uid() AND class_id IN (SELECT app_my_taught_class_ids()));
+    WITH CHECK (
+        created_by = auth.uid()
+        AND academy_id = current_user_academy()
+        AND class_id IN (SELECT app_my_taught_class_ids())
+        AND app_class_academy(class_id) = academy_id
+    );
 
 CREATE POLICY schedule_events_teacher_delete ON schedule_events FOR DELETE TO authenticated
     USING (
@@ -87,7 +98,7 @@ CREATE POLICY schedule_events_parent_read ON schedule_events FOR SELECT TO authe
     USING (
         current_user_role() = 'parent'
         AND (
-            (class_id IS NULL AND academy_id = current_user_academy())
+            (class_id IS NULL AND academy_id IN (SELECT app_my_child_academy_ids()))
             OR class_id IN (SELECT app_my_child_class_ids())
         )
     );
