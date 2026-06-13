@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth'
-import { getMyTeachingClasses } from '@/lib/sessions/service'
 import {
   createAssignmentSchema,
   updateAssignmentSchema,
@@ -18,23 +17,18 @@ function revalidateAssignments() {
   revalidatePath('/me/assignments')
 }
 
-/** owner면 class가 자기 학원 소속인지, teacher면 담당 반인지 재검증. 통과 시 academyId 반환. */
+/** owner·teacher(=학원 스태프) 공통: class가 자기 학원 소속이면 부여 가능. 통과 시 academyId 반환. */
 async function assertCanAssignToClass(classId: string): Promise<string> {
   const user = await requireRole(['owner', 'teacher'])
   if (!user.academyId) throw new Error('소속 학원 정보가 없습니다.')
-  if (user.role === 'teacher') {
-    const mine = await getMyTeachingClasses()
-    if (!mine.some((c) => c.id === classId)) throw new Error('담당 반이 아닙니다.')
-  } else {
-    const supabase = await createClient()
-    const { data: cls } = await supabase
-      .from('classes').select('academy_id').eq('id', classId).maybeSingle()
-    if (!cls || cls.academy_id !== user.academyId) throw new Error('잘못된 반입니다.')
-  }
+  const supabase = await createClient()
+  const { data: cls } = await supabase
+    .from('classes').select('academy_id').eq('id', classId).maybeSingle()
+  if (!cls || cls.academy_id !== user.academyId) throw new Error('잘못된 반입니다.')
   return user.academyId
 }
 
-/** 타겟 과제 소유권 확인 — owner: 학원 일치, teacher: 본인 작성. 통과 시 row 반환. */
+/** 타겟 과제 소유권 확인 — owner·teacher 모두 자기 학원 과제면 가능. 통과 시 row 반환. */
 async function verifyAssignmentOwnership(
   id: string
 ): Promise<{ academy_id: string; created_by: string | null; class_id: string }> {
@@ -46,9 +40,8 @@ async function verifyAssignmentOwnership(
     .eq('id', id)
     .maybeSingle()
   if (error) throw new Error(error.message)
-  const allowed =
-    !!data &&
-    (user.role === 'owner' ? data.academy_id === user.academyId : data.created_by === user.id)
+  // teacher=owner parity: owner·teacher 모두 자기 학원 과제면 수정/삭제 가능
+  const allowed = !!data && data.academy_id === user.academyId
   if (!allowed || !data) throw new Error('권한이 없습니다.')
   return data
 }
