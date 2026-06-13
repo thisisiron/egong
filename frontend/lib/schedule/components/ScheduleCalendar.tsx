@@ -71,7 +71,6 @@ export function ScheduleCalendar({ basePath, searchParams, cells, events, extraP
           day={day}
           cells={popupCells}
           events={dayEvents}
-          basePath={basePath}
           sessionLinkBase={sessionLinkBase}
         />
       )}

@@ -8,7 +8,6 @@ type Props = {
   day: string
   /** 그 날의 회차들 (없으면 empty state) */
   cells: SessionCellInfo[]
-  basePath: string
   /** 세션 상세 링크 base (예: '/teacher'). 없으면 링크 없이 정보만 표시. */
   sessionLinkBase?: string
   /** 그 날의 이벤트들 (시험/상담) */
