@@ -21,6 +21,8 @@ export default async function OwnerQuestionDetailPage({ params }: { params: Prom
       replies={repliesWithFiles}
       canReply
       canResolve
+      canDelete
+      listHref="/owner/questions"
       academyId={question.academy_id}
     />
   )

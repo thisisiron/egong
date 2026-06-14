@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { StorageFileUpload, type UploadedFile } from '@/components/ui/StorageFileUpload'
-import { createReplyAction, toggleResolvedAction } from '../actions'
+import { createReplyAction, toggleResolvedAction, deleteQuestionAction } from '../actions'
 import { REPLY_ROLE_LABEL, type QuestionReply, type QuestionWithClass } from '../types'
 
 type SignedFile = { path: string; url: string | null }
@@ -15,6 +16,10 @@ type Props = {
   replies: Array<QuestionReply & { signedFiles: SignedFile[] }>
   canReply: boolean
   canResolve: boolean
+  /** 삭제 권한(작성 학생 또는 스태프). */
+  canDelete: boolean
+  /** 삭제 후 돌아갈 목록 경로(역할별 basePath). */
+  listHref: string
   academyId: string
 }
 
@@ -30,11 +35,13 @@ function FileLinks({ files }: { files: SignedFile[] }) {
   )
 }
 
-export function QuestionThread({ question, questionFiles, replies, canReply, canResolve, academyId }: Props) {
+export function QuestionThread({ question, questionFiles, replies, canReply, canResolve, canDelete, listHref, academyId }: Props) {
+  const router = useRouter()
   const [files, setFiles] = useState<UploadedFile[]>([])
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [resolvePending, startResolve] = useTransition()
+  const [deletePending, startDelete] = useTransition()
 
   function handleReply(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -63,6 +70,20 @@ export function QuestionThread({ question, questionFiles, replies, canReply, can
     })
   }
 
+  function handleDelete() {
+    if (!window.confirm('이 질문을 삭제할까요? 답글과 첨부 파일도 함께 삭제됩니다.')) return
+    const fd = new FormData()
+    fd.set('id', question.id)
+    startDelete(async () => {
+      try {
+        await deleteQuestionAction(fd)
+        router.push(listHref)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '삭제에 실패했습니다.')
+      }
+    })
+  }
+
   return (
     <div className="space-y-4">
       <header>
@@ -74,11 +95,21 @@ export function QuestionThread({ question, questionFiles, replies, canReply, can
           {question.is_resolved
             ? <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600">해결됨</span>
             : <span className="text-xs px-1.5 py-0.5 rounded bg-rose-50 text-rose-600">미해결</span>}
-          {canResolve && (
-            <button type="button" onClick={handleToggle} disabled={resolvePending}
-                    className="ml-auto text-xs text-indigo-600 hover:underline disabled:opacity-50">
-              {question.is_resolved ? '미해결로 되돌리기' : '해결됨으로 표시'}
-            </button>
+          {(canResolve || canDelete) && (
+            <span className="ml-auto flex items-center gap-3">
+              {canResolve && (
+                <button type="button" onClick={handleToggle} disabled={resolvePending}
+                        className="text-xs text-indigo-600 hover:underline disabled:opacity-50">
+                  {question.is_resolved ? '미해결로 되돌리기' : '해결됨으로 표시'}
+                </button>
+              )}
+              {canDelete && (
+                <button type="button" onClick={handleDelete} disabled={deletePending}
+                        className="text-xs text-rose-600 hover:underline disabled:opacity-50">
+                  {deletePending ? '삭제 중…' : '삭제'}
+                </button>
+              )}
+            </span>
           )}
         </div>
         <h1 className="text-lg font-semibold">{question.title}</h1>

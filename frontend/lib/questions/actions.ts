@@ -63,13 +63,32 @@ export async function createQuestionAction(formData: FormData) {
   revalidateQuestions()
 }
 
-/** 질문 삭제 — 작성 학생 또는 학원 스태프(RLS가 강제). */
+/** 질문 삭제 — 작성 학생/담당 선생/원장(RLS가 강제). 질문·답글 첨부 파일도 스토리지에서 정리. */
 export async function deleteQuestionAction(formData: FormData) {
   await requireRole(['student', 'teacher', 'owner'])
   const id = questionIdSchema.parse(formData.get('id'))
   const supabase = await createClient()
-  const { error } = await supabase.from('questions').delete().eq('id', id)
+
+  // 삭제 전 첨부 경로 수집(질문 + 답글). DB FK cascade는 답글 row를 지우지만 스토리지 파일은 안 지움.
+  const { data: q } = await supabase.from('questions').select('file_paths').eq('id', id).maybeSingle()
+  const { data: replyRows } = await supabase
+    .from('question_replies').select('file_paths').eq('question_id', id)
+  const paths = [
+    ...(q?.file_paths ?? []),
+    ...(replyRows ?? []).flatMap((r) => r.file_paths ?? []),
+  ]
+
+  // 실제로 삭제된 경우에만 스토리지 정리 — RLS가 막으면 0행이므로 남의 파일을 건드리지 않는다.
+  const { data: deleted, error } = await supabase
+    .from('questions').delete().eq('id', id).select('id')
   if (error) throw new Error(error.message)
+  if (deleted && deleted.length > 0 && paths.length > 0) {
+    try {
+      await supabase.storage.from('question-files').remove(paths)
+    } catch (e) {
+      console.error('질문 첨부 파일 삭제 실패:', e)
+    }
+  }
   revalidateQuestions()
 }
 
