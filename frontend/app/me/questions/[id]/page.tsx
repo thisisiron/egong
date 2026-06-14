@@ -34,6 +34,8 @@ export default async function MyQuestionDetailPage({
         replies={repliesWithFiles}
         canReply={canReply}
         canResolve={canResolve}
+        canDelete={isOwnQuestion}
+        listHref="/me/questions"
         academyId={question.academy_id}
       />
     </div>

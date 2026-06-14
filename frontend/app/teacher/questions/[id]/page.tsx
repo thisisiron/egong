@@ -21,6 +21,8 @@ export default async function TeacherQuestionDetailPage({ params }: { params: Pr
       replies={repliesWithFiles}
       canReply
       canResolve
+      canDelete
+      listHref="/teacher/questions"
       academyId={question.academy_id}
     />
   )
