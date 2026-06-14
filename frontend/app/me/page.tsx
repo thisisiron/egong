@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 import { getSessionUser } from '@/lib/auth'
 
 import { AttendanceCalendar } from '@/lib/attendance/components/AttendanceCalendar'
@@ -15,6 +17,7 @@ import {
   getRecentAttendanceSessions,
 } from '@/lib/attendance/service'
 import { listAnnouncementsForStudent } from '@/lib/announcements/service'
+import { listQuestionsForStudent } from '@/lib/questions/service'
 import { AnnouncementCard } from '@/lib/announcements/components/AnnouncementCard'
 import { getEventsInRange } from '@/lib/events/service'
 
@@ -61,14 +64,17 @@ export default async function MyStudentPage({
     }
   )
 
-  const [student, recentSessions, announcements, attendance, events] =
+  const [student, recentSessions, announcements, attendance, events, myQuestions] =
     await Promise.all([
       getStudentProfile(targetStudentId),
       getRecentAttendanceSessions(targetStudentId, 6),
       listAnnouncementsForStudent(targetStudentId),
       attendancePromise,
       eventsPromise,
+      listQuestionsForStudent(targetStudentId).catch(() => []),
     ])
+
+  const unresolvedCount = myQuestions.filter((q) => !q.is_resolved).length
 
   return (
     <div className="space-y-6">
@@ -101,6 +107,22 @@ export default async function MyStudentPage({
           <p className="text-sm text-slate-400 text-center py-4">공지사항이 없습니다.</p>
         )}
       </section>
+
+      <Link
+        href="/me/questions"
+        className="block bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50"
+      >
+        <div className="flex items-center justify-between">
+          <span className="font-medium">💬 내 질문</span>
+          {unresolvedCount > 0 ? (
+            <span className="text-xs px-2 py-0.5 rounded bg-rose-50 text-rose-600">
+              미해결 {unresolvedCount}
+            </span>
+          ) : (
+            <span className="text-xs text-slate-400">모두 해결됨</span>
+          )}
+        </div>
+      </Link>
 
       {attendance ? (
         <>

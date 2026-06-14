@@ -8,6 +8,7 @@ import {
   Home,
   LayoutDashboard,
   Megaphone,
+  MessagesSquare,
   School,
   UserRound,
   Users,
@@ -42,6 +43,7 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
       items: [
         { href: '/owner/announcements', label: '공지', icon: Megaphone },
         { href: '/owner/assignments', label: '과제', icon: ClipboardCheck },
+        { href: '/owner/questions', label: '질문', icon: MessagesSquare },
       ],
     },
   ],
@@ -66,6 +68,7 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
       items: [
         { href: '/teacher/announcements', label: '공지', icon: Megaphone },
         { href: '/teacher/assignments', label: '과제', icon: ClipboardCheck },
+        { href: '/teacher/questions', label: '질문', icon: MessagesSquare },
       ],
     },
   ],
@@ -83,6 +86,7 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
         { href: '/me', label: '홈', icon: Home },
         { href: '/me/board', label: '게시판', icon: ClipboardList },
         { href: '/me/assignments', label: '과제', icon: ClipboardCheck },
+        { href: '/me/questions', label: '질문', icon: MessagesSquare },
       ],
     },
   ],

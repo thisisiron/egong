@@ -611,6 +611,128 @@ export type Database = {
           },
         ]
       }
+      question_replies: {
+        Row: {
+          academy_id: string
+          author_id: string | null
+          author_name: string
+          author_role: string
+          body: string
+          created_at: string
+          file_paths: string[]
+          id: string
+          question_id: string
+        }
+        Insert: {
+          academy_id: string
+          author_id?: string | null
+          author_name: string
+          author_role: string
+          body: string
+          created_at?: string
+          file_paths?: string[]
+          id?: string
+          question_id: string
+        }
+        Update: {
+          academy_id?: string
+          author_id?: string | null
+          author_name?: string
+          author_role?: string
+          body?: string
+          created_at?: string
+          file_paths?: string[]
+          id?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_replies_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_replies_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_replies_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          academy_id: string
+          author_name: string
+          body: string
+          class_id: string
+          created_at: string
+          file_paths: string[]
+          id: string
+          is_public: boolean
+          is_resolved: boolean
+          student_id: string
+          title: string
+        }
+        Insert: {
+          academy_id: string
+          author_name: string
+          body: string
+          class_id: string
+          created_at?: string
+          file_paths?: string[]
+          id?: string
+          is_public?: boolean
+          is_resolved?: boolean
+          student_id: string
+          title: string
+        }
+        Update: {
+          academy_id?: string
+          author_name?: string
+          body?: string
+          class_id?: string
+          created_at?: string
+          file_paths?: string[]
+          id?: string
+          is_public?: boolean
+          is_resolved?: boolean
+          student_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedule_events: {
         Row: {
           academy_id: string
@@ -954,6 +1076,14 @@ export type Database = {
       }
       notify_assignment_submitted: {
         Args: { p_submission_id: string }
+        Returns: number
+      }
+      notify_question_created: {
+        Args: { p_question_id: string }
+        Returns: number
+      }
+      notify_question_reply: {
+        Args: { p_reply_id: string }
         Returns: number
       }
       current_user_academy: { Args: never; Returns: string }
