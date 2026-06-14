@@ -71,7 +71,7 @@ export default async function MyStudentPage({
       listAnnouncementsForStudent(targetStudentId),
       attendancePromise,
       eventsPromise,
-      listQuestionsForStudent(targetStudentId),
+      listQuestionsForStudent(targetStudentId).catch(() => []),
     ])
 
   const unresolvedCount = myQuestions.filter((q) => !q.is_resolved).length
