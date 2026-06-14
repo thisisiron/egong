@@ -48,7 +48,22 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
   teacher: [
     {
       items: [
-        { href: '/teacher', label: '일정', icon: LayoutDashboard },
+        { href: '/teacher', label: '대시보드', icon: LayoutDashboard },
+        { href: '/teacher/schedule', label: '일정', icon: CalendarDays },
+      ],
+    },
+    {
+      label: '학사관리',
+      items: [
+        { href: '/teacher/students', label: '학생', icon: Users },
+        { href: '/teacher/parents', label: '학부모', icon: UserRound },
+        { href: '/teacher/teachers', label: '선생님', icon: GraduationCap },
+        { href: '/teacher/classes', label: '반', icon: School },
+      ],
+    },
+    {
+      label: '소통',
+      items: [
         { href: '/teacher/announcements', label: '공지', icon: Megaphone },
         { href: '/teacher/assignments', label: '과제', icon: ClipboardCheck },
       ],

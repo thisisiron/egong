@@ -45,12 +45,12 @@ async def test_create_teacher_rejects_non_owner(client):
 
 
 @pytest.mark.asyncio
-async def test_lookup_parent_requires_owner(client):
-    """Teacher-role caller can't look up parents → 403."""
+async def test_lookup_parent_rejects_non_staff(client):
+    """Student/admin/parent role caller can't look up parents → 403."""
     from src.main import app
 
     async def fake_user():
-        return deps.CurrentUser(user_id="u1", role="teacher", academy_id="a1")
+        return deps.CurrentUser(user_id="u1", role="admin", academy_id="a1")
 
     app.dependency_overrides[deps.get_current_user] = fake_user
     try:

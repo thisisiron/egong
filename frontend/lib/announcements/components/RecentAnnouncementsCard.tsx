@@ -3,15 +3,15 @@ import Link from 'next/link'
 import { ymdKST } from '@/lib/date'
 import type { AnnouncementWithClass } from '../types'
 
-type Props = { items: AnnouncementWithClass[] }
+type Props = { items: AnnouncementWithClass[]; announcementsPath: string }
 
-export function RecentAnnouncementsCard({ items }: Props) {
+export function RecentAnnouncementsCard({ items, announcementsPath }: Props) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-slate-900">최근 공지</h2>
         <Link
-          href="/owner/announcements"
+          href={announcementsPath}
           className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
         >
           공지 작성 →
@@ -24,7 +24,7 @@ export function RecentAnnouncementsCard({ items }: Props) {
           {items.map((a) => (
             <li key={a.id}>
               <Link
-                href="/owner/announcements"
+                href={announcementsPath}
                 className="flex items-center gap-3 py-2.5 hover:bg-gray-50"
               >
                 <span

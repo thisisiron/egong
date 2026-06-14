@@ -11,6 +11,7 @@ import type { CreateEventInput, UpdateEventInput } from './schemas'
 function revalidateSchedule() {
   revalidatePath('/owner/schedule')
   revalidatePath('/teacher')
+  revalidatePath('/teacher/schedule')
   revalidatePath('/me')
 }
 

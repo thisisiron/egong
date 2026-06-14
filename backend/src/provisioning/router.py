@@ -9,7 +9,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from src.auth.dependencies import CurrentUser, require_owner
+from src.auth.dependencies import CurrentUser, require_owner_or_teacher
 from src.provisioning import service
 from src.provisioning.schemas import (
     ParentCreate,
@@ -37,7 +37,7 @@ def _academy_id(owner: CurrentUser) -> str:
 )
 async def create_teacher(
     payload: TeacherCreate,
-    owner: Annotated[CurrentUser, Depends(require_owner)],
+    owner: Annotated[CurrentUser, Depends(require_owner_or_teacher)],
 ):
     return await service.create_teacher(_academy_id(owner), payload)
 
@@ -49,7 +49,7 @@ async def create_teacher(
 )
 async def create_parent(
     payload: ParentCreate,
-    owner: Annotated[CurrentUser, Depends(require_owner)],
+    owner: Annotated[CurrentUser, Depends(require_owner_or_teacher)],
 ):
     return await service.create_parent(_academy_id(owner), payload)
 
@@ -57,12 +57,12 @@ async def create_parent(
 @router.get("/parents/by-email", response_model=ParentLookupOut)
 async def lookup_parent(
     email: str,
-    owner: Annotated[CurrentUser, Depends(require_owner)],
+    owner: Annotated[CurrentUser, Depends(require_owner_or_teacher)],
 ):
-    # require_owner is enough; we don't restrict by academy because parents
+    # staff role guard is enough; we don't restrict by academy because parents
     # in this schema aren't bound to a single academy — student_parent INSERT
-    # will be rejected by RLS if the owner tries to link to a student they
-    # don't own.
+    # will be rejected by RLS if the staff member tries to link to a student
+    # they don't own.
     _ = _academy_id(owner)
     parent_id = await service.find_parent_id_by_email(email)
     if not parent_id:
@@ -78,6 +78,6 @@ async def lookup_parent(
 async def attach_student_auth(
     student_id: str,
     payload: StudentAuthCreate,
-    owner: Annotated[CurrentUser, Depends(require_owner)],
+    owner: Annotated[CurrentUser, Depends(require_owner_or_teacher)],
 ):
     return await service.attach_student_auth(_academy_id(owner), student_id, payload)

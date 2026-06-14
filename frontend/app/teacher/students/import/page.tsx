@@ -1,9 +1,8 @@
 import { requireRole } from '@/lib/auth'
-
 import { CsvImportForm } from '@/lib/students/components/CsvImportForm'
 
-export default async function ImportStudentsPage() {
-  await requireRole(['owner'])
+export default async function TeacherImportStudentsPage() {
+  await requireRole(['owner', 'teacher'])
 
   return (
     <div className="max-w-xl">

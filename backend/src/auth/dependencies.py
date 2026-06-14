@@ -69,3 +69,11 @@ async def require_owner(
     if user.role != "owner":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "owner only")
     return user
+
+
+async def require_owner_or_teacher(
+    user: Annotated[CurrentUser, Depends(get_current_user)],
+) -> CurrentUser:
+    if user.role not in ("owner", "teacher"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "owner or teacher only")
+    return user
