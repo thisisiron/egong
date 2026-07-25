@@ -30,8 +30,15 @@ export function MaterialCard({ material, files, canManage }: Props) {
   return (
     <article className="bg-white border border-gray-200 rounded-lg p-4 space-y-2">
       <div className="flex items-center gap-2">
-        <span className="text-xs px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">
-          {material.class_name ?? '학원 전체'}
+        <span
+          className={`text-xs px-2 py-0.5 rounded ${
+            material.class_id
+              ? 'bg-slate-100 text-slate-600'
+              : 'bg-indigo-100 text-indigo-700'
+          }`}
+        >
+          {/* 반별 자료인데 RLS로 반 이름을 못 읽는 경우(teacher의 비담당 반) → 중립 표기 */}
+          {material.class_id ? (material.class_name ?? '반 자료') : '학원 전체'}
         </span>
         <h3 className="font-medium">{material.title}</h3>
         {canManage && (
