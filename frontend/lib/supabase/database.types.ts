@@ -579,6 +579,64 @@ export type Database = {
           },
         ]
       }
+      materials: {
+        Row: {
+          academy_id: string
+          author_name: string
+          class_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          files: Json
+          id: string
+          title: string
+        }
+        Insert: {
+          academy_id: string
+          author_name: string
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          files?: Json
+          id?: string
+          title: string
+        }
+        Update: {
+          academy_id?: string
+          author_name?: string
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          files?: Json
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materials_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materials_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materials_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parents: {
         Row: {
           created_at: string
@@ -1068,6 +1126,10 @@ export type Database = {
       }
       create_assignment_notifications: {
         Args: { p_assignment_id: string; p_roles: string[] }
+        Returns: number
+      }
+      create_material_notifications: {
+        Args: { p_material_id: string; p_roles: string[] }
         Returns: number
       }
       notify_assignment_feedback: {
