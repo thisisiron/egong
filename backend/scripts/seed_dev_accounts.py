@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import logging
 import os
@@ -57,8 +58,15 @@ ACCOUNTS: list[tuple[str, str, str]] = [
     ("parent@egong.test", "parent", "김부모"),
 ]
 
+SEED_EMAIL_DOMAIN = "@egong.test"
 
-async def main() -> int:
+
+def is_seed_email(email: str) -> bool:
+    """--reset-passwords 대상인지 판정. 실제 사용자 계정 보호를 위한 도메인 가드."""
+    return email.strip().lower().endswith(SEED_EMAIL_DOMAIN)
+
+
+async def main(reset_passwords: bool = False) -> int:
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_SECRET_KEY")
     if not url or not key:
@@ -75,6 +83,11 @@ async def main() -> int:
     user_ids: dict[str, str] = {}
     for email, role, display_name in ACCOUNTS:
         user_id, created = await ensure_auth_user(client, email, display_name)
+        if reset_passwords and not created and is_seed_email(email):
+            await client.auth.admin.update_user_by_id(
+                user_id, {"password": SEED_PASSWORD}
+            )
+            log.info("pwd  [RESET] %-7s %s", role, email)
         await ensure_users_row(
             client,
             user_id=user_id,
@@ -408,4 +421,14 @@ async def ensure_sessions_and_attendance(
 
 
 if __name__ == "__main__":
-    sys.exit(asyncio.run(main()))
+    parser = argparse.ArgumentParser(
+        description="LOCAL DEV ONLY — 5개 역할 계정 + 학원/반/세션/출결 시딩."
+    )
+    parser.add_argument(
+        "--reset-passwords",
+        action="store_true",
+        help="@egong.test 계정의 비밀번호를 SEED_PASSWORD로 재설정 "
+        "(기본 동작은 기존 비밀번호 유지)",
+    )
+    args = parser.parse_args()
+    sys.exit(asyncio.run(main(reset_passwords=args.reset_passwords)))
