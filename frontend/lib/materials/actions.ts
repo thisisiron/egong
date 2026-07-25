@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth'
+import { classBelongsToAcademy } from '@/lib/classes/service'
 import {
   createMaterialSchema,
   updateMaterialSchema,
@@ -50,11 +51,9 @@ export async function createMaterialAction(formData: FormData) {
 
   const supabase = await createClient()
 
-  // 반 지정 시 내 학원 반인지 재검증 (RLS 위 2차 방어선)
-  if (parsed.class_id) {
-    const { data: cls } = await supabase
-      .from('classes').select('academy_id').eq('id', parsed.class_id).maybeSingle()
-    if (!cls || cls.academy_id !== user.academyId) throw new Error('잘못된 반입니다.')
+  // 반 지정 시 내 학원 반인지 재검증 (RLS 위 2차 방어선) — 소유 도메인 service 경유
+  if (parsed.class_id && !(await classBelongsToAcademy(parsed.class_id, user.academyId))) {
+    throw new Error('잘못된 반입니다.')
   }
 
   const { data: inserted, error } = await supabase
