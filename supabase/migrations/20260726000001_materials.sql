@@ -24,9 +24,14 @@ CREATE POLICY materials_admin_all ON materials FOR ALL TO authenticated
     USING (is_admin()) WITH CHECK (is_admin());
 
 -- 스태프(owner·teacher parity) — 학원 전체 CRUD
+-- class_id↔academy 일관성 가드: 반별 자료의 반은 반드시 자료의 academy 소속이어야 함.
+--   없으면 PostgREST 직접 호출로 타 학원 class_id를 가리키는 자료를 만들 수 있고,
+--   그 반 학생이 materials_student_read의 enrolled_class 분기로 열람 가능(크로스 테넌트 주입).
+--   공지의 20260612000003_announcements_rls_tighten.sql과 동일한 패턴.
 CREATE POLICY materials_staff_all ON materials FOR ALL TO authenticated
     USING (current_user_role() IN ('owner','teacher') AND academy_id = current_user_academy())
-    WITH CHECK (current_user_role() IN ('owner','teacher') AND academy_id = current_user_academy());
+    WITH CHECK (current_user_role() IN ('owner','teacher') AND academy_id = current_user_academy()
+        AND (class_id IS NULL OR app_class_academy(class_id) = academy_id));
 
 CREATE POLICY materials_student_read ON materials FOR SELECT TO authenticated
     USING (current_user_role() = 'student' AND (
