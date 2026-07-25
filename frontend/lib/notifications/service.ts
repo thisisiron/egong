@@ -43,3 +43,18 @@ export async function dispatchAnnouncementNotifications(
   if (error) throw new Error(error.message)
   return data ?? 0
 }
+
+/** 자료 fan-out — definer RPC가 (역할 ∩ 범위) 수신자에게 알림 생성. 생성 행 수 반환. */
+export async function dispatchMaterialNotifications(
+  materialId: string,
+  roles: NotifyRole[]
+): Promise<number> {
+  if (roles.length === 0) return 0
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('create_material_notifications', {
+    p_material_id: materialId,
+    p_roles: roles,
+  })
+  if (error) throw new Error(error.message)
+  return data ?? 0
+}

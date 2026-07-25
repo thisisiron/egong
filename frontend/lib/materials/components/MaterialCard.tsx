@@ -53,19 +53,24 @@ export function MaterialCard({ material, files, canManage }: Props) {
       )}
 
       <ul className="space-y-1">
-        {files.map((f) => (
-          <li key={f.path}>
-            <a
-              href={f.url ?? '#'}
-              target="_blank"
-              rel="noreferrer"
-              download={f.name}
-              className="text-sm text-indigo-600 hover:underline break-all"
-            >
-              📎 {f.name}
-            </a>
-          </li>
-        ))}
+        {files.map((f) =>
+          f.url ? (
+            <li key={f.path}>
+              <a
+                href={f.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm text-indigo-600 hover:underline break-all"
+              >
+                📎 {f.name}
+              </a>
+            </li>
+          ) : (
+            <li key={f.path} className="text-sm text-slate-400 break-all">
+              📎 {f.name} — 다운로드 링크를 만들 수 없습니다
+            </li>
+          )
+        )}
         {files.length === 0 && <li className="text-xs text-slate-400">첨부 없음</li>}
       </ul>
 

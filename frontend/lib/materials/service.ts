@@ -97,7 +97,11 @@ export async function signMaterialFilesByMaterial(
 
   const out: Record<string, SignedMaterialFile[]> = {}
   for (const { materialId, file } of flat) {
-    ;(out[materialId] ??= []).push({ ...file, url: urlByPath.get(file.path) ?? null })
+    const base = urlByPath.get(file.path) ?? null
+    // Supabase Storage는 ?download= 파라미터로 Content-Disposition: attachment + 원본 파일명을 내려준다.
+    // (HTML download 속성은 cross-origin에서 무시되므로 URL 쪽에서 처리해야 한다.)
+    const url = base ? `${base}&download=${encodeURIComponent(file.name)}` : null
+    ;(out[materialId] ??= []).push({ ...file, url })
   }
   return out
 }

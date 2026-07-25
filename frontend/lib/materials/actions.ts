@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth'
 import { classBelongsToAcademy } from '@/lib/classes/service'
+import { dispatchMaterialNotifications } from '@/lib/notifications/service'
 import {
   createMaterialSchema,
   updateMaterialSchema,
@@ -72,12 +73,11 @@ export async function createMaterialAction(formData: FormData) {
   if (error) throw new Error(error.message)
 
   // 알림 fail-soft — 자료는 이미 저장됨. 실패해도 롤백하지 않고 로깅만.
+  // (notifications 도메인 service 경유 — supabase.rpc는 reject하지 않고 {error}로 resolve하므로
+  //  inline 호출 시 try/catch가 죽은 코드가 된다. service가 error를 throw로 변환해줘야 catch가 잡는다.)
   if (parsed.notify_roles.length > 0) {
     try {
-      await supabase.rpc('create_material_notifications', {
-        p_material_id: inserted.id,
-        p_roles: parsed.notify_roles,
-      })
+      await dispatchMaterialNotifications(inserted.id, parsed.notify_roles)
     } catch (e) {
       console.error('자료 알림 발송 실패:', e)
     }
