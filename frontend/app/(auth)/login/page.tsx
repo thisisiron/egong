@@ -2,6 +2,7 @@ import { loginAction } from './actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { DevLoginBanner } from '@/lib/dev-auth/components/DevLoginBanner'
 
 type Props = { searchParams: Promise<{ error?: string; next?: string }> }
 
@@ -9,7 +10,8 @@ export default async function LoginPage({ searchParams }: Props) {
   const { error, next } = await searchParams
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <DevLoginBanner />
       <div className="w-full max-w-sm bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
         <h1 className="text-2xl font-semibold">로그인</h1>
         {error ? (
