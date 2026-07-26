@@ -63,7 +63,6 @@ export function MaterialCard({ material, files, canManage }: Props) {
 
   return (
     <article
-      data-testid="material-card"
       data-material-title={material.title}
       className="bg-white border border-gray-200 rounded-lg p-4 space-y-2"
     >

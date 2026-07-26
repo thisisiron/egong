@@ -187,5 +187,28 @@ test('선생이 올린 자료를 학생이 즉시 본다', async ({ page, browse
   await expect(
     studentPage.locator(`[data-material-title="${title}"]`)
   ).toBeVisible()
+
+  // 카드 제목만으로는 46297a1(업로드 경로 반 스코프)의 회귀를 못 잡는다 — materials 행은
+  // Postgres 테이블이라 storage 경로와 무관하게 항상 정상 조회된다. 첨부가 실제로 "읽히는지"는
+  // MaterialCard가 렌더하는 signedFiles[*].url(service.ts의 createSignedUrls, RLS 적용된
+  // 사용자 세션으로 호출)까지 내려가야 검증된다: MaterialForm의 pathPrefix가
+  // `{academyId}/{classId||'all'}`에서 반 세그먼트를 잃으면 storage.foldername(name)[2]가
+  // NULL이 되어 mfiles_member_read 정책이 그 반 학생(=정당한 소유자)에게도 신호URL을
+  // 내주지 못한다(모두에게 안 보이는 방향의 회귀라 크로스클래스 유출 테스트로는 못 잡는다).
+  // 링크 존재(href) 확인에서 그치지 않고 실제로 GET해 스토리지 정책을 통과하는지까지 본다.
+  const attachmentLink = studentPage.locator(`[data-material-title="${title}"] a`)
+  await expect(attachmentLink).toBeVisible()
+  const href = await attachmentLink.getAttribute('href')
+  expect(
+    href,
+    '첨부 링크(href)가 없습니다 — 서명 URL 생성이 실패했다는 뜻(스토리지 경로/정책 회귀 가능성)'
+  ).toBeTruthy()
+  const download = await studentPage.request.get(href!)
+  expect(
+    download.ok(),
+    `학생이 방금 올라온 첨부를 다운로드하지 못했습니다(status=${download.status()}) — ` +
+      'material-files storage 정책이 반 스코프를 잘못 검사하고 있을 수 있습니다'
+  ).toBeTruthy()
+
   await studentCtx.close()
 })
