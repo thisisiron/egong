@@ -30,7 +30,9 @@ def test_함수가_존재한다(db, func):
 
 @pytest.mark.parametrize("func", NOTIFY_FUNCS)
 def test_anon은_EXECUTE_권한이_없다(db, func):
-    for oid in _oids(db, func):
+    oids = _oids(db, func)
+    assert oids, f"{func}가 없습니다 — 이름이 바뀌었다면 목록을 갱신하세요"
+    for oid in oids:
         granted = db.execute(
             "SELECT has_function_privilege('anon', %s, 'EXECUTE')", (oid,)
         ).fetchone()[0]
@@ -40,7 +42,9 @@ def test_anon은_EXECUTE_권한이_없다(db, func):
 @pytest.mark.parametrize("func", NOTIFY_FUNCS)
 def test_authenticated_역할에는_열려_있다(db, func):
     """대조군 — 전부 막혀 있어서 통과하는 상황을 구분한다."""
-    for oid in _oids(db, func):
+    oids = _oids(db, func)
+    assert oids, f"{func}가 없습니다 — 이름이 바뀌었다면 목록을 갱신하세요"
+    for oid in oids:
         granted = db.execute(
             "SELECT has_function_privilege('authenticated', %s, 'EXECUTE')", (oid,)
         ).fetchone()[0]
