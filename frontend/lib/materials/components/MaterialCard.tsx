@@ -62,7 +62,11 @@ export function MaterialCard({ material, files, canManage }: Props) {
   }
 
   return (
-    <article className="bg-white border border-gray-200 rounded-lg p-4 space-y-2">
+    <article
+      data-testid="material-card"
+      data-material-title={material.title}
+      className="bg-white border border-gray-200 rounded-lg p-4 space-y-2"
+    >
       <div className="flex items-center gap-2">
         <span
           className={`text-xs px-2 py-0.5 rounded ${
