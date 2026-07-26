@@ -42,6 +42,13 @@ async function submitQuestion(page: Page, title: string) {
 test('학생: 대시보드에 출석 현황이 보인다', async ({ page }) => {
   await page.goto('/me')
   await expect(page.getByText('표시할 학생 정보가 없습니다.')).toHaveCount(0)
+
+  // 음성 단언만으로는 "출결 3종 조회가 전부 실패해도 통과"하는 구멍이 있었다 —
+  // app/me/page.tsx는 attendance 3종을 .catch(() => null)로 fail-soft 처리하고,
+  // 실패 시 AttendanceStats 대신 "출결 정보를 불러오지 못했습니다…" 문구를 렌더링한다.
+  // 그 문구에는 위 셀렉터가 안 걸리므로, 대시보드가 완전히 깨져도 이전 단언은 통과했다.
+  // AttendanceStats가 실제로 렌더링됐다는 양성 신호로 fail-soft 분기를 타지 않았음을 증명한다.
+  await expect(page.getByText('출석률 (이번 달)')).toBeVisible()
 })
 
 test('학생: 자기 반 자료만 보인다', async ({ page }) => {
