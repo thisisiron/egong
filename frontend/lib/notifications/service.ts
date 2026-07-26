@@ -58,3 +58,18 @@ export async function dispatchMaterialNotifications(
   if (error) throw new Error(error.message)
   return data ?? 0
 }
+
+/** 성적 공개 fan-out — definer RPC가 (역할 ∩ 범위) 수신자에게 알림 생성. 생성 행 수 반환. */
+export async function dispatchExamNotifications(
+  examId: string,
+  roles: NotifyRole[]
+): Promise<number> {
+  if (roles.length === 0) return 0
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('create_exam_notifications', {
+    p_exam_id: examId,
+    p_roles: roles,
+  })
+  if (error) throw new Error(error.message)
+  return data ?? 0
+}
