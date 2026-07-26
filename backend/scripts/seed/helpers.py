@@ -282,3 +282,38 @@ async def ensure_sessions_and_attendance(
         n_attendance += 1
 
     return len(sessions_to_create), n_attendance
+
+
+async def ensure_today_session(client: AsyncClient, class_id: str) -> str:
+    """오늘(KST) 00:05 세션 1개. 출결은 만들지 않는다 — teacher-day가 채우는 몫.
+
+    멱등: '[DEV SEED] 오늘' 세션이 이 반에 이미 있으면 그 id를 반환한다.
+    'upcoming' 상태면 SessionPopup이 출결 링크를 렌더하지 않으므로, 반드시 현재 시각보다
+    이전이어야 한다. KST 00:05 = UTC 전날 15:05.
+    """
+    title = "[DEV SEED] 오늘"
+    resp = (
+        await client.table("sessions")
+        .select("id")
+        .eq("class_id", class_id)
+        .eq("title", title)
+        .execute()
+    )
+    if resp.data:
+        return resp.data[0]["id"]
+
+    kst_now = datetime.now(timezone(timedelta(hours=9)))
+    scheduled = kst_now.replace(hour=0, minute=5, second=0, microsecond=0)
+    resp = (
+        await client.table("sessions")
+        .insert(
+            {
+                "class_id": class_id,
+                "scheduled_at": scheduled.astimezone(timezone.utc).isoformat(),
+                "title": title,
+                "unit": "오늘 단원",
+            }
+        )
+        .execute()
+    )
+    return resp.data[0]["id"]

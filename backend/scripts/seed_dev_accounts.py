@@ -37,14 +37,26 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-from dotenv import load_dotenv  # noqa: E402
+from dotenv import load_dotenv
 
 load_dotenv(BACKEND_DIR / ".env")
 
-from supabase import acreate_client  # noqa: E402
-
-from seed import ACADEMY_NAME, ACCOUNTS, CLASS_NAME, SEED_PASSWORD, is_seed_email  # noqa: E402
-from seed import helpers as h  # noqa: E402
+from seed import (
+    ACADEMY_B_CLASS_NAME,
+    ACADEMY_B_NAME,
+    ACADEMY_NAME,
+    ACCOUNTS,
+    ACCOUNTS_B,
+    CLASS_B_NAME,
+    CLASS_NAME,
+    EXTRA_STUDENT_ACCOUNT,
+    SEED_PASSWORD,
+    is_seed_email,
+)
+from seed import (
+    helpers as h,
+)
+from supabase import acreate_client
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger("seed")
@@ -108,6 +120,43 @@ async def main(reset_passwords: bool = False) -> int:
         client, class_id, student_id, teacher_id
     )
     log.info("sessions : %d 개 (출결 row %d 개)", n_sessions, n_attendance)
+
+    # 6. 반 2 (같은 학원 A) — 반 경계 검증용
+    class_b_id = await h.ensure_class(client, academy_id, CLASS_B_NAME, "middle")
+    await h.ensure_class_teacher(client, class_b_id, teacher_id)
+
+    sb_email, sb_role, sb_name = EXTRA_STUDENT_ACCOUNT
+    sb_user_id, _ = await h.ensure_auth_user(client, sb_email, sb_name)
+    await h.ensure_users_row(
+        client, user_id=sb_user_id, email=sb_email, role=sb_role,
+        display_name=sb_name, academy_id=academy_id,
+    )
+    student_b_id = await h.ensure_student(client, sb_user_id, academy_id, sb_name)
+    await h.ensure_class_student(client, class_b_id, student_b_id)
+    log.info("class B  : %-20s %s", CLASS_B_NAME, class_b_id)
+
+    # 7. 오늘 세션 (반 1) — teacher-day가 출결을 입력할 대상
+    today_session_id = await h.ensure_today_session(client, class_id)
+    log.info("today    : %s", today_session_id)
+
+    # 8. 학원 B — 학원 경계 검증용
+    academy_b_id = await h.get_or_create_academy(client, ACADEMY_B_NAME)
+    b_user_ids: dict[str, str] = {}
+    for email, role, display_name in ACCOUNTS_B:
+        uid, _ = await h.ensure_auth_user(client, email, display_name)
+        await h.ensure_users_row(
+            client, user_id=uid, email=email, role=role,
+            display_name=display_name, academy_id=academy_b_id,
+        )
+        b_user_ids[role] = uid
+    class_ab_id = await h.ensure_class(
+        client, academy_b_id, ACADEMY_B_CLASS_NAME, "middle"
+    )
+    student2_id = await h.ensure_student(
+        client, b_user_ids["student"], academy_b_id, "정학생"
+    )
+    await h.ensure_class_student(client, class_ab_id, student2_id)
+    log.info("academy B: %-20s %s", ACADEMY_B_NAME, academy_b_id)
 
     print()
     print("=" * 60)

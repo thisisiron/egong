@@ -1,20 +1,28 @@
 """dev 시드 패키지. LOCAL DEV ONLY."""
 
 from .world import (
+    ACADEMY_B_CLASS_NAME,
     ACADEMY_B_NAME,
     ACADEMY_NAME,
     ACCOUNTS,
+    ACCOUNTS_B,
+    CLASS_B_NAME,
     CLASS_NAME,
+    EXTRA_STUDENT_ACCOUNT,
     SEED_EMAIL_DOMAIN,
     SEED_PASSWORD,
     is_seed_email,
 )
 
 __all__ = [
+    "ACADEMY_B_CLASS_NAME",
     "ACADEMY_B_NAME",
     "ACADEMY_NAME",
     "ACCOUNTS",
+    "ACCOUNTS_B",
+    "CLASS_B_NAME",
     "CLASS_NAME",
+    "EXTRA_STUDENT_ACCOUNT",
     "SEED_EMAIL_DOMAIN",
     "SEED_PASSWORD",
     "is_seed_email",
