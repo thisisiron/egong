@@ -54,3 +54,6 @@ skills-lock.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Playwright 역할별 세션 (로그인 쿠키 — 커밋 금지)
+frontend/playwright/.auth/
