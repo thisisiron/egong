@@ -96,7 +96,17 @@ export async function updateExamAction(formData: FormData) {
     max_score: formData.get('max_score'),
   })
 
-  await verifyExamInMyAcademy(parsed.id)
+  const existing = await verifyExamInMyAcademy(parsed.id)
+
+  // 시험일 변경 차단(공개 후) — 명단은 exam_date 기준으로 이력 해석된다
+  // (getExamRosterStudentIds, exam_report_for_student 둘 다 동일). 공개 후 시험일을
+  // 옮기면 채점·공개된 학생이 자기 리포트에서 조용히 사라지거나(재적 기간이 새 날짜를
+  // 벗어남), 채점 안 된 학생이 명단에 새로 들어와 "미입력 0명" 불변식이 사후적으로
+  // 깨질 수 있다. 값이 그대로면(폼이 매번 같은 값을 재제출) 통과시켜야 일반 수정이
+  // 막히지 않는다.
+  if (existing.published_at !== null && parsed.exam_date !== existing.exam_date) {
+    throw new Error('이미 공개된 시험의 시험일은 변경할 수 없습니다.')
+  }
 
   const supabase = await createClient()
 
