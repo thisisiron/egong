@@ -4,13 +4,14 @@
 테스트학원 + 반 1개 + 학생 1명 + 학부모 연결 + 최근 2주치 세션 6개 +
 샘플 출결까지 함께 넣어서 모든 화면을 즉시 둘러볼 수 있게 만듭니다.
 
-멱등: 다시 돌려도 안전. 이미 있으면 skip, 기존 비밀번호는 절대 덮어쓰지 않음.
-(만약 비밀번호를 잊었다면 Supabase Studio → Auth → user → Send password recovery
-또는 직접 reset 하세요.)
+멱등: 다시 돌려도 안전. 이미 있으면 skip, 플래그 없이는 기존 비밀번호를 덮어쓰지 않음.
+(비밀번호를 재설정하려면 --reset-passwords 플래그를 쓰세요. `@egong.test` 계정에
+한해 비밀번호를 SEED_PASSWORD(기본 '***REMOVED***')로 재설정합니다.)
 
 사용:
     cd backend
     ./.venv/Scripts/python.exe scripts/seed_dev_accounts.py
+    ./.venv/Scripts/python.exe scripts/seed_dev_accounts.py --reset-passwords
 
 환경변수:
     SEED_PASSWORD (기본 '***REMOVED***') — 신규 생성되는 모든 계정에 동일하게 사용
@@ -19,6 +20,7 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import logging
 import os
@@ -57,8 +59,15 @@ ACCOUNTS: list[tuple[str, str, str]] = [
     ("parent@egong.test", "parent", "김부모"),
 ]
 
+SEED_EMAIL_DOMAIN = "@egong.test"
 
-async def main() -> int:
+
+def is_seed_email(email: str) -> bool:
+    """--reset-passwords 대상인지 판정. 실제 사용자 계정 보호를 위한 도메인 가드."""
+    return email.strip().lower().endswith(SEED_EMAIL_DOMAIN)
+
+
+async def main(reset_passwords: bool = False) -> int:
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_SECRET_KEY")
     if not url or not key:
@@ -75,6 +84,11 @@ async def main() -> int:
     user_ids: dict[str, str] = {}
     for email, role, display_name in ACCOUNTS:
         user_id, created = await ensure_auth_user(client, email, display_name)
+        if reset_passwords and not created and is_seed_email(email):
+            await client.auth.admin.update_user_by_id(
+                user_id, {"password": SEED_PASSWORD}
+            )
+            log.info("pwd  [RESET] %-7s %s", role, email)
         await ensure_users_row(
             client,
             user_id=user_id,
@@ -408,4 +422,14 @@ async def ensure_sessions_and_attendance(
 
 
 if __name__ == "__main__":
-    sys.exit(asyncio.run(main()))
+    parser = argparse.ArgumentParser(
+        description="LOCAL DEV ONLY — 5개 역할 계정 + 학원/반/세션/출결 시딩."
+    )
+    parser.add_argument(
+        "--reset-passwords",
+        action="store_true",
+        help="@egong.test 계정의 비밀번호를 SEED_PASSWORD로 재설정 "
+        "(기본 동작은 기존 비밀번호 유지)",
+    )
+    args = parser.parse_args()
+    sys.exit(asyncio.run(main(reset_passwords=args.reset_passwords)))
