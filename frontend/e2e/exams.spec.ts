@@ -57,6 +57,13 @@ test.describe('성적 스모크', () => {
     ).toBeVisible()
 
     await page.locator('#exam-title').fill(title)
+    // ExamForm의 반 선택(select[name="class_id"])은 listClasses()로 학원 전체 반을 받아온다
+    // (ExamsPageBody.tsx 주석 참조) — <select>는 기본으로 첫 옵션이 선택되므로, 학원에 반이
+    // "초등 미술반" 하나뿐이라고 가정하고 그냥 두면 위험하다. 이 DB는 다른 워크트리·세션과
+    // 공유돼 있어(e2e 실행 중 실제로 "E2E반-eb1fa315-..." 같은, 이 스펙이 만들지 않은 반이
+    // 이미 존재해 첫 옵션으로 잡히는 걸 확인함 — 그 반은 명단이 비어 있어 뒤 단계가 전부
+    // 깨진다), 반드시 이름으로 명시 선택한다.
+    await page.locator('select[name="class_id"]').selectOption({ label: '초등 미술반' })
     // ExamForm의 시험일 input(name="exam_date"). 상세 화면의 ExamAdminPanel도 같은
     // name="exam_date"를 쓰지만, 그 패널은 기본 접힘 상태라(버튼만 렌더) 지금 이
     // 목록 페이지의 DOM에는 아예 존재하지 않는다 — 스코프 충돌 걱정 없음.
@@ -119,7 +126,13 @@ test.describe('성적 스모크', () => {
     await login(page, studentEmail!, studentPassword!, '**/me')
     await page.goto('/me/exams')
 
-    await expect(page.getByText(title), '학생 화면에 방금 공개한 시험이 안 보임').toBeVisible()
+    // exact: true 필수 — ExamReportBoard의 요약 타일 부제("23 / 25점 · 2026-07-26 · {title}")도
+    // title을 부분 문자열로 포함해서, exact 없이 getByText(title)을 쓰면 목록 행의 제목과
+    // 요약 타일 부제 두 곳에 매치돼 strict mode violation이 난다(실제로 이 실행에서 확인함).
+    await expect(
+      page.getByText(title, { exact: true }),
+      '학생 화면에 방금 공개한 시험이 안 보임',
+    ).toBeVisible()
     await expect(page.getByText('반 평균')).toBeVisible()
     await expect(page.getByText('시험 목록')).toBeVisible()
 
