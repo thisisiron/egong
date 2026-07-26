@@ -284,12 +284,27 @@ async def ensure_sessions_and_attendance(
     return len(sessions_to_create), n_attendance
 
 
-async def ensure_today_session(client: AsyncClient, class_id: str) -> str:
-    """오늘(KST) 00:05 세션 1개. 출결은 만들지 않는다 — teacher-day가 채우는 몫.
+def _compute_today_session_scheduled_at(kst_now: datetime) -> datetime:
+    """'오늘' 세션의 scheduled_at(KST)을 계산 — 항상 kst_now보다 엄격히 이전이면서 같은 KST 날짜.
 
-    멱등: '[DEV SEED] 오늘' 세션이 이 반에 이미 있으면 그 id를 반환한다.
     'upcoming' 상태면 SessionPopup이 출결 링크를 렌더하지 않으므로, 반드시 현재 시각보다
-    이전이어야 한다. KST 00:05 = UTC 전날 15:05.
+    이전이어야 한다. 기본은 오늘 00:05다. 하지만 시드가 자정 직후 00:00~00:05 사이에
+    실행되면 00:05가 아직 오지 않은 미래 시각이 되어버려 이 불변식이 깨진다 — 그 경우
+    'kst_now - 1초'를 대신 쓴다(자정 이전으로는 내려가지 않게 clamp해서 '오늘'을 유지).
+    """
+    midnight = kst_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    five_past_midnight = midnight + timedelta(minutes=5)
+    if five_past_midnight < kst_now:
+        return five_past_midnight
+    return max(midnight, kst_now - timedelta(seconds=1))
+
+
+async def ensure_today_session(client: AsyncClient, class_id: str) -> str:
+    """오늘(KST) 세션 1개(기본 00:05, 자정 직후엔 현재 시각 직전으로 보정).
+
+    출결은 만들지 않는다 — teacher-day가 채우는 몫.
+    멱등: '[DEV SEED] 오늘' 세션이 이 반에 이미 있으면 그 id를 반환한다(시각 계산 이전에
+    먼저 확인하므로 언제 재실행해도 안전).
     """
     title = "[DEV SEED] 오늘"
     resp = (
@@ -303,7 +318,7 @@ async def ensure_today_session(client: AsyncClient, class_id: str) -> str:
         return resp.data[0]["id"]
 
     kst_now = datetime.now(timezone(timedelta(hours=9)))
-    scheduled = kst_now.replace(hour=0, minute=5, second=0, microsecond=0)
+    scheduled = _compute_today_session_scheduled_at(kst_now)
     resp = (
         await client.table("sessions")
         .insert(
