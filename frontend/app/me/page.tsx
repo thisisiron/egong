@@ -20,6 +20,8 @@ import { listAnnouncementsForStudent } from '@/lib/announcements/service'
 import { listQuestionsForStudent } from '@/lib/questions/service'
 import { AnnouncementCard } from '@/lib/announcements/components/AnnouncementCard'
 import { getEventsInRange } from '@/lib/events/service'
+import { getLatestPublishedReportRow } from '@/lib/exams/service'
+import { toPercent } from '@/lib/exams/types'
 
 export default async function MyStudentPage({
   searchParams,
@@ -64,7 +66,7 @@ export default async function MyStudentPage({
     }
   )
 
-  const [student, recentSessions, announcements, attendance, events, myQuestions] =
+  const [student, recentSessions, announcements, attendance, events, myQuestions, latestExam] =
     await Promise.all([
       getStudentProfile(targetStudentId),
       getRecentAttendanceSessions(targetStudentId, 6),
@@ -72,6 +74,8 @@ export default async function MyStudentPage({
       attendancePromise,
       eventsPromise,
       listQuestionsForStudent(targetStudentId).catch(() => []),
+      // fail-soft — 성적 카드 하나의 실패가 대시보드 전체를 죽이지 않게
+      getLatestPublishedReportRow(targetStudentId).catch(() => null),
     ])
 
   const unresolvedCount = myQuestions.filter((q) => !q.is_resolved).length
@@ -123,6 +127,28 @@ export default async function MyStudentPage({
           )}
         </div>
       </Link>
+
+      {latestExam && latestExam.my_score !== null && (
+        <Link
+          href="/me/exams"
+          className="block border border-gray-200 bg-white rounded-lg p-4 hover:bg-gray-50"
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            최근 성적
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-semibold text-slate-900 tabular-nums">
+              {toPercent(latestExam.my_score, latestExam.max_score)}%
+            </span>
+            <span className="text-xs text-slate-500">
+              {latestExam.my_score} / {latestExam.max_score}점
+            </span>
+          </div>
+          <div className="mt-0.5 text-xs text-slate-500">
+            {latestExam.exam_date} · {latestExam.title}
+          </div>
+        </Link>
+      )}
 
       {attendance ? (
         <>

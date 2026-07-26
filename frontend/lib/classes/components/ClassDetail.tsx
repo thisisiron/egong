@@ -28,12 +28,20 @@ export function ClassDetail({
         {cls.description ? ` · ${cls.description}` : ''}
       </p>
 
-      <Link
-        href={`${basePath}/questions`}
-        className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline"
-      >
-        💬 이 반 학생들의 질문 보기 →
-      </Link>
+      <div className="flex flex-wrap gap-4">
+        <Link
+          href={`${basePath}/questions`}
+          className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline"
+        >
+          💬 이 반 학생들의 질문 보기 →
+        </Link>
+        <Link
+          href={`${basePath}/exams?class=${cls.id}`}
+          className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline"
+        >
+          📊 이 반 성적 보기 →
+        </Link>
+      </div>
 
       <section className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
         <h2 className="font-semibold">담임 선생님</h2>

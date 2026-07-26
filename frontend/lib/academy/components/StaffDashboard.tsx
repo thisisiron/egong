@@ -8,6 +8,7 @@ import { todayAttendanceRate } from '@/lib/attendance/stats'
 import { TodayAttendance } from '@/lib/attendance/components/TodayAttendance'
 import { getSessionUser } from '@/lib/auth'
 import { countClasses } from '@/lib/classes/service'
+import { countDraftExams } from '@/lib/exams/service'
 import { listSessionDaysForMonth } from '@/lib/sessions/service'
 import { MonthCalendarCard } from '@/lib/sessions/components/MonthCalendarCard'
 import { countStudents } from '@/lib/students/service'
@@ -21,27 +22,41 @@ interface StaffDashboardProps {
 }
 
 export async function StaffDashboard({ basePath, roleLabel }: StaffDashboardProps) {
-  const [user, academyName, students, teachers, classes, today, monthDays, announcements] =
-    await Promise.all([
-      getSessionUser(), // layout의 requireRole과 React cache 공유 — 추가 쿼리 없음
-      getMyAcademyName(),
-      countStudents(),
-      countTeachers(),
-      countClasses(),
-      // fail-soft — 출결 카드 하나의 실패가 대시보드 전체를 죽이지 않게
-      getTodaySessionsSummary().catch((e: unknown) => {
-        console.error('오늘 출결 현황 조회 실패:', e)
-        return null
-      }),
-      listSessionDaysForMonth().catch((e: unknown) => {
-        console.error('월 세션 조회 실패:', e)
-        return null
-      }),
-      listAnnouncements(5).catch((e: unknown) => {
-        console.error('최근 공지 조회 실패:', e)
-        return null
-      }),
-    ])
+  const [
+    user,
+    academyName,
+    students,
+    teachers,
+    classes,
+    today,
+    monthDays,
+    announcements,
+    draftExams,
+  ] = await Promise.all([
+    getSessionUser(), // layout의 requireRole과 React cache 공유 — 추가 쿼리 없음
+    getMyAcademyName(),
+    countStudents(),
+    countTeachers(),
+    countClasses(),
+    // fail-soft — 출결 카드 하나의 실패가 대시보드 전체를 죽이지 않게
+    getTodaySessionsSummary().catch((e: unknown) => {
+      console.error('오늘 출결 현황 조회 실패:', e)
+      return null
+    }),
+    listSessionDaysForMonth().catch((e: unknown) => {
+      console.error('월 세션 조회 실패:', e)
+      return null
+    }),
+    listAnnouncements(5).catch((e: unknown) => {
+      console.error('최근 공지 조회 실패:', e)
+      return null
+    }),
+    // fail-soft — 공개 대기 카드 하나의 실패가 대시보드 전체를 죽이지 않게
+    countDraftExams().catch((e: unknown) => {
+      console.error('공개 대기 시험 조회 실패:', e)
+      return null
+    }),
+  ])
 
   const rate = todayAttendanceRate(today)
 
@@ -84,6 +99,26 @@ export async function StaffDashboard({ basePath, roleLabel }: StaffDashboardProp
             sub={rate.detail}
             tone="violet"
           />
+          {draftExams !== null && (
+            <Link
+              href={`${basePath}/exams`}
+              className={`block border rounded-lg p-4 transition-colors ${
+                draftExams > 0
+                  ? 'border-gray-200 bg-white hover:bg-gray-50'
+                  : 'border-dashed border-slate-300 bg-slate-50'
+              }`}
+            >
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                공개 대기
+              </div>
+              <div className="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">
+                {draftExams}
+              </div>
+              <div className="mt-0.5 text-xs text-slate-500">
+                {draftExams > 0 ? '아직 공개하지 않은 시험이 있습니다' : '모두 공개됐습니다'}
+              </div>
+            </Link>
+          )}
         </div>
         {monthDays ? (
           <MonthCalendarCard days={monthDays} />
