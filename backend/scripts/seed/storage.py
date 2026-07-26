@@ -30,16 +30,22 @@ async def upload_material_file(
     """더미 파일 1개를 규약 경로에 올리고 materials.files 항목 dict를 반환한다.
 
     멱등: 해당 prefix에 이미 객체가 있으면 새로 올리지 않고 첫 객체를 재사용한다.
+
+    `filename`의 확장자는 무시한다 — 실제로 올라가는 객체는 항상 DUMMY_EXT
+    (버킷 allowed_mime_types 제약 때문에 pdf로 고정, 아래 DUMMY_CONTENT_TYPE 참고).
+    호출자가 아무 확장자로 부르든 표시 이름과 저장 객체의 확장자가 어긋날 수 없도록
+    여기서 강제로 맞춘다(caller가 실수로 벌려놓을 수 없게).
     """
     scope = class_id or "all"
     prefix = f"{academy_id}/{scope}"
+    display_name = f"{_strip_ext(filename)}.{DUMMY_EXT}"
 
     existing = await client.storage.from_(BUCKET).list(prefix)
     if existing:
         name = existing[0]["name"]
         return {
             "path": f"{prefix}/{name}",
-            "name": filename,
+            "name": display_name,
             "size": len(DUMMY_BODY),
         }
 
@@ -47,7 +53,13 @@ async def upload_material_file(
     await client.storage.from_(BUCKET).upload(
         path, DUMMY_BODY, {"content-type": DUMMY_CONTENT_TYPE}
     )
-    return {"path": path, "name": filename, "size": len(DUMMY_BODY)}
+    return {"path": path, "name": display_name, "size": len(DUMMY_BODY)}
+
+
+def _strip_ext(filename: str) -> str:
+    """호출자가 준 파일명에서 확장자를 떼어낸다 (표시 이름 base 용)."""
+    base, _, _ext = filename.rpartition(".")
+    return base if base else filename
 
 
 async def delete_material_files_under(
