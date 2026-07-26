@@ -45,6 +45,10 @@ pnpm run dev:frontend                                       # http://localhost:3
 
 - 웹: http://localhost:3000
 - API: http://localhost:8000/docs (Swagger UI)
+
+> **dev 서버는 루프백(`127.0.0.1`)에만 바인딩됩니다.** 같은 네트워크의 다른 기기에서는 접속되지 않습니다.
+> 휴대폰 실기기로 확인해야 할 때만 `pnpm --filter @egong/frontend exec next dev`처럼 `-H` 없이 띄우세요.
+> 단, 그 상태에서는 dev 전용 퀵 로그인 배너(`DEV_LOGIN_ENABLED=1`)도 함께 노출되므로 신뢰할 수 있는 네트워크에서만 하세요.
 - Supabase: https://supabase.com/dashboard → egong 프로젝트 → SQL Editor / Table Editor
 
 ### 디렉토리
