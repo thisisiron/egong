@@ -229,3 +229,31 @@ export async function currentAcademyId(): Promise<string | null> {
   const user = await getSessionUser()
   return user?.academyId ?? null
 }
+
+/**
+ * 이 시험의 "시험일 기준" 응시 대상 학생 id 목록. 없는 시험이면 빈 배열.
+ * class_students는 다른 도메인(classes) 소유 테이블 — actions.ts가 명단 검증(점수 저장 시
+ * 응시 대상 확인, 공개 시 미입력 판정)에 쓸 때 이 함수를 거치게 해서 (1) 도메인 경계를 지키고
+ * (2) inRosterOn 판정 로직을 한 곳에서만 유지한다.
+ */
+export async function getExamRosterStudentIds(examId: string): Promise<string[]> {
+  const supabase = await createClient()
+
+  const { data: exam, error: examErr } = await supabase
+    .from('exams')
+    .select('class_id, exam_date')
+    .eq('id', examId)
+    .maybeSingle()
+  if (examErr) throw new Error(examErr.message)
+  if (!exam) return []
+
+  const { data, error } = await supabase
+    .from('class_students')
+    .select('student_id, joined_at, left_at')
+    .eq('class_id', exam.class_id)
+  if (error) throw new Error(error.message)
+
+  return (data ?? [])
+    .filter((cs) => inRosterOn(cs, exam.exam_date))
+    .map((cs) => cs.student_id)
+}

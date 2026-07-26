@@ -13,6 +13,7 @@ import {
   saveScoresSchema,
   updateExamSchema,
 } from './schemas'
+import { getExamRosterStudentIds } from './service'
 
 function revalidateExamLists() {
   revalidatePath('/owner/exams')
@@ -98,6 +99,25 @@ export async function updateExamAction(formData: FormData) {
   await verifyExamInMyAcademy(parsed.id)
 
   const supabase = await createClient()
+
+  // 만점 하향 검사 — exam_scores의 CHECK 트리거는 score/exam_id 변경에만 걸리고 exams
+  // UPDATE에는 걸리지 않는다. 검사 없이 만점을 낮추면 이미 저장된 점수가 100%를 넘는
+  // 상태로 남아, 학생 리포트(exam_report_for_student)가 190% 같은 값을 보여줄 수 있다.
+  const { data: maxScoreRow, error: maxScoreErr } = await supabase
+    .from('exam_scores')
+    .select('score')
+    .eq('exam_id', parsed.id)
+    .not('score', 'is', null)
+    .order('score', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (maxScoreErr) throw new Error(maxScoreErr.message)
+  if (maxScoreRow && maxScoreRow.score !== null && parsed.max_score < maxScoreRow.score) {
+    throw new Error(
+      `이미 입력된 최고 점수(${maxScoreRow.score}점)보다 낮은 만점은 설정할 수 없습니다.`
+    )
+  }
+
   const { error } = await supabase
     .from('exams')
     .update({
@@ -124,6 +144,7 @@ export async function deleteExamAction(formData: FormData) {
   if (error) throw new Error(error.message)
 
   revalidateExamLists()
+  revalidateExamDetail(id)
   revalidateDashboards()
 }
 
@@ -140,21 +161,9 @@ export async function saveExamScoresAction(formData: FormData) {
   // 명단 검증 — 제출된 student_id가 "시험일 기준" 그 반 명단에 있는지.
   // RLS는 "내 학원 행"까지만 막고 "이 시험의 응시자인가"는 보지 못한다. 검증이 없으면
   // 같은 학원 다른 반 학생 id를 끼워 넣어 점수를 심을 수 있다.
-  const { data: rosterRows, error: rosterErr } = await supabase
-    .from('class_students')
-    .select('student_id, joined_at, left_at')
-    .eq('class_id', exam.class_id)
-  if (rosterErr) throw new Error(rosterErr.message)
-
-  const allowed = new Set(
-    (rosterRows ?? [])
-      .filter(
-        (cs) =>
-          cs.joined_at <= exam.exam_date &&
-          (cs.left_at === null || cs.left_at >= exam.exam_date)
-      )
-      .map((cs) => cs.student_id)
-  )
+  // class_students는 classes 도메인 소유라 exams/service.ts의 getExamRosterStudentIds를
+  // 거쳐서만 접근한다 — 직접 조회하면 도메인 경계를 넘고, 명단 판정 로직이 흩어진다.
+  const allowed = new Set(await getExamRosterStudentIds(parsed.exam_id))
   if (parsed.rows.some((r) => !allowed.has(r.student_id))) {
     throw new Error('이 시험의 응시 대상이 아닌 학생이 포함되어 있습니다.')
   }
@@ -183,10 +192,15 @@ export async function saveExamScoresAction(formData: FormData) {
 
   revalidateExamLists()
   revalidateExamDetail(parsed.exam_id)
+  // 공개 후에도 점수 정정이 가능하므로 학생 화면(리포트)도 갱신 대상이다.
+  revalidateDashboards()
 }
 
 /**
  * 공개. 멱등 — 이미 공개된 시험은 조용히 종료해 알림 중복을 막는다.
+ * 이 조기 반환은 "빠른 경로"일 뿐, 진짜 멱등성 보장은 아래 UPDATE의 `.is('published_at', null)`
+ * 조건이 한다 — 두 탭이 동시에 조기 반환을 통과해도(TOCTOU) UPDATE는 먼저 커밋한 요청에게만
+ * 매치되므로 두 번째 요청은 0행을 받고 알림을 재발송하지 않는다.
  * 알림 실패는 삼킨다: 공개가 주 작업이고 알림은 부수 효과다. throw하면 화면에는 "실패"가
  * 뜨는데 성적은 이미 공개된 상태라 사용자가 다시 누르게 되고, 그러면 알림이 두 번 갈 수 있다.
  * (materials는 throw하는데, 이 지점에서 의도적으로 다르게 간다 — 스펙 4.1 참조)
@@ -199,29 +213,23 @@ export async function publishExamAction(
   const exam = await verifyExamInMyAcademy(id)
 
   if (exam.published_at !== null) {
-    return { published: true, notified: true }
+    // 이미 공개됨 — 알림은 최초 공개 시 한 번만 나가야 하므로 재발송하지 않는다.
+    // "성공"으로 보고하면 재클릭 사용자가 "발송 안 됐는데 됐다고 뜬다"를 겪을 수 있어
+    // notified: false로 알린다.
+    return { published: true, notified: false }
   }
 
   const supabase = await createClient()
 
-  // 미입력 검사 — 시험일 기준 명단 대비 점수·미응시가 모두 기록됐는지
-  const [rosterRes, scoreRes] = await Promise.all([
-    supabase
-      .from('class_students')
-      .select('student_id, joined_at, left_at')
-      .eq('class_id', exam.class_id),
+  // 미입력 검사 — 시험일 기준 명단 대비 점수·미응시가 모두 기록됐는지.
+  // class_students는 classes 도메인 소유라 exams/service.ts의 getExamRosterStudentIds를
+  // 거쳐서만 접근한다 (saveExamScoresAction과 동일한 명단 판정 로직을 한 곳에서 재사용).
+  const [rosterIds, scoreRes] = await Promise.all([
+    getExamRosterStudentIds(id),
     supabase.from('exam_scores').select('student_id, score, is_absent').eq('exam_id', id),
   ])
-  if (rosterRes.error) throw new Error(rosterRes.error.message)
   if (scoreRes.error) throw new Error(scoreRes.error.message)
 
-  const rosterIds = (rosterRes.data ?? [])
-    .filter(
-      (cs) =>
-        cs.joined_at <= exam.exam_date &&
-        (cs.left_at === null || cs.left_at >= exam.exam_date)
-    )
-    .map((cs) => cs.student_id)
   const recorded = new Set(
     (scoreRes.data ?? [])
       .filter((s) => s.score !== null || s.is_absent)
@@ -232,17 +240,27 @@ export async function publishExamAction(
     throw new Error(`미입력 ${missing}명이 있습니다. 점수를 넣거나 미응시로 표시해주세요.`)
   }
 
-  const { error } = await supabase
+  // UPDATE 자체를 동시성 게이트로 쓴다 — `.is('published_at', null)`이 매치하는 요청만
+  // "내가 공개를 성사시켰다"고 간주한다. 두 탭이 동시에 위 조기 반환을 통과해도(TOCTOU),
+  // 여기서 실제로 행을 갱신한 쪽만 알림을 보낸다.
+  const { data: updated, error } = await supabase
     .from('exams')
     .update({ published_at: new Date().toISOString() })
     .eq('id', id)
+    .is('published_at', null)
+    .select('id')
   if (error) throw new Error(error.message)
 
-  let notified = true
-  try {
-    await dispatchExamNotifications(id, ['student', 'parent'])
-  } catch {
-    notified = false
+  let notified = false
+  if (updated && updated.length > 0) {
+    try {
+      const count = await dispatchExamNotifications(id, ['student', 'parent'])
+      // create_exam_notifications가 자체 스태프 가드 등으로 0건을 반환하면 발송 안 된 것.
+      notified = count > 0
+    } catch (e) {
+      console.error(`시험 공개 알림 발송 실패 (examId=${id}):`, e)
+      notified = false
+    }
   }
 
   revalidateExamLists()
