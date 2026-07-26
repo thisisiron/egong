@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Building2,
   CalendarDays,
   ClipboardCheck,
@@ -37,6 +38,7 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
         { href: '/owner/parents', label: '학부모', icon: UserRound },
         { href: '/owner/teachers', label: '선생님', icon: GraduationCap },
         { href: '/owner/classes', label: '반', icon: School },
+        { href: '/owner/exams', label: '성적', icon: BarChart3 },
       ],
     },
     {
@@ -63,6 +65,7 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
         { href: '/teacher/parents', label: '학부모', icon: UserRound },
         { href: '/teacher/teachers', label: '선생님', icon: GraduationCap },
         { href: '/teacher/classes', label: '반', icon: School },
+        { href: '/teacher/exams', label: '성적', icon: BarChart3 },
       ],
     },
     {
@@ -91,6 +94,7 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
         { href: '/me/assignments', label: '과제', icon: ClipboardCheck },
         { href: '/me/questions', label: '질문', icon: MessagesSquare },
         { href: '/me/materials', label: '자료', icon: FolderOpen },
+        { href: '/me/exams', label: '성적', icon: BarChart3 },
       ],
     },
   ],
