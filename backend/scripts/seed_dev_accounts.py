@@ -8,10 +8,15 @@
 (비밀번호를 재설정하려면 --reset-passwords 플래그를 쓰세요. `@egong.test` 계정에
 한해 비밀번호를 SEED_PASSWORD(기본 '***REMOVED***')로 재설정합니다.)
 
+시드 세계를 완전히 새로 만들려면 --reset 플래그를 쓰세요. 시드가 소유한 학원 2개
+(테스트학원·테스트학원2)와 `@egong.test` 계정을 전부 지운 뒤 처음부터 다시 시딩합니다.
+ENVIRONMENT=production 에서는 안전장치가 실행을 거부합니다.
+
 사용:
     cd backend
     ./.venv/Scripts/python.exe scripts/seed_dev_accounts.py
     ./.venv/Scripts/python.exe scripts/seed_dev_accounts.py --reset-passwords
+    ./.venv/Scripts/python.exe scripts/seed_dev_accounts.py --reset
 
 환경변수:
     SEED_PASSWORD (기본 '***REMOVED***') — 신규 생성되는 모든 계정에 동일하게 사용
@@ -65,13 +70,14 @@ from seed import (
 from seed import (
     storage as st,
 )
+from seed.reset import reset_seed_world
 from supabase import acreate_client
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger("seed")
 
 
-async def main(reset_passwords: bool = False) -> int:
+async def main(reset: bool = False, reset_passwords: bool = False) -> int:
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_SECRET_KEY")
     if not url or not key:
@@ -79,6 +85,13 @@ async def main(reset_passwords: bool = False) -> int:
         return 2
 
     client = await acreate_client(url, key)
+
+    if reset:
+        stats = await reset_seed_world(client)
+        log.info(
+            "reset 완료: auth %d · 학원 %d · storage %d",
+            stats["auth_users"], stats["academies"], stats["storage_objects"],
+        )
 
     # 1. 학원
     academy_id = await h.get_or_create_academy(client, ACADEMY_NAME)
@@ -228,5 +241,12 @@ if __name__ == "__main__":
         help="@egong.test 계정의 비밀번호를 SEED_PASSWORD로 재설정 "
         "(기본 동작은 기존 비밀번호 유지)",
     )
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="시드 소유 학원 2개와 @egong.test 계정을 전부 지우고 새로 만든다",
+    )
     args = parser.parse_args()
-    sys.exit(asyncio.run(main(reset_passwords=args.reset_passwords)))
+    sys.exit(
+        asyncio.run(main(reset=args.reset, reset_passwords=args.reset_passwords))
+    )
