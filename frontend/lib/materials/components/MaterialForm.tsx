@@ -18,9 +18,22 @@ type Props = {
 }
 
 export function MaterialForm({ academyId, scopeOptions, onSuccess }: Props) {
+  const [classId, setClassId] = useState('')
   const [files, setFiles] = useState<UploadedFile[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [scopeNotice, setScopeNotice] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+
+  // 파일은 storage 경로 {academy}/{class_id|'all'}/{uuid}.{ext}에 선택 즉시 업로드된다.
+  // 업로드 후 대상(반)을 바꾸면 이미 올라간 파일이 옛 경로(prefix)에 남아 새 대상 기준으로는
+  // 읽을 수 없게 되므로, 대상이 바뀌면 첨부를 초기화하고 재첨부를 안내한다.
+  function handleClassChange(nextClassId: string) {
+    setClassId(nextClassId)
+    if (files.length > 0) {
+      setFiles([])
+      setScopeNotice('대상을 바꿔 첨부 파일을 초기화했습니다. 다시 첨부해주세요.')
+    }
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -30,7 +43,7 @@ export function MaterialForm({ academyId, scopeOptions, onSuccess }: Props) {
     // 클라이언트 선검증 — 프로덕션에서 서버 throw 메시지가 마스킹되므로 여기서 친절한 에러
     // files는 아직 배열 상태(state)로 검증 — 액션에는 JSON 문자열로 실어 보낸다
     const parsed = createMaterialSchema.safeParse({
-      class_id: fd.get('class_id') ?? '',
+      class_id: classId,
       title: fd.get('title'),
       description: fd.get('description'),
       files,
@@ -48,7 +61,9 @@ export function MaterialForm({ academyId, scopeOptions, onSuccess }: Props) {
         await createMaterialAction(fd)
         setError(null)
         form.reset()
+        setClassId('')
         setFiles([])
+        setScopeNotice(null)
         onSuccess?.()
       } catch (err) {
         setError(err instanceof Error ? err.message : '자료 등록에 실패했습니다.')
@@ -63,7 +78,8 @@ export function MaterialForm({ academyId, scopeOptions, onSuccess }: Props) {
         <select
           id="mat-class"
           name="class_id"
-          defaultValue=""
+          value={classId}
+          onChange={(e) => handleClassChange(e.target.value)}
           className="w-full border rounded px-3 py-2 text-sm"
         >
           <option value="">학원 전체</option>
@@ -72,6 +88,8 @@ export function MaterialForm({ academyId, scopeOptions, onSuccess }: Props) {
           ))}
         </select>
       </div>
+
+      {scopeNotice && <div role="status" className="text-sm text-amber-600">{scopeNotice}</div>}
 
       <div className="space-y-1">
         <Label htmlFor="mat-title">제목</Label>
@@ -87,7 +105,7 @@ export function MaterialForm({ academyId, scopeOptions, onSuccess }: Props) {
         <Label>파일</Label>
         <StorageFileUpload
           bucket="material-files"
-          pathPrefix={academyId}
+          pathPrefix={`${academyId}/${classId || 'all'}`}
           value={files}
           onChange={setFiles}
           multiple
