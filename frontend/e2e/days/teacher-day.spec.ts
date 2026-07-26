@@ -48,9 +48,9 @@ test('선생: 오늘 회차 출결 입력', async ({ page }) => {
   // 조건부). 주간 목록의 각 세션 행 자체가 `?day=YYYY-MM-DD`로 가는 링크라 먼저 그걸 눌러야
   // 팝업이 나타난다. 오늘 세션은 시드가 제목에 "오늘"을 박아둬(`[DEV SEED] 오늘`) 날짜를
   // 하드코딩하지 않고도 안정적으로 특정할 수 있다.
-  await page.getByRole('link', { name: /오늘/ }).click()
+  const todayLink = page.getByRole('link', { name: /오늘/ })
 
-  // /teacher/sessions/[id]로 가는 유일한 링크 — 방금 뜬 SessionPopup(SessionPopup.tsx:85).
+  // /teacher/sessions/[id]로 가는 유일한 링크 — '오늘' 클릭으로 뜬 SessionPopup(SessionPopup.tsx:85).
   // 상태가 upcoming이면 링크 자체가 없다(시드가 세션을 KST 00:05로 만들어 이미 지난 시각이라
   // empty/in_progress/completed 중 하나가 되도록 보장). 링크 라벨은 상태에 따라
   // '출결 입력하기'(empty·in_progress) 또는 '회차 보기'(completed)로 갈린다 — 반복 실행 시
@@ -58,17 +58,27 @@ test('선생: 오늘 회차 출결 입력', async ({ page }) => {
   const detailLink = page
     .getByRole('link', { name: /출결 입력하기|회차 보기/ })
     .first()
-  // 실측: 위 '오늘' 클릭 직후 팝업이 day 쿼리파라미터로 새로 RSC 렌더링되는 타이밍과 겹치면
-  // 이 링크 클릭이 씹혀 URL이 전혀 안 바뀐 채로 소모되는 경우가 재현됐다(제출 폼의 하이드레이션
-  // 레이스와는 다른 결이지만 같은 "DOM이 막 바뀌는 순간의 클릭 유실" 계열). 이 클릭은 순수
-  // 페이지 이동(Link)이라 부작용이 없어 재시도해도 안전하다 — 클릭+네비게이션 성공을 한
-  // 단위로 묶어 재시도한다.
+
+  // 실측(Task 11): '오늘' 클릭 직후 팝업이 day 쿼리파라미터로 새로 RSC 렌더링되는 타이밍과
+  // 겹치면 그 다음 상세 링크 클릭이 씹혀 URL이 전혀 안 바뀐 채로 소모되는 경우가 재현됐다.
+  //
+  // 추가 실측(Task 13): 상세 링크만 재시도해서는 부족했다 — '오늘' 클릭 그 자체(현재 이
+  // 줄)도 같은 하이드레이션 레이스에 걸릴 수 있고, 그게 씹히면 day 파라미터가 아예 안 붙어
+  // 팝업이 영영 뜨지 않는다. 그 상태에서 상세 링크만 재시도하면 존재하지도 않는 링크를
+  // 계속 찾다가(각 시도 3s) 바깥 toPass 예산(당시 15s)을 전부 소진하고 "Timeout 15000ms
+  // exceeded while waiting on the predicate"로 실패한다 — 실측 시 캡처한 페이지 스냅샷이
+  // 여전히 주간 목록 화면이었고 SessionPopup 자체가 없었다(day 파라미터 미적용). 두 클릭을
+  // **하나의 재시도 단위**로 묶어, 상세 링크를 못 찾으면 '오늘'부터 다시 누르게 한다. 둘 다
+  // 순수 `<Link>` 네비게이션(부작용 없음)이라 전체를 재시도해도 안전하다. 각 클릭에 짧은
+  // 개별 timeout을 줘서(3s) 한 번의 느린 시도가 바깥 예산을 통째로 태우지 않고 실제로 여러
+  // 차례 재시도할 여지를 남긴다.
   await expect(async () => {
-    await detailLink.click()
+    await todayLink.click({ timeout: 3000 })
+    await detailLink.click({ timeout: 3000 })
     await expect(page).toHaveURL(/\/teacher\/sessions\/[0-9a-f-]{36}$/, {
       timeout: 2000,
     })
-  }).toPass({ timeout: 15_000 })
+  }).toPass({ timeout: 20_000 })
 
   const presentBtn = page.getByRole('button', { name: '김학생 출' })
   // AttendanceRow는 세션 상세 진입 직후 등장하는 client component라 공지 '글작성'과 동일한
@@ -82,10 +92,24 @@ test('선생: 오늘 회차 출결 입력', async ({ page }) => {
 
   // 리로드해도 유지되는지 확인 — 버튼 색이 클라이언트 상태(useState)만 바뀐 게 아니라
   // 서버에 실제로 저장돼 새 페이지 로드 시 initialStatus로 되돌아온 것인지 검증한다.
-  await page.reload()
-  await expect(page.getByRole('button', { name: '김학생 출' })).toHaveClass(
-    /bg-green-500/
-  )
+  //
+  // 실측(Task 13): AttendanceRow의 pick()은 upsertAttendanceAction을 startTransition
+  // 안에서 `void`로 fire-and-forget 호출한다 — await가 없어 클라이언트에 "서버 커밋
+  // 완료" 신호가 전혀 없다(위 toPass가 확인하는 건 setStatus로 즉시 바뀌는 클라이언트
+  // 상태일 뿐, 서버 반영 여부와 무관). --reset 직후 그 세션에 대한 첫 출결 쓰기는 커밋이
+  // 관측상 15초보다 늦게(길게는 수십 초) 도착했다 — 리로드가 실제 커밋보다 먼저 도착하면
+  // 이 단언은 "아직 반영 안 된 진짜 상태"를 읽고 정직하게 실패한다(셀렉터 문제가 아님).
+  // page.reload()는 순수 GET이라 부작용이 없어 재시도해도 안전하다(제출 버튼처럼 재시도가
+  // 중복 insert를 만들 위험이 없음) — 커밋이 반영될 때까지 리로드+단언을 한 단위로 묶어
+  // 재시도한다. 검증 대상은 여전히 initialStatus(서버 상태)이므로, 재시도는 통과를
+  // 만들어내는 게 아니라 "결국 서버에 실제로 반영됐는지"를 확인하는 것이다.
+  await expect(async () => {
+    await page.reload()
+    await expect(page.getByRole('button', { name: '김학생 출' })).toHaveClass(
+      /bg-green-500/,
+      { timeout: 3000 }
+    )
+  }).toPass({ timeout: 60_000 })
 })
 
 test('선생: 과제 부여 → 목록 반영', async ({ page }, testInfo) => {
