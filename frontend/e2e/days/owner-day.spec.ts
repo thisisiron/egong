@@ -32,12 +32,23 @@ test('원장: 공지 등록 → 목록 반영', async ({ page }, testInfo) => {
   const title = `E2E공지-${testInfo.testId.slice(0, 8)}-${Date.now()}`
 
   await page.goto('/owner/announcements')
-  // 실측: 네트워크가 잠잠해지기 전(=클라이언트 하이드레이션 완료 전)에 클릭하면
-  // 버튼이 DOM상 보여도 onClick이 아직 붙지 않아 클릭이 씹히고, 이후 getByLabel('제목')이
-  // 테스트 전체 타임아웃(30s)까지 조용히 대기하다 실패한다 — networkidle로 그 레이스를 없앤다.
-  await page.waitForLoadState('networkidle')
-  await page.getByRole('button', { name: '글작성' }).click()
-  await page.getByLabel('제목').fill(title)
+  // 실측: goto 직후(=클라이언트 하이드레이션 완료 전) 클릭하면 버튼이 DOM상 보여도
+  // onClick이 아직 안 붙어 클릭이 씹히고, 이후 getByLabel('제목')이 테스트 전체
+  // 타임아웃(30s)까지 조용히 대기하다 실패한다.
+  // networkidle("500ms간 네트워크 요청 없음")로 처음 우회했었지만, 이 앱에 현재
+  // setInterval/WebSocket/EventSource 같은 백그라운드 트래픽이 전혀 없어서 "네트워크가
+  // 조용함"과 "핸들러가 붙음"이 우연히 일치했을 뿐이다 — 폴링이나 realtime 구독이 하나라도
+  // 생기면 조용히 깨진다(Playwright 공식 문서도 이 이유로 networkidle 사용을 권장하지 않음).
+  // 원하는 상태(작성 폼이 실제로 마운트됨)를 직접 폴링하도록 교체 — 클릭+검증을 한 단위로
+  // 묶어 재시도한다. 하이드레이션이 늦어 처음 클릭이 씹혀도 다음 시도에서 통과하고,
+  // 기능 자체가 깨졌다면(예: 글작성 버튼이 죽음) toPass의 자체 타임아웃(15s)에서 실패한다 —
+  // 테스트 재시도(config의 retries: 0)와는 별개로, 이 상호작용 하나에 한정된 재시도다.
+  const titleInput = page.getByLabel('제목')
+  await expect(async () => {
+    await page.getByRole('button', { name: '글작성' }).click()
+    await expect(titleInput).toBeVisible({ timeout: 2000 })
+  }).toPass({ timeout: 15_000 })
+  await titleInput.fill(title)
   await page.getByLabel('내용').fill('e2e 공지 본문')
   // brief의 /등록|저장|올리기/ 는 실제 마크업과 불일치 — AnnouncementCreateForm.tsx 105행은 '게시'.
   await page.getByRole('button', { name: '게시', exact: true }).click()
