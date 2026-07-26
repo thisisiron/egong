@@ -133,7 +133,12 @@ test.describe('성적 스모크', () => {
       page.getByText(title, { exact: true }),
       '학생 화면에 방금 공개한 시험이 안 보임',
     ).toBeVisible()
-    await expect(page.getByText('반 평균')).toBeVisible()
+    // .first() 필수 — 공개된 시험이 누적돼 TREND_MIN_POINTS(3개) 이상이면 ScoreTrendChart의
+    // 범례(ScoreTrendChart.tsx:58)에도 "반 평균" 텍스트가 또 나온다(요약 타일 라벨과 합쳐
+    // 2곳). 둘 다 정상 UI이므로 어느 쪽이 매치돼도 "반 평균이 노출된다"는 확인 목적은
+    // 만족한다 — 반복 실행으로 시드에 공개 시험이 쌓이면 strict mode violation이 나는 걸
+    // 실제로 겪었다.
+    await expect(page.getByText('반 평균').first()).toBeVisible()
     await expect(page.getByText('시험 목록')).toBeVisible()
 
     // 핵심 2: 타인 개별 점수가 노출되지 않는다.
