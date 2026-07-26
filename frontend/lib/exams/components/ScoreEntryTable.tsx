@@ -35,26 +35,67 @@ export function ScoreEntryTable({ examId, maxScore, roster }: Props) {
   const [saved, setSaved] = useState(false)
   const [pending, startTransition] = useTransition()
 
+  // roster는 서버 컴포넌트가 exam_date 기준으로 다시 계산해 내려줄 수 있다(예: ExamAdminPanel에서
+  // 시험일을 고치면 revalidate로 이 컴포넌트가 언마운트 없이 새 roster를 받는다). drafts는 마운트
+  // 시점 한 번만 초기화되므로, 새로 들어온 학생은 drafts에 키가 없을 수 있다 — 직접 인덱싱하면
+  // undefined를 읽어 타이핑 중이던 값이 크래시와 함께 날아간다. 항상 이 헬퍼로 읽어 서버 값으로
+  // 폴백한다(이미 입력한 값은 state가 이긴다).
+  function draftFor(r: ExamRosterRow): Draft {
+    return (
+      drafts[r.student_id] ?? {
+        score: r.score === null ? '' : String(r.score),
+        is_absent: r.is_absent,
+        memo: r.memo ?? '',
+      }
+    )
+  }
+
   const missingCount = roster.filter((r) => {
-    const d = drafts[r.student_id]
+    const d = draftFor(r)
     return !d.is_absent && d.score.trim() === ''
   }).length
 
   function update(studentId: string, patch: Partial<Draft>) {
     setSaved(false)
-    setDrafts((prev) => ({ ...prev, [studentId]: { ...prev[studentId], ...patch } }))
+    setDrafts((prev) => ({
+      ...prev,
+      [studentId]: { ...(prev[studentId] ?? draftFor(roster.find((r) => r.student_id === studentId)!)), ...patch },
+    }))
   }
 
-  function toggleAbsent(studentId: string) {
-    const next = !drafts[studentId].is_absent
+  function toggleAbsent(r: ExamRosterRow) {
+    const d = draftFor(r)
+    const next = !d.is_absent
     // 미응시로 바꾸면 점수를 비운다 — DB CHECK와 같은 규칙을 화면에서도 지킨다.
-    update(studentId, { is_absent: next, score: next ? '' : drafts[studentId].score })
+    update(r.student_id, { is_absent: next, score: next ? '' : d.score })
   }
 
   function save() {
     setError(null)
+
+    // 클라이언트 검증 — number input의 min/max는 버튼 클릭 흐름에서 강제되지 않는다(폼 제출이
+    // 아니라 onClick 핸들러라 브라우저 검증이 개입하지 않음). 여기서 막지 않으면 서버의 ZodError가
+    // 그대로 튀어 JSON 블롭이 보인다. 학생 이름을 메시지에 넣어 어느 줄인지 알려준다.
+    for (const r of roster) {
+      const d = draftFor(r)
+      if (d.is_absent || d.score.trim() === '') continue
+      const n = Number(d.score)
+      if (!Number.isFinite(n)) {
+        setError(`${r.student_name}: 점수를 숫자로 입력해주세요.`)
+        return
+      }
+      if (n < 0) {
+        setError(`${r.student_name}: 점수는 0점 이상이어야 합니다.`)
+        return
+      }
+      if (n > maxScore) {
+        setError(`${r.student_name}: 만점 ${maxScore}점을 넘는 점수가 있습니다.`)
+        return
+      }
+    }
+
     const rows = roster.map((r) => {
-      const d = drafts[r.student_id]
+      const d = draftFor(r)
       return {
         student_id: r.student_id,
         score: d.is_absent || d.score.trim() === '' ? null : Number(d.score),
@@ -87,7 +128,7 @@ export function ScoreEntryTable({ examId, maxScore, roster }: Props) {
     <div className="space-y-3">
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         {roster.map((r, i) => {
-          const d = drafts[r.student_id]
+          const d = draftFor(r)
           const isMissing = !d.is_absent && d.score.trim() === ''
           const pct =
             !d.is_absent && d.score.trim() !== ''
@@ -130,7 +171,7 @@ export function ScoreEntryTable({ examId, maxScore, roster }: Props) {
 
               <button
                 type="button"
-                onClick={() => toggleAbsent(r.student_id)}
+                onClick={() => toggleAbsent(r)}
                 className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600 hover:bg-slate-50"
               >
                 {d.is_absent ? '해제' : '미응시'}

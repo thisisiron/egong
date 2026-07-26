@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { ZodError, type ZodType } from 'zod'
 
 import { requireRole } from '@/lib/auth'
 import { classBelongsToAcademy } from '@/lib/classes/service'
@@ -14,6 +15,23 @@ import {
   updateExamSchema,
 } from './schemas'
 import { getExamRosterStudentIds } from './service'
+
+/**
+ * zod `.parse()`를 감싸 `ZodError`를 평범한 한국어 `Error`로 바꾼다.
+ * `ZodError.message`는 이슈 배열을 JSON으로 직렬화한 문자열이라, 클라이언트가 그대로
+ * `e.message`를 화면에 띄우면 사용자에게 JSON 블롭이 보인다. 첫 번째 이슈의 메시지만
+ * 꺼내 던져 스키마에 적힌 한국어 메시지가 그대로 살아남게 한다.
+ */
+function parse<Schema extends ZodType>(schema: Schema, data: unknown): Schema['_output'] {
+  try {
+    return schema.parse(data)
+  } catch (e) {
+    if (e instanceof ZodError) {
+      throw new Error(e.issues[0]?.message ?? '입력값이 올바르지 않습니다.')
+    }
+    throw e
+  }
+}
 
 function revalidateExamLists() {
   revalidatePath('/owner/exams')
@@ -56,7 +74,7 @@ export async function createExamAction(formData: FormData) {
   const user = await requireRole(['owner', 'teacher'])
   if (!user.academyId) throw new Error('소속 학원 정보가 없습니다.')
 
-  const parsed = createExamSchema.parse({
+  const parsed = parse(createExamSchema, {
     class_id: formData.get('class_id') ?? '',
     title: formData.get('title'),
     exam_type: formData.get('exam_type'),
@@ -87,7 +105,7 @@ export async function createExamAction(formData: FormData) {
 }
 
 export async function updateExamAction(formData: FormData) {
-  const parsed = updateExamSchema.parse({
+  const parsed = parse(updateExamSchema, {
     id: formData.get('id') ?? '',
     title: formData.get('title'),
     exam_type: formData.get('exam_type'),
@@ -146,7 +164,7 @@ export async function updateExamAction(formData: FormData) {
 }
 
 export async function deleteExamAction(formData: FormData) {
-  const id = examIdSchema.parse(formData.get('id') ?? '')
+  const id = parse(examIdSchema, formData.get('id') ?? '')
   await verifyExamInMyAcademy(id)
 
   const supabase = await createClient()
@@ -160,7 +178,7 @@ export async function deleteExamAction(formData: FormData) {
 
 export async function saveExamScoresAction(formData: FormData) {
   const rawRows = formData.get('rows')
-  const parsed = saveScoresSchema.parse({
+  const parsed = parse(saveScoresSchema, {
     exam_id: formData.get('exam_id') ?? '',
     rows: typeof rawRows === 'string' && rawRows.trim() !== '' ? JSON.parse(rawRows) : [],
   })
@@ -219,7 +237,7 @@ export async function saveExamScoresAction(formData: FormData) {
 export async function publishExamAction(
   formData: FormData
 ): Promise<{ published: boolean; notified: boolean }> {
-  const id = examIdSchema.parse(formData.get('id') ?? '')
+  const id = parse(examIdSchema, formData.get('id') ?? '')
   const exam = await verifyExamInMyAcademy(id)
 
   if (exam.published_at !== null) {
