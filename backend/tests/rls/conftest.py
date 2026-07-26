@@ -101,3 +101,17 @@ def as_user(db, user_id: str):
 
 def count(db, sql: str, *params) -> int:
     return db.execute(sql, params).fetchone()[0]
+
+
+def material_file_count(db, academy_id: str, segment: str) -> int:
+    """material-files 버킷에서 {academy_id}/{segment}/ 접두사 아래 오브젝트 수.
+
+    segment는 class_id 또는 리터럴 'all'. mfiles_member_read의
+    path-segment 검사(academy·class)를 그대로 흉내내는 조회.
+    """
+    return count(
+        db,
+        "SELECT count(*) FROM storage.objects "
+        "WHERE bucket_id = 'material-files' AND name LIKE %s",
+        f"{academy_id}/{segment}/%",
+    )
