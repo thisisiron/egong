@@ -58,6 +58,7 @@ from seed import (
     CLASS_NAME,
     EXTRA_STUDENT_ACCOUNT,
     MATERIAL_ALL_TITLE,
+    MATERIAL_B_TITLE,
     MATERIAL_CLASS1_TITLE,
     MATERIAL_CLASS2_TITLE,
     QUESTION_TITLE,
@@ -215,6 +216,20 @@ async def main(reset: bool = False, reset_passwords: bool = False) -> int:
         created_by=user_ids["owner"], author_name="박원장",
     )
     log.info("contents : 자료 3 · 과제 1 · 질문 1 · 공지 1")
+
+    # 10. 학원 B 콘텐츠 — 학원 경계 RLS 테스트의 양성 단언용(자기 학원 데이터가 실제로
+    #     보이는지). 최소 1건씩만 — 학원 B를 A의 축소판으로 만들지 않는다.
+    await h.ensure_material(
+        client, academy_id=academy_b_id, class_id=class_ab_id,
+        title=MATERIAL_B_TITLE, files=[],
+        created_by=b_user_ids["owner"], author_name="최원장",
+    )
+    today_session_b_id = await h.ensure_today_session(client, class_ab_id)
+    await h.ensure_attendance(
+        client, session_id=today_session_b_id, student_id=student2_id,
+        status="present",
+    )
+    log.info("academy B contents: 자료 1 · 출결 1")
 
     print()
     print("=" * 60)

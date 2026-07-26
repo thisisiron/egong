@@ -284,6 +284,43 @@ async def ensure_sessions_and_attendance(
     return len(sessions_to_create), n_attendance
 
 
+async def ensure_attendance(
+    client: AsyncClient,
+    *,
+    session_id: str,
+    student_id: str,
+    status: str,
+    marked_by: str | None = None,
+) -> str:
+    """단건 출결 row. attendance는 (session_id, student_id) UNIQUE라 이 쌍으로 멱등 확인.
+
+    ensure_sessions_and_attendance는 6세션짜리 대량 생성기라 단건이 필요한 곳(학원 B
+    양성 단언용)에는 무겁다 — 그래서 별도로 둔다.
+    """
+    resp = (
+        await client.table("attendance")
+        .select("id")
+        .eq("session_id", session_id)
+        .eq("student_id", student_id)
+        .execute()
+    )
+    if resp.data:
+        return resp.data[0]["id"]
+    resp = (
+        await client.table("attendance")
+        .insert(
+            {
+                "session_id": session_id,
+                "student_id": student_id,
+                "status": status,
+                "marked_by": marked_by,
+            }
+        )
+        .execute()
+    )
+    return resp.data[0]["id"]
+
+
 def _compute_today_session_scheduled_at(kst_now: datetime) -> datetime:
     """'오늘' 세션의 scheduled_at(KST)을 계산 — 항상 kst_now보다 엄격히 이전이면서 같은 KST 날짜.
 
