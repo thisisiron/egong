@@ -332,3 +332,146 @@ async def ensure_today_session(client: AsyncClient, class_id: str) -> str:
         .execute()
     )
     return resp.data[0]["id"]
+
+
+async def ensure_material(
+    client: AsyncClient,
+    *,
+    academy_id: str,
+    class_id: str | None,
+    title: str,
+    files: list[dict],
+    created_by: str,
+    author_name: str,
+) -> str:
+    resp = (
+        await client.table("materials")
+        .select("id")
+        .eq("academy_id", academy_id)
+        .eq("title", title)
+        .execute()
+    )
+    if resp.data:
+        return resp.data[0]["id"]
+    resp = (
+        await client.table("materials")
+        .insert(
+            {
+                "academy_id": academy_id,
+                "class_id": class_id,
+                "title": title,
+                "description": "시드 자료",
+                "files": files,
+                "created_by": created_by,
+                "author_name": author_name,
+            }
+        )
+        .execute()
+    )
+    return resp.data[0]["id"]
+
+
+async def ensure_assignment(
+    client: AsyncClient,
+    *,
+    academy_id: str,
+    class_id: str,
+    title: str,
+    created_by: str,
+    author_name: str,
+) -> str:
+    resp = (
+        await client.table("assignments")
+        .select("id")
+        .eq("academy_id", academy_id)
+        .eq("title", title)
+        .execute()
+    )
+    if resp.data:
+        return resp.data[0]["id"]
+    resp = (
+        await client.table("assignments")
+        .insert(
+            {
+                "academy_id": academy_id,
+                "class_id": class_id,
+                "title": title,
+                "description": "시드 과제",
+                "created_by": created_by,
+                "author_name": author_name,
+            }
+        )
+        .execute()
+    )
+    return resp.data[0]["id"]
+
+
+async def ensure_question(
+    client: AsyncClient,
+    *,
+    academy_id: str,
+    class_id: str,
+    student_id: str,
+    title: str,
+    author_name: str,
+) -> str:
+    resp = (
+        await client.table("questions")
+        .select("id")
+        .eq("academy_id", academy_id)
+        .eq("title", title)
+        .execute()
+    )
+    if resp.data:
+        return resp.data[0]["id"]
+    resp = (
+        await client.table("questions")
+        .insert(
+            {
+                "academy_id": academy_id,
+                "class_id": class_id,
+                "student_id": student_id,
+                "author_name": author_name,
+                "title": title,
+                "body": "시드 질문 본문",
+                "is_public": True,
+            }
+        )
+        .execute()
+    )
+    return resp.data[0]["id"]
+
+
+async def ensure_announcement(
+    client: AsyncClient,
+    *,
+    academy_id: str,
+    class_id: str | None,
+    title: str,
+    created_by: str,
+    author_name: str,
+) -> str:
+    resp = (
+        await client.table("announcements")
+        .select("id")
+        .eq("academy_id", academy_id)
+        .eq("title", title)
+        .execute()
+    )
+    if resp.data:
+        return resp.data[0]["id"]
+    resp = (
+        await client.table("announcements")
+        .insert(
+            {
+                "academy_id": academy_id,
+                "class_id": class_id,
+                "title": title,
+                "body": "시드 공지 본문",
+                "created_by": created_by,
+                "author_name": author_name,
+            }
+        )
+        .execute()
+    )
+    return resp.data[0]["id"]

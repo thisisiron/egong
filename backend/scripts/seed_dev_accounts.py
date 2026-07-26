@@ -47,14 +47,23 @@ from seed import (
     ACADEMY_NAME,
     ACCOUNTS,
     ACCOUNTS_B,
+    ANNOUNCEMENT_TITLE,
+    ASSIGNMENT_TITLE,
     CLASS_B_NAME,
     CLASS_NAME,
     EXTRA_STUDENT_ACCOUNT,
+    MATERIAL_ALL_TITLE,
+    MATERIAL_CLASS1_TITLE,
+    MATERIAL_CLASS2_TITLE,
+    QUESTION_TITLE,
     SEED_PASSWORD,
     is_seed_email,
 )
 from seed import (
     helpers as h,
+)
+from seed import (
+    storage as st,
 )
 from supabase import acreate_client
 
@@ -157,6 +166,42 @@ async def main(reset_passwords: bool = False) -> int:
     )
     await h.ensure_class_student(client, class_ab_id, student2_id)
     log.info("academy B: %-20s %s", ACADEMY_B_NAME, academy_b_id)
+
+    # 9. 콘텐츠 — 자료 3종(반1·반2·학원전체) + 과제·질문·공지
+    f1 = await st.upload_material_file(client, academy_id, class_id, "반1자료.txt")
+    f2 = await st.upload_material_file(client, academy_id, class_b_id, "반2자료.txt")
+    fa = await st.upload_material_file(client, academy_id, None, "전체자료.txt")
+
+    await h.ensure_material(
+        client, academy_id=academy_id, class_id=class_id,
+        title=MATERIAL_CLASS1_TITLE, files=[f1],
+        created_by=user_ids["teacher"], author_name="이선생",
+    )
+    await h.ensure_material(
+        client, academy_id=academy_id, class_id=class_b_id,
+        title=MATERIAL_CLASS2_TITLE, files=[f2],
+        created_by=user_ids["teacher"], author_name="이선생",
+    )
+    await h.ensure_material(
+        client, academy_id=academy_id, class_id=None,
+        title=MATERIAL_ALL_TITLE, files=[fa],
+        created_by=user_ids["owner"], author_name="박원장",
+    )
+    await h.ensure_assignment(
+        client, academy_id=academy_id, class_id=class_id,
+        title=ASSIGNMENT_TITLE,
+        created_by=user_ids["teacher"], author_name="이선생",
+    )
+    await h.ensure_question(
+        client, academy_id=academy_id, class_id=class_id,
+        student_id=student_id, title=QUESTION_TITLE, author_name="김학생",
+    )
+    await h.ensure_announcement(
+        client, academy_id=academy_id, class_id=class_id,
+        title=ANNOUNCEMENT_TITLE,
+        created_by=user_ids["owner"], author_name="박원장",
+    )
+    log.info("contents : 자료 3 · 과제 1 · 질문 1 · 공지 1")
 
     print()
     print("=" * 60)

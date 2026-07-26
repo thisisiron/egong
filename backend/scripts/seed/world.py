@@ -38,3 +38,12 @@ ACCOUNTS_B: list[tuple[str, str, str]] = [
 def is_seed_email(email: str) -> bool:
     """시드가 소유한 계정인지 판정. 실제 사용자 계정 보호를 위한 도메인 가드."""
     return email.strip().lower().endswith(SEED_EMAIL_DOMAIN)
+
+
+# 콘텐츠 제목 — RLS 테스트·e2e 스펙이 이 문자열로 조회한다. 바꾸면 양쪽이 함께 깨진다.
+MATERIAL_CLASS1_TITLE = "[SEED] 반1 전용 자료"
+MATERIAL_CLASS2_TITLE = "[SEED] 반2 전용 자료"
+MATERIAL_ALL_TITLE = "[SEED] 학원 전체 자료"
+ASSIGNMENT_TITLE = "[SEED] 반1 과제"
+QUESTION_TITLE = "[SEED] 반1 질문"
+ANNOUNCEMENT_TITLE = "[SEED] 반1 공지"
