@@ -22,12 +22,16 @@ export function MaterialForm({ academyId, scopeOptions, onSuccess }: Props) {
   const [files, setFiles] = useState<UploadedFile[]>([])
   const [error, setError] = useState<string | null>(null)
   const [scopeNotice, setScopeNotice] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
   const [pending, startTransition] = useTransition()
 
   // 파일은 storage 경로 {academy}/{class_id|'all'}/{uuid}.{ext}에 선택 즉시 업로드된다.
-  // 업로드 후 대상(반)을 바꾸면 이미 올라간 파일이 옛 경로(prefix)에 남아 새 대상 기준으로는
-  // 읽을 수 없게 되므로, 대상이 바뀌면 첨부를 초기화하고 재첨부를 안내한다.
+  // 업로드 후 대상(반)을 바꾸면 이미 올라간 파일이 옛 경로(prefix)에 남아, 옛 대상 멤버는
+  // 볼 수 있고(유출) 새 대상 멤버는 못 보는(첨부 깨짐) 상태가 된다 → 첨부를 비우고 재첨부 안내.
+  // 업로드가 아직 진행 중이면 files가 비어 있어 이 가드가 헛돌기 때문에(경합),
+  // 진행 중에는 select 자체를 잠근다(아래 disabled={uploading}).
   function handleClassChange(nextClassId: string) {
+    setScopeNotice(null)
     setClassId(nextClassId)
     if (files.length > 0) {
       setFiles([])
@@ -54,6 +58,9 @@ export function MaterialForm({ academyId, scopeOptions, onSuccess }: Props) {
       return
     }
 
+    // disabled된 select는 FormData에 값을 싣지 않는다(업로드 중 잠금 때문에 발생 가능).
+    // 화면 상태(classId)를 단일 진실 소스로 삼아 명시적으로 실어 보낸다 — files와 동일한 패턴.
+    fd.set('class_id', classId)
     fd.set('files', JSON.stringify(files))
 
     startTransition(async () => {
@@ -80,13 +87,15 @@ export function MaterialForm({ academyId, scopeOptions, onSuccess }: Props) {
           name="class_id"
           value={classId}
           onChange={(e) => handleClassChange(e.target.value)}
-          className="w-full border rounded px-3 py-2 text-sm"
+          disabled={uploading}
+          className="w-full border rounded px-3 py-2 text-sm disabled:bg-slate-100 disabled:text-slate-400"
         >
           <option value="">학원 전체</option>
           {scopeOptions.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
+        {uploading && <p className="text-xs text-slate-500">업로드 중에는 대상을 바꿀 수 없습니다</p>}
       </div>
 
       {scopeNotice && <div role="status" className="text-sm text-amber-600">{scopeNotice}</div>}
@@ -108,6 +117,7 @@ export function MaterialForm({ academyId, scopeOptions, onSuccess }: Props) {
           pathPrefix={`${academyId}/${classId || 'all'}`}
           value={files}
           onChange={setFiles}
+          onUploadingChange={setUploading}
           multiple
           maxBytes={10 * 1024 * 1024}
         />
@@ -135,7 +145,10 @@ export function MaterialForm({ academyId, scopeOptions, onSuccess }: Props) {
       </div>
 
       {error && <div role="alert" className="text-sm text-red-600">{error}</div>}
-      <Button type="submit" disabled={pending}>{pending ? '등록 중…' : '자료 올리기'}</Button>
+      {/* 업로드 중 제출하면 files가 아직 비어 있어 첨부 없는 자료가 등록된다 — 함께 잠근다. */}
+      <Button type="submit" disabled={pending || uploading}>
+        {pending ? '등록 중…' : uploading ? '업로드 중…' : '자료 올리기'}
+      </Button>
     </form>
   )
 }

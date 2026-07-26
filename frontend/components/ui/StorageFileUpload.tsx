@@ -11,6 +11,9 @@ type Props = {
   pathPrefix: string
   value: UploadedFile[]
   onChange: (files: UploadedFile[]) => void
+  /** 업로드 진행 여부를 부모에 알린다(선택). pathPrefix가 폼 입력에 의존할 때
+   *  업로드 중 그 입력을 잠가야 경로-범위 불일치(경합)를 막을 수 있다. */
+  onUploadingChange?: (uploading: boolean) => void
   multiple?: boolean
   accept?: string
   maxBytes?: number
@@ -24,6 +27,7 @@ export function StorageFileUpload({
   pathPrefix,
   value,
   onChange,
+  onUploadingChange,
   multiple = false,
   accept = 'image/png,image/jpeg,application/pdf',
   maxBytes = 5 * 1024 * 1024,
@@ -31,6 +35,12 @@ export function StorageFileUpload({
 }: Props) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  /** uploading 상태는 부모도 알아야 한다(경로 잠금) — 항상 이 함수로만 바꾼다. */
+  function updateUploading(next: boolean) {
+    setUploading(next)
+    onUploadingChange?.(next)
+  }
 
   async function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
@@ -40,7 +50,7 @@ export function StorageFileUpload({
       if (f.size > maxBytes) { setError(`파일 크기는 ${Math.round(maxBytes / 1024 / 1024)}MB 이하여야 합니다`); return }
       if (!allowedMimes.includes(f.type)) { setError('PNG, JPG, PDF 파일만 업로드 가능합니다'); return }
     }
-    setUploading(true)
+    updateUploading(true)
     try {
       const supabase = createClient()
       const uploaded: UploadedFile[] = []
@@ -53,7 +63,7 @@ export function StorageFileUpload({
       }
       onChange(multiple ? [...value, ...uploaded] : uploaded.slice(0, 1))
     } finally {
-      setUploading(false)
+      updateUploading(false)
       e.target.value = ''
     }
   }

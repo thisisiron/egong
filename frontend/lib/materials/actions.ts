@@ -57,6 +57,15 @@ export async function createMaterialAction(formData: FormData) {
     throw new Error('잘못된 반입니다.')
   }
 
+  // 첨부 경로가 저장할 대상(범위)과 실제로 일치하는지 재검증 (RLS 위 2차 방어선).
+  // 파일은 제출 전에 {academy}/{class_id|'all'}/... 로 즉시 업로드되므로, 업로드 후 대상을
+  // 바꾸면 경로와 class_id가 어긋난다(옛 대상엔 유출, 새 대상엔 열람 불가). 클라이언트가
+  // 무엇을 하든 여기서 막는다.
+  const expectedPrefix = `${user.academyId}/${parsed.class_id ?? 'all'}/`
+  if (parsed.files.some((f) => !f.path.startsWith(expectedPrefix))) {
+    throw new Error('첨부 파일과 대상이 일치하지 않습니다. 파일을 다시 첨부해주세요.')
+  }
+
   const { data: inserted, error } = await supabase
     .from('materials')
     .insert({
