@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 
 from supabase import AsyncClient
 
@@ -210,7 +210,7 @@ async def ensure_class_student(
     )
     if resp.data:
         return
-    joined_at = (datetime.now(timezone.utc) - timedelta(days=14)).date().isoformat()
+    joined_at = (datetime.now(UTC) - timedelta(days=14)).date().isoformat()
     await client.table("class_students").insert(
         {
             "class_id": class_id,
@@ -240,7 +240,7 @@ async def ensure_sessions_and_attendance(
     if resp.data:
         return len(resp.data), 0
 
-    today = datetime.now(timezone.utc)
+    today = datetime.now(UTC)
     # 어제부터 14일 전까지 거꾸로 보면서 월(0)·수(2)·금(4)만 추리고, 최근 6개만.
     candidates: list[datetime] = []
     for days_ago in range(1, 15):
@@ -361,7 +361,7 @@ async def ensure_today_session(client: AsyncClient, class_id: str) -> str:
         .insert(
             {
                 "class_id": class_id,
-                "scheduled_at": scheduled.astimezone(timezone.utc).isoformat(),
+                "scheduled_at": scheduled.astimezone(UTC).isoformat(),
                 "title": title,
                 "unit": "오늘 단원",
             }
