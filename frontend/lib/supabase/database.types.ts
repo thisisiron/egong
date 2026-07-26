@@ -637,6 +637,124 @@ export type Database = {
           },
         ]
       }
+      exams: {
+        Row: {
+          academy_id: string
+          class_id: string
+          created_at: string
+          created_by: string | null
+          exam_date: string
+          exam_type: string | null
+          id: string
+          max_score: number
+          published_at: string | null
+          scope: string | null
+          title: string
+        }
+        Insert: {
+          academy_id: string
+          class_id: string
+          created_at?: string
+          created_by?: string | null
+          exam_date: string
+          exam_type?: string | null
+          id?: string
+          max_score: number
+          published_at?: string | null
+          scope?: string | null
+          title: string
+        }
+        Update: {
+          academy_id?: string
+          class_id?: string
+          created_at?: string
+          created_by?: string | null
+          exam_date?: string
+          exam_type?: string | null
+          id?: string
+          max_score?: number
+          published_at?: string | null
+          scope?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exams_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exams_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exams_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_scores: {
+        Row: {
+          academy_id: string
+          class_id: string
+          created_at: string
+          exam_id: string
+          id: string
+          is_absent: boolean
+          memo: string | null
+          score: number | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          class_id: string
+          created_at?: string
+          exam_id: string
+          id?: string
+          is_absent?: boolean
+          memo?: string | null
+          score?: number | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          class_id?: string
+          created_at?: string
+          exam_id?: string
+          id?: string
+          is_absent?: boolean
+          memo?: string | null
+          score?: number | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_scores_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_scores_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parents: {
         Row: {
           created_at: string
@@ -1131,6 +1249,26 @@ export type Database = {
       create_material_notifications: {
         Args: { p_material_id: string; p_roles: string[] }
         Returns: number
+      }
+      create_exam_notifications: {
+        Args: { p_exam_id: string; p_roles: string[] }
+        Returns: number
+      }
+      exam_report_for_student: {
+        Args: { p_student_id: string; p_from: string; p_to: string }
+        Returns: {
+          exam_id: string
+          title: string
+          exam_type: string | null
+          scope: string | null
+          exam_date: string
+          max_score: number
+          my_score: number | null
+          my_is_absent: boolean
+          class_avg_pct: number | null
+          class_max_pct: number | null
+          taker_count: number
+        }[]
       }
       notify_assignment_feedback: {
         Args: { p_submission_id: string }
