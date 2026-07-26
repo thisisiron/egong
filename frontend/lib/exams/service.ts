@@ -216,12 +216,18 @@ export async function countDraftExams(): Promise<number> {
   return count ?? 0
 }
 
-/** /me 대시보드 카드 — 가장 최근 공개된 성적 한 줄. 없으면 null. */
+/**
+ * /me 대시보드 카드 — 가장 최근 "응시한"(점수 있고 미응시 아님) 공개 성적 한 줄. 없으면 null.
+ * 가장 최근 공개 시험을 무조건 집으면, 그게 이 학생이 결시했거나 소급 배정 전이라 my_score가
+ * 없는 시험일 때 더 예전 성적이 있어도 카드가 사라진다. ExamReportBoard.tsx와 동일한 규칙
+ * (taken 필터 후 마지막)을 여기서도 써서 화면 두 곳이 어긋나지 않게 한다.
+ */
 export async function getLatestPublishedReportRow(
   studentId: string
 ): Promise<ExamReportRow | null> {
   const rows = await getExamReport(studentId)
-  return rows.length > 0 ? rows[rows.length - 1] : null
+  const taken = rows.filter((r) => r.my_score !== null && !r.my_is_absent)
+  return taken.length > 0 ? taken[taken.length - 1] : null
 }
 
 /** 세션 사용자의 학원 id — 액션에서 재검증할 때 쓰기 위해 노출. */

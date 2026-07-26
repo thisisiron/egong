@@ -43,6 +43,16 @@ function revalidateExamDetail(examId: string) {
   revalidatePath(`/teacher/exams/${examId}`)
 }
 
+/** rows는 폼에서 JSON 문자열로 온다 — 파싱 실패는 빈 배열로 두고 zod가 거른다(materials 선례). */
+function parseRowsField(raw: FormDataEntryValue | null): unknown {
+  if (typeof raw !== 'string' || raw.trim() === '') return []
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return []
+  }
+}
+
 function revalidateDashboards() {
   revalidatePath('/owner')
   revalidatePath('/teacher')
@@ -102,6 +112,8 @@ export async function createExamAction(formData: FormData) {
   if (error) throw new Error(error.message)
 
   revalidateExamLists()
+  // 스태프 대시보드 "공개 대기" 카드가 초안 수를 세므로 새 시험 생성도 갱신 대상이다.
+  revalidateDashboards()
 }
 
 export async function updateExamAction(formData: FormData) {
@@ -177,10 +189,9 @@ export async function deleteExamAction(formData: FormData) {
 }
 
 export async function saveExamScoresAction(formData: FormData) {
-  const rawRows = formData.get('rows')
   const parsed = parse(saveScoresSchema, {
     exam_id: formData.get('exam_id') ?? '',
-    rows: typeof rawRows === 'string' && rawRows.trim() !== '' ? JSON.parse(rawRows) : [],
+    rows: parseRowsField(formData.get('rows')),
   })
 
   const exam = await verifyExamInMyAcademy(parsed.exam_id)
@@ -194,6 +205,18 @@ export async function saveExamScoresAction(formData: FormData) {
   const allowed = new Set(await getExamRosterStudentIds(parsed.exam_id))
   if (parsed.rows.some((r) => !allowed.has(r.student_id))) {
     throw new Error('이 시험의 응시 대상이 아닌 학생이 포함되어 있습니다.')
+  }
+
+  // 중복 student_id — upsert(onConflict: 'exam_id,student_id')는 같은 배치 안에서 같은
+  // 충돌 대상 행을 두 번 갱신하지 못한다(Postgres 21000: ON CONFLICT DO UPDATE command
+  // cannot affect row a second time). 사전에 걸러 원시 Postgres 에러가 그대로 화면에
+  // 뜨는 것을 막는다.
+  const seen = new Set<string>()
+  for (const r of parsed.rows) {
+    if (seen.has(r.student_id)) {
+      throw new Error('같은 학생의 점수가 중복 제출되었습니다.')
+    }
+    seen.add(r.student_id)
   }
 
   // 만점 초과 — 사용자에게 즉시 보여줄 메시지용. DB 트리거가 최후 방어선으로 한 겹 더 있다.

@@ -100,24 +100,14 @@ export async function StaffDashboard({ basePath, roleLabel }: StaffDashboardProp
             tone="violet"
           />
           {draftExams !== null && (
-            <Link
+            <StatCard
               href={`${basePath}/exams`}
-              className={`block border rounded-lg p-4 transition-colors ${
-                draftExams > 0
-                  ? 'border-gray-200 bg-white hover:bg-gray-50'
-                  : 'border-dashed border-slate-300 bg-slate-50'
-              }`}
-            >
-              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                공개 대기
-              </div>
-              <div className="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">
-                {draftExams}
-              </div>
-              <div className="mt-0.5 text-xs text-slate-500">
-                {draftExams > 0 ? '아직 공개하지 않은 시험이 있습니다' : '모두 공개됐습니다'}
-              </div>
-            </Link>
+              badge="시험"
+              label="공개 대기"
+              value={`${draftExams}건`}
+              sub={draftExams > 0 ? '아직 공개하지 않은 시험이 있습니다' : '모두 공개됐습니다'}
+              tone="amber"
+            />
           )}
         </div>
         {monthDays ? (
@@ -156,6 +146,7 @@ const TONES = {
   sky: { card: 'bg-sky-50 border-sky-100', badge: 'bg-sky-100 text-sky-700' },
   emerald: { card: 'bg-emerald-50 border-emerald-100', badge: 'bg-emerald-100 text-emerald-700' },
   violet: { card: 'bg-violet-50 border-violet-100', badge: 'bg-violet-100 text-violet-700' },
+  amber: { card: 'bg-amber-50 border-amber-100', badge: 'bg-amber-100 text-amber-700' },
 } as const
 
 function StatCard({
