@@ -16,7 +16,37 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
-import { confirmConsultationAction, rejectConsultationAction } from '../actions'
+import {
+  cancelConsultationAction,
+  confirmConsultationAction,
+  rejectConsultationAction,
+} from '../actions'
+
+const TITLE: Record<'confirm' | 'reject' | 'cancel', string> = {
+  confirm: '상담 확정',
+  reject: '상담 반려',
+  cancel: '상담 취소',
+}
+
+const DESCRIPTION: Record<'confirm' | 'reject' | 'cancel', string> = {
+  confirm: '상담 시각을 정하면 학부모에게 알림이 갑니다.',
+  reject: '반려 사유는 학부모에게 그대로 전달됩니다.',
+  cancel: '취소 사유는 학부모에게 그대로 전달됩니다.',
+}
+
+const NOTE_LABEL: Record<'confirm' | 'reject' | 'cancel', string> = {
+  confirm: '안내 메모 (선택)',
+  reject: '반려 사유',
+  cancel: '취소 사유 (선택)',
+}
+
+const SUBMIT_LABEL: Record<'confirm' | 'reject' | 'cancel', string> = {
+  confirm: '확정',
+  reject: '반려',
+  // '취소'로만 쓰면 다이얼로그를 닫는 버튼처럼 읽힌다 — 실제로 취소 액션을 제출한다는
+  // 것을 분명히 하고, teacher-day.spec.ts의 '확정'/'반려' 셀렉터와도 겹치지 않는다.
+  cancel: '취소하기',
+}
 
 export function ConsultationHandleDialog({
   consultationId,
@@ -24,7 +54,7 @@ export function ConsultationHandleDialog({
   trigger,
 }: {
   consultationId: string
-  mode: 'confirm' | 'reject'
+  mode: 'confirm' | 'reject' | 'cancel'
   trigger: ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -32,6 +62,17 @@ export function ConsultationHandleDialog({
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    if (!next) {
+      // 실패 후 닫았다 다시 열면 이전 에러·입력이 남아있던 문제. 이 다이얼로그 인스턴스가
+      // confirm/reject/cancel 여러 목적으로 재사용되므로 닫힐 때마다 비운다.
+      setError(null)
+      setScheduledAt('')
+      setNote('')
+    }
+  }
 
   function submit() {
     setError(null)
@@ -44,7 +85,9 @@ export function ConsultationHandleDialog({
                 scheduled_at_local: scheduledAt,
                 note: note || null,
               })
-            : await rejectConsultationAction({ id: consultationId, note })
+            : mode === 'reject'
+              ? await rejectConsultationAction({ id: consultationId, note })
+              : await cancelConsultationAction({ id: consultationId, note: note || null })
         if (!result.ok) {
           setError(result.message)
           return
@@ -57,16 +100,12 @@ export function ConsultationHandleDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{mode === 'confirm' ? '상담 확정' : '상담 반려'}</DialogTitle>
-          <DialogDescription>
-            {mode === 'confirm'
-              ? '상담 시각을 정하면 학부모에게 알림이 갑니다.'
-              : '반려 사유는 학부모에게 그대로 전달됩니다.'}
-          </DialogDescription>
+          <DialogTitle>{TITLE[mode]}</DialogTitle>
+          <DialogDescription>{DESCRIPTION[mode]}</DialogDescription>
         </DialogHeader>
 
         {mode === 'confirm' && (
@@ -82,9 +121,7 @@ export function ConsultationHandleDialog({
         )}
 
         <div className="space-y-1">
-          <Label htmlFor="consultation-note">
-            {mode === 'confirm' ? '안내 메모 (선택)' : '반려 사유'}
-          </Label>
+          <Label htmlFor="consultation-note">{NOTE_LABEL[mode]}</Label>
           <Textarea
             id="consultation-note"
             value={note}
@@ -97,7 +134,7 @@ export function ConsultationHandleDialog({
 
         <DialogFooter>
           <Button onClick={submit} disabled={pending}>
-            {pending ? '처리 중…' : mode === 'confirm' ? '확정' : '반려'}
+            {pending ? '처리 중…' : SUBMIT_LABEL[mode]}
           </Button>
         </DialogFooter>
       </DialogContent>

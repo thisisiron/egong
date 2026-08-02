@@ -4,7 +4,7 @@ import { ko } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
 import { formatDateTimeKR } from '@/lib/format'
 
-import { SLOT_LABEL, type Consultation } from '../types'
+import { isOpen, SLOT_LABEL, type Consultation } from '../types'
 import { ConsultationHandleDialog } from './ConsultationHandleDialog'
 import { ConsultationStatusBadge } from './ConsultationStatusBadge'
 
@@ -53,19 +53,35 @@ export function StaffConsultationBoard({ rows }: { rows: Consultation[] }) {
             <p className="text-xs text-slate-500">학원 메모: {r.response_note}</p>
           )}
 
-          {r.status === 'requested' && (
+          {isOpen(r.status) && (
             <div className="flex gap-2">
+              {r.status === 'requested' && (
+                <>
+                  <ConsultationHandleDialog
+                    consultationId={r.id}
+                    mode="confirm"
+                    trigger={<Button size="sm">확정</Button>}
+                  />
+                  <ConsultationHandleDialog
+                    consultationId={r.id}
+                    mode="reject"
+                    trigger={
+                      <Button size="sm" variant="outline">
+                        반려
+                      </Button>
+                    }
+                  />
+                </>
+              )}
+              {/* requested·confirmed 둘 다 취소 가능 — 강사 일정 변경 등으로 학원 쪽에서
+                  확정된 상담을 해제할 UI 경로가 이전엔 없었다(cancel_consultation RPC의
+                  v_is_staff 분기가 도달 불가능했다). */}
               <ConsultationHandleDialog
                 consultationId={r.id}
-                mode="confirm"
-                trigger={<Button size="sm">확정</Button>}
-              />
-              <ConsultationHandleDialog
-                consultationId={r.id}
-                mode="reject"
+                mode="cancel"
                 trigger={
                   <Button size="sm" variant="outline">
-                    반려
+                    취소하기
                   </Button>
                 }
               />
