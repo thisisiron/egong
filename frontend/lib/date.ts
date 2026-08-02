@@ -1,5 +1,5 @@
 import { TZDate } from '@date-fns/tz'
-import { addDays, addMonths, endOfMonth, format, getDate, getMonth, getYear, startOfDay, startOfMonth } from 'date-fns'
+import { addDays, addMonths, endOfMonth, format, getDate, getMonth, getYear, startOfDay, startOfMonth, subMonths } from 'date-fns'
 
 /** 이 프로젝트의 모든 날짜 판정 기준 타임존. */
 const TZ = 'Asia/Seoul'
@@ -55,19 +55,45 @@ export function todayRangeKST(now = new Date()): {
   }
 }
 
-/** 'YYYY-MM' 쿼리 파라미터 → 그 달 KST 1일 00:00 인스턴트. 불량·없음이면 이번 달 (throw 없음).
+/** 'YYYY-MM' 쿼리 파라미터 → 그 달 KST 1일 00:00 인스턴트.
+ * 불량·없음이면 이번 달, 미래 달이면 이번 달로 클램프 (throw 없음).
  * 반환 Date의 연·월은 kstParts로 읽을 것 (로컬 getFullYear/getMonth 금지).
  */
 export function monthFromParam(param: string | undefined, now = new Date()): Date {
-  if (param && /^\d{4}-(0[1-9]|1[0-2])$/.test(param)) {
-    const [y, m] = param.split('-').map(Number)
-    return kstMonthStart(y, m)
-  }
-  const { year, month } = kstParts(now)
-  return kstMonthStart(year, month)
+  const current = kstParts(now)
+  const currentStart = kstMonthStart(current.year, current.month)
+  if (!param || !/^\d{4}-(0[1-9]|1[0-2])$/.test(param)) return currentStart
+  const [y, m] = param.split('-').map(Number)
+  const requested = kstMonthStart(y, m)
+  // 미래 달은 데이터가 없다. 404 대신 이번 달로 조용히 클램프한다.
+  return requested.getTime() > currentStart.getTime() ? currentStart : requested
 }
 
 /** KST 기준 해당 연·월 1일 00:00의 인스턴트. */
 function kstMonthStart(year: number, month: number): Date {
   return new Date(new TZDate(year, month - 1, 1, TZ).getTime())
+}
+
+/** 이전 달 KST 1일 00:00. 연 경계는 date-fns가 처리한다. */
+export function prevMonth(d: Date): Date {
+  const { year, month } = kstParts(d)
+  return new Date(subMonths(new TZDate(year, month - 1, 1, TZ), 1).getTime())
+}
+
+/** 다음 달 KST 1일 00:00. */
+export function nextMonth(d: Date): Date {
+  const { year, month } = kstParts(d)
+  return new Date(addMonths(new TZDate(year, month - 1, 1, TZ), 1).getTime())
+}
+
+/** d가 now와 같은 KST 달인가. 다음 달 버튼 비활성 판정용. */
+export function isCurrentMonthKST(d: Date, now = new Date()): boolean {
+  const a = kstParts(d)
+  const b = kstParts(now)
+  return a.year === b.year && a.month === b.month
+}
+
+/** URL 쿼리용 'YYYY-MM'. */
+export function monthParam(d: Date): string {
+  return format(toKST(d), 'yyyy-MM')
 }
