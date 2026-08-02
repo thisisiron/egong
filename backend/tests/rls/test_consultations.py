@@ -145,3 +145,134 @@ def test_대기중_상담은_학생당_한_건만(db, uids, parent_ctx):
         db.execute(sql, args)
         with pytest.raises(Exception):
             db.execute(sql, args)
+
+
+# ===== 신청·상태 전이 RPC =====
+#
+# 한 트랜잭션 안에서 set_config로 역할을 바꿔가며 검증한다. as_user처럼 트랜잭션을
+# 나누면 앞 단계에서 만든 행이 롤백되어 보이지 않는다.
+
+
+@contextmanager
+def acting_as(db, user_id):
+    """authenticated 롤 + 해당 사용자 클레임으로 시작하는 롤백 트랜잭션."""
+    with db.transaction(force_rollback=True):
+        db.execute("SET LOCAL role = 'authenticated'")
+        db.execute("SELECT set_config('request.jwt.claims', %s, true)", (claims(user_id),))
+        yield db
+
+
+def switch_to(db, user_id):
+    """같은 트랜잭션 안에서 다른 사용자로 전환."""
+    db.execute("SELECT set_config('request.jwt.claims', %s, true)", (claims(user_id),))
+
+
+def _request(db, student_id, days=7, reason="[TEST] RPC 신청"):
+    return db.execute(
+        "SELECT request_consultation(%s, %s, 'afternoon', %s)",
+        (student_id, (dt.date.today() + dt.timedelta(days=days)), reason),
+    ).fetchone()[0]
+
+
+def test_학부모는_RPC로_상담을_신청한다(db, uids, parent_ctx):
+    """양성 단언 — 이름 스냅샷이 서버에서 채워지는지까지 확인한다."""
+    with db.transaction(force_rollback=True):
+        # 시드 상담(requested)과 uq_consultation_pending이 충돌하지 않도록 먼저 비운다.
+        # role을 낮추기 전에 해야 한다 — authenticated로 내려간 뒤에는 되돌릴 수 없다.
+        # force_rollback이라 이 DELETE는 커밋되지 않는다.
+        db.execute(
+            "DELETE FROM consultations WHERE student_id = %s AND status = 'requested'",
+            (parent_ctx["student_id"],),
+        )
+        db.execute("SET LOCAL role = 'authenticated'")
+        switch_to(db, uids["parent"])
+
+        cid = _request(db, parent_ctx["student_id"])
+        assert cid is not None
+        sname, pname, status = db.execute(
+            "SELECT student_name, parent_name, status FROM consultations WHERE id = %s",
+            (cid,),
+        ).fetchone()
+    assert sname == parent_ctx["student_name"]
+    assert pname == parent_ctx["parent_name"]
+    assert status == "requested"
+
+
+def test_학부모는_남의_자녀로_신청할_수_없다(db, uids):
+    other = db.execute(
+        "SELECT id FROM students WHERE user_id = %s", (uids["student_b"],)
+    ).fetchone()
+    assert other is not None, "시드 student_b가 없습니다"
+    with acting_as(db, uids["parent"]) as c:
+        with pytest.raises(Exception, match="내 자녀가 아닙니다"):
+            _request(c, str(other[0]), reason="[TEST] 남의 자녀")
+
+
+def test_학부모는_확정_RPC를_직접_호출할_수_없다(db, uids, parent_ctx):
+    """PostgREST /rpc 직접 호출 방어 — 정책이 아니라 함수 내부 가드가 막아야 한다."""
+    with seeded(db, parent_ctx, user_id=uids["parent"]) as cid:
+        future = dt.datetime.now(dt.UTC) + dt.timedelta(days=7)
+        with pytest.raises(Exception, match="권한이 없습니다"):
+            db.execute("SELECT confirm_consultation(%s, %s, NULL)", (cid, future)).fetchone()
+
+
+def test_선생님은_상담을_확정한다(db, uids, parent_ctx):
+    with seeded(db, parent_ctx, user_id=uids["teacher"]) as cid:
+        future = dt.datetime.now(dt.UTC) + dt.timedelta(days=7)
+        db.execute(
+            "SELECT confirm_consultation(%s, %s, '상담실에서 뵙겠습니다')", (cid, future)
+        ).fetchone()
+        status, sched, handler = db.execute(
+            "SELECT status, scheduled_at, handler_name FROM consultations WHERE id = %s",
+            (cid,),
+        ).fetchone()
+    assert status == "confirmed"
+    assert sched is not None
+    assert handler == "이선생", "handler_name 스냅샷이 채워지지 않았습니다"
+
+
+def test_이미_확정된_상담은_다시_확정되지_않는다(db, uids, parent_ctx):
+    """낙관적 잠금 — 두 선생님이 동시에 눌러도 한 번만 성사된다."""
+    with seeded(db, parent_ctx, user_id=uids["teacher"]) as cid:
+        future = dt.datetime.now(dt.UTC) + dt.timedelta(days=7)
+        db.execute("SELECT confirm_consultation(%s, %s, NULL)", (cid, future)).fetchone()
+        with pytest.raises(Exception, match="이미 처리된"):
+            db.execute("SELECT confirm_consultation(%s, %s, NULL)", (cid, future)).fetchone()
+
+
+def test_과거_시각으로는_확정할_수_없다(db, uids, parent_ctx):
+    with seeded(db, parent_ctx, user_id=uids["teacher"]) as cid:
+        past = dt.datetime.now(dt.UTC) - dt.timedelta(days=1)
+        with pytest.raises(Exception, match="지난 시각"):
+            db.execute("SELECT confirm_consultation(%s, %s, NULL)", (cid, past)).fetchone()
+
+
+def test_반려는_사유가_필요하다(db, uids, parent_ctx):
+    with seeded(db, parent_ctx, user_id=uids["teacher"]) as cid:
+        with pytest.raises(Exception, match="반려 사유"):
+            db.execute("SELECT reject_consultation(%s, '')", (cid,)).fetchone()
+
+
+def test_학부모는_확정된_상담을_취소할_수_있다(db, uids, parent_ctx):
+    """확정 후 취소는 허용한다 — 막으면 전화로 돌아가 기능의 의미가 없어진다."""
+    with seeded(db, parent_ctx, user_id=uids["teacher"]) as cid:
+        future = dt.datetime.now(dt.UTC) + dt.timedelta(days=7)
+        db.execute("SELECT confirm_consultation(%s, %s, NULL)", (cid, future)).fetchone()
+
+        switch_to(db, uids["parent"])
+        db.execute("SELECT cancel_consultation(%s, '사정이 생겨 취소합니다')", (cid,)).fetchone()
+        status = db.execute(
+            "SELECT status FROM consultations WHERE id = %s", (cid,)
+        ).fetchone()[0]
+    assert status == "cancelled"
+
+
+def test_미인증_호출은_거부된다(db):
+    """auth.uid() IS NULL 가드가 살아있는지 — 없으면 NULL 비교로 fail-open."""
+    from .conftest import as_unauthenticated
+
+    with as_unauthenticated(db) as c:
+        with pytest.raises(Exception, match="권한이 없습니다"):
+            c.execute(
+                "SELECT cancel_consultation('00000000-0000-0000-0000-000000000000', NULL)"
+            ).fetchone()
