@@ -17,28 +17,32 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 import { buildColumns } from '../columns'
-import { delta, type ClassStatRow } from '../types'
+import { delta, formatDelta, formatMetric, type ClassStatRow, type DeltaTone } from '../types'
 
 type Props = { rows: ClassStatRow[]; basePath: string }
 
+// buildColumns()는 인자가 없는 정적 정의라 렌더마다 새로 만들 이유가 없다.
+// 모듈 스코프에서 한 번만 만들어 TanStack Table에 안정된 참조를 넘긴다.
+const COLUMNS = buildColumns()
+
+const DELTA_TONE_CLASS: Record<DeltaTone, string> = {
+  none: 'text-slate-400',
+  flat: 'text-slate-400',
+  up: 'text-emerald-600',
+  down: 'text-rose-600',
+}
+
 /** 지표 셀 — 값 + 전월 대비 델타.
- * 색만으로 좋고/나쁨을 구분하지 않는다. 화살표와 부호를 함께 쓴다.
+ * 표시 로직(undefined/0 판정, 화살표+부호 조합)은 lib/stats/types.ts의
+ * formatMetric/formatDelta에 있다 — 이 컴포넌트는 그 결과를 그리기만 한다.
  */
 function MetricCell({ value, prev }: { value?: number; prev?: number }) {
   if (value === undefined) return <span className="text-slate-400">—</span>
-  const d = delta(value, prev)
+  const { text, tone } = formatDelta(delta(value, prev))
   return (
     <span className="whitespace-nowrap">
-      <span className="font-medium text-slate-900">{Math.round(value)}%</span>
-      {d === undefined ? (
-        <span className="ml-2 text-xs text-slate-400">—</span>
-      ) : d === 0 ? (
-        <span className="ml-2 text-xs text-slate-400">— 0%p</span>
-      ) : (
-        <span className={`ml-2 text-xs ${d < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-          {d < 0 ? '▼' : '▲'} {Math.abs(d)}%p
-        </span>
-      )}
+      <span className="font-medium text-slate-900">{formatMetric(value)}</span>
+      <span className={`ml-2 text-xs ${DELTA_TONE_CLASS[tone]}`}>{text}</span>
     </span>
   )
 }
@@ -56,7 +60,7 @@ export function ClassStatsTable({ rows, basePath }: Props) {
 
   const table = useReactTable({
     data: rows,
-    columns: buildColumns(),
+    columns: COLUMNS,
     state: { sorting },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),

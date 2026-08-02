@@ -21,3 +21,31 @@ export function delta(now?: number, prev?: number): number | undefined {
   const diff = Number((now - prev).toFixed(8))
   return Math.round(diff * 10) / 10
 }
+
+/** 지표 표시 문자열. undefined는 "데이터 없음"(—)이고 0은 진짜 0%다 — 둘을 절대 섞지 않는다.
+ * `!value` 같은 falsy 가드로 "단순화"하면 0이 —로 바뀌는 회귀가 생기므로 반드시 `=== undefined`로만 판정한다.
+ */
+export function formatMetric(value?: number): string {
+  if (value === undefined) return '—'
+  return `${Math.round(value)}%`
+}
+
+export type DeltaTone = 'none' | 'flat' | 'up' | 'down'
+
+export interface DeltaDisplay {
+  text: string
+  tone: DeltaTone
+}
+
+/** delta()의 결과를 표시용 데이터로 가공한다. 색만으로 방향을 전달하지 않도록
+ * 화살표(▲/▼)와 부호(+/-)를 텍스트에 함께 넣는다 — 어느 한쪽만 지원되지 않는 환경에서도
+ * 나머지 하나가 방향을 전달한다.
+ * d가 undefined면 비교 불가(신설 반 등), 0이면 변화 없음 — 이 둘은 방향이 없으므로 화살표를 붙이지 않는다.
+ */
+export function formatDelta(d?: number): DeltaDisplay {
+  if (d === undefined) return { text: '—', tone: 'none' }
+  if (d === 0) return { text: '— 0%p', tone: 'flat' }
+  const arrow = d < 0 ? '▼' : '▲'
+  const sign = d < 0 ? '-' : '+'
+  return { text: `${arrow} ${sign}${Math.abs(d)}%p`, tone: d < 0 ? 'down' : 'up' }
+}
