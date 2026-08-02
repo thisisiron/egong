@@ -1,6 +1,12 @@
 import { test as setup, expect } from '@playwright/test'
 
-const PASSWORD = process.env.SEED_PASSWORD ?? '***REMOVED***'
+// 하드코딩 기본값 없음 — 시드 비밀번호가 공개 저장소에 평문으로 남지 않게 한다.
+const PASSWORD = process.env.SEED_PASSWORD
+if (!PASSWORD) {
+  throw new Error(
+    'SEED_PASSWORD 환경변수가 설정되지 않았습니다 (셸 또는 .env.local 확인)'
+  )
+}
 
 // 역할 → [이메일, 로그인 후 도달해야 하는 URL 패턴]
 // 이메일은 backend/scripts/seed/world.py 의 ACCOUNTS와 일치해야 한다.

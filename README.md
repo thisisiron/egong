@@ -29,6 +29,10 @@ cp backend/.env.example backend/.env
 # pnpm db:types 실행 전에는 SUPABASE_PROJECT_REF가 셸 환경에 있어야 함:
 #   export SUPABASE_PROJECT_REF=<your-ref>     # Git Bash
 # 또는 dotenv-cli로 .env를 로드하는 방식 사용
+#
+# backend/.env 에 SEED_PASSWORD=<강한 비밀번호>도 추가할 것 — 시드 스크립트
+# (scripts/seed_dev_accounts.py)가 하드코딩 기본값 없이 이 환경변수를 필수로 요구한다.
+# dev 퀵 로그인을 쓴다면 frontend/.env.local 의 DEV_LOGIN_PASSWORD를 같은 값으로 맞출 것.
 
 # 3. (선택) Supabase CLI 로그인·링크 — Task 2 마이그레이션 push 직전에
 npx supabase login                                          # 브라우저 OAuth

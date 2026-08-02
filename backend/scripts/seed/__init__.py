@@ -17,7 +17,7 @@ from .world import (
     MATERIAL_CLASS2_TITLE,
     QUESTION_TITLE,
     SEED_EMAIL_DOMAIN,
-    SEED_PASSWORD,
+    get_seed_password,
     is_seed_email,
 )
 
@@ -38,6 +38,6 @@ __all__ = [
     "MATERIAL_CLASS2_TITLE",
     "QUESTION_TITLE",
     "SEED_EMAIL_DOMAIN",
-    "SEED_PASSWORD",
+    "get_seed_password",
     "is_seed_email",
 ]

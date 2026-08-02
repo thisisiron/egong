@@ -6,7 +6,7 @@
 
 멱등: 다시 돌려도 안전. 이미 있으면 skip, 플래그 없이는 기존 비밀번호를 덮어쓰지 않음.
 (비밀번호를 재설정하려면 --reset-passwords 플래그를 쓰세요. `@egong.test` 계정에
-한해 비밀번호를 SEED_PASSWORD(기본 '***REMOVED***')로 재설정합니다.)
+한해 비밀번호를 SEED_PASSWORD로 재설정합니다. 이 환경변수는 필수이며 기본값이 없습니다.)
 
 시드 세계를 완전히 새로 만들려면 --reset 플래그를 쓰세요. 시드가 소유한 학원 2개
 (테스트학원·테스트학원2)와 `@egong.test` 계정을 전부 지운 뒤 처음부터 다시 시딩합니다.
@@ -19,7 +19,8 @@ ENVIRONMENT=production 에서는 안전장치가 실행을 거부합니다.
     ./.venv/Scripts/python.exe scripts/seed_dev_accounts.py --reset
 
 환경변수:
-    SEED_PASSWORD (기본 '***REMOVED***') — 신규 생성되는 모든 계정에 동일하게 사용
+    SEED_PASSWORD (필수, 기본값 없음) — 신규 생성되는 모든 계정에 동일하게 사용.
+        미설정 시 계정을 실제로 생성/재설정하는 시점에 에러로 중단합니다.
     SUPABASE_URL, SUPABASE_SECRET_KEY — backend/.env 에서 로드
 """
 
@@ -62,7 +63,7 @@ from seed import (
     MATERIAL_CLASS1_TITLE,
     MATERIAL_CLASS2_TITLE,
     QUESTION_TITLE,
-    SEED_PASSWORD,
+    get_seed_password,
     is_seed_email,
 )
 from seed import (
@@ -104,7 +105,7 @@ async def main(reset: bool = False, reset_passwords: bool = False) -> int:
         user_id, created = await h.ensure_auth_user(client, email, display_name)
         if reset_passwords and not created and is_seed_email(email):
             await client.auth.admin.update_user_by_id(
-                user_id, {"password": SEED_PASSWORD}
+                user_id, {"password": get_seed_password()}
             )
             log.info("pwd  [RESET] %-7s %s", role, email)
         await h.ensure_users_row(
@@ -233,7 +234,7 @@ async def main(reset: bool = False, reset_passwords: bool = False) -> int:
 
     print()
     print("=" * 60)
-    print(f"  DEV ACCOUNTS  (비밀번호: {SEED_PASSWORD})")
+    print(f"  DEV ACCOUNTS  (비밀번호: {get_seed_password()})")
     print("=" * 60)
     for email, role, _ in ACCOUNTS:
         print(f"  {role:8s} {email}")

@@ -15,7 +15,13 @@ export async function devLoginAction(role: UserRole) {
   const account = lookupDevAccount(role)
   if (!account) throw new Error(`unknown dev role: ${role}`)
 
-  const password = process.env.DEV_LOGIN_PASSWORD ?? '***REMOVED***'
+  // 하드코딩 기본값 없음 — 시드 비밀번호가 공개 저장소에 평문으로 남지 않게 한다.
+  const password = process.env.DEV_LOGIN_PASSWORD
+  if (!password) {
+    throw new Error(
+      'DEV_LOGIN_PASSWORD 환경변수가 설정되지 않았습니다 (.env.local 확인)'
+    )
+  }
 
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signInWithPassword({

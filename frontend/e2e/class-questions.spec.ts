@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 
 // 수업 질문(Q&A) 스모크.
 // 사전조건: seed_dev_accounts로 시드된 학원(student@egong.test 가 어떤 반에 배정,
-//   teacher@egong.test 가 해당 학원 스태프). 모든 계정 비밀번호 ***REMOVED***.
+//   teacher@egong.test 가 해당 학원 스태프). 모든 계정 비밀번호는 SEED_PASSWORD 환경변수 값.
 // 환경변수: STUDENT_EMAIL/STUDENT_PASSWORD, TEACHER_EMAIL/TEACHER_PASSWORD
 //   (기존 스펙과 동일하게 미설정 시 skip)
 const studentEmail = process.env.STUDENT_EMAIL
