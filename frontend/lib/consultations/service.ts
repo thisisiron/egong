@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { ymdKST } from '@/lib/date'
 import { createClient } from '@/lib/supabase/server'
 import type { Consultation, ConsultationStatus } from './types'
 
@@ -68,9 +69,7 @@ export async function getConfirmedConsultationsInRange(
     .filter((r): r is { scheduled_at: string } => r.scheduled_at !== null)
     .map((r) => ({
       type: 'consultation' as const,
-      // KST 벽시계 날짜로 버킷팅 — lib/date.ts의 ymdKST와 같은 규칙
-      event_date: new Date(new Date(r.scheduled_at).getTime() + 9 * 3600_000)
-        .toISOString()
-        .slice(0, 10),
+      // KST 벽시계 날짜로 버킷팅
+      event_date: ymdKST(new Date(r.scheduled_at)),
     }))
 }
