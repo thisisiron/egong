@@ -38,6 +38,12 @@ BEGIN
     IF v_academy IS NULL THEN
         RETURN;
     END IF;
+    -- p_month가 NULL이면 date_trunc 등도 전부 NULL로 전파되어 scope의 날짜
+    -- 조건이 사라지고 "학원 전체 반, student_count=0, 모든 지표 NULL"이라는
+    -- 그럴듯하지만 틀린 결과가 나온다. 명시적으로 막는다.
+    IF p_month IS NULL THEN
+        RETURN;
+    END IF;
 
     -- ===== 기간 =====
     -- 프론트가 월 중간 날짜를 넘겨도 같은 결과가 나오도록 정규화한다.
@@ -46,13 +52,23 @@ BEGIN
     v_range_end  := (v_this_start + interval '1 month' - interval '1 day')::date;
     -- 학생 수 기준일: 선택 월 말일과 오늘 중 이른 쪽.
     -- 8월을 보면서 현재 인원이 보이면 다른 숫자들과 시점이 어긋난다.
-    v_as_of := LEAST(v_range_end, CURRENT_DATE);
+    -- CURRENT_DATE는 세션 타임존(Supabase에서는 UTC) 기준이라 KST 00:00~09:00
+    -- 사이에는 하루 전 날짜가 되고, 매월 1일 KST 09시 이전에는 "오늘"이 전월로
+    -- 밀려 v_as_of가 통째로 전월 말일이 되어버린다 — 같은 행의 다른 지표는
+    -- 이번 달인데 student_count만 전월 명단이 되는 조용한 오류. 이 함수의 다른
+    -- 모든 날짜 귀속과 동일하게 KST로 맞춘다.
+    v_as_of := LEAST(v_range_end, (now() AT TIME ZONE 'Asia/Seoul')::date);
 
     SELECT COALESCE((a.settings->>'late_weight')::numeric, 0.4)
       INTO v_late_weight
       FROM academy a WHERE a.id = v_academy;
     v_late_weight := COALESCE(v_late_weight, 0.4);
 
+    -- 아래 CTE들은 class_id/student_count/attendance_pct 같은 이름 대신
+    -- cid/n/pct로 별칭을 준다. RETURNS TABLE의 OUT 파라미터는 plpgsql에서
+    -- 함수 전체에 걸친 변수이므로, CTE 컬럼에 같은 이름을 쓰면 SELECT 목록에서
+    -- 어느 쪽을 가리키는지 모호해져 런타임 에러가 난다. 세 번째 지표 CTE를
+    -- 추가할 때도 이 규칙을 유지할 것.
     RETURN QUERY
     WITH scope AS (
         SELECT c.id, c.name
@@ -148,7 +164,7 @@ BEGIN
 END;
 $$;
 
--- RLS 술어 헬퍼 grant 누락으로 정책 평가가 어긋난 전례(042a7c9)가 있어 명시적으로 넣는다.
+-- 이 RPC의 실행 권한을 명시적으로 관리한다: authenticated만 호출 가능해야 한다.
 -- PUBLIC뿐 아니라 anon도 명시적으로 REVOKE한다: 이 스키마는 새 함수에 대한 기본
 -- 권한(default privileges)이 anon에 직접 EXECUTE를 부여하므로(PUBLIC 경유가 아님),
 -- "FROM PUBLIC"만으로는 anon의 실행 권한이 남는다. exam_report_for_student와 동일한
