@@ -1,5 +1,5 @@
 import { TZDate } from '@date-fns/tz'
-import { addMonths, endOfMonth, format, getDate, getMonth, getYear, startOfDay, startOfMonth } from 'date-fns'
+import { addDays, addMonths, endOfMonth, format, getDate, getMonth, getYear, startOfDay, startOfMonth } from 'date-fns'
 
 /** 이 프로젝트의 모든 날짜 판정 기준 타임존. */
 const TZ = 'Asia/Seoul'
@@ -48,7 +48,7 @@ export function todayRangeKST(now = new Date()): {
   toIso: string
 } {
   const start = startOfDay(toKST(now))
-  const next = new Date(start.getTime() + 24 * 3600_000)
+  const next = new Date(addDays(start, 1).getTime())
   return {
     fromIso: new Date(start.getTime()).toISOString(),
     toIso: next.toISOString(),
