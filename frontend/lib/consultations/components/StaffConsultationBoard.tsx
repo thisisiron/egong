@@ -4,7 +4,7 @@ import { ko } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
 import { formatDateTimeKR } from '@/lib/format'
 
-import { isOpen, SLOT_LABEL, type Consultation } from '../types'
+import { SLOT_LABEL, type Consultation } from '../types'
 import { ConsultationHandleDialog } from './ConsultationHandleDialog'
 import { ConsultationStatusBadge } from './ConsultationStatusBadge'
 
@@ -53,29 +53,32 @@ export function StaffConsultationBoard({ rows }: { rows: Consultation[] }) {
             <p className="text-xs text-slate-500">학원 메모: {r.response_note}</p>
           )}
 
-          {isOpen(r.status) && (
+          {r.status === 'requested' && (
             <div className="flex gap-2">
-              {r.status === 'requested' && (
-                <>
-                  <ConsultationHandleDialog
-                    consultationId={r.id}
-                    mode="confirm"
-                    trigger={<Button size="sm">확정</Button>}
-                  />
-                  <ConsultationHandleDialog
-                    consultationId={r.id}
-                    mode="reject"
-                    trigger={
-                      <Button size="sm" variant="outline">
-                        반려
-                      </Button>
-                    }
-                  />
-                </>
-              )}
-              {/* requested·confirmed 둘 다 취소 가능 — 강사 일정 변경 등으로 학원 쪽에서
-                  확정된 상담을 해제할 UI 경로가 이전엔 없었다(cancel_consultation RPC의
-                  v_is_staff 분기가 도달 불가능했다). */}
+              <ConsultationHandleDialog
+                consultationId={r.id}
+                mode="confirm"
+                trigger={<Button size="sm">확정</Button>}
+              />
+              <ConsultationHandleDialog
+                consultationId={r.id}
+                mode="reject"
+                trigger={
+                  <Button size="sm" variant="outline">
+                    반려
+                  </Button>
+                }
+              />
+            </div>
+          )}
+
+          {/* 대기 중(requested) 카드에는 취소를 두지 않는다 — 반려 사유는 필수인데 취소는
+              선택이라, 대기 중 건에 취소를 열어두면 사유 없이 요청을 종결할 길이 생겨 반려의
+              사유 필수 규칙이 우회된다. "이 신청을 받지 않겠다"는 반려, "잡은 약속을
+              무르겠다"는 취소로 의미를 가른다. 강사 일정 변경 등으로 확정된 상담을 해제할
+              경로는 여전히 필요하므로 confirmed에만 남긴다. */}
+          {r.status === 'confirmed' && (
+            <div className="flex gap-2">
               <ConsultationHandleDialog
                 consultationId={r.id}
                 mode="cancel"
