@@ -21,12 +21,16 @@ source .venv/Scripts/activate                               # Git Bash
 pip install -e ".[dev]"
 cd ..
 
-# 2. 환경변수
-cp .env.example .env                                        # 루트 (db:types 등 워크스페이스 스크립트용)
-cp frontend/.env.example frontend/.env.local
-cp backend/.env.example backend/.env
-# Supabase 대시보드에서 URL·publishable·secret 키와 project ref를 복사해 세 파일에 입력
-# pnpm db:types 실행 전에는 SUPABASE_PROJECT_REF가 셸 환경에 있어야 함:
+# 2. 환경변수 — 루트 .env가 유일한 소스. backend/.env, frontend/.env.local은 손으로 만들지 않는다
+cp .env.example .env
+# Supabase 대시보드에서 URL·publishable·secret 키·project ref, 그리고 NTS_API_KEY(data.go.kr)를
+# 복사해 루트 .env 하나에 입력 (자세한 항목·출처는 .env.example 주석 참고)
+pnpm env:sync                                                # backend/.env, frontend/.env.local 생성
+# 이미 있는 backend/.env, frontend/.env.local을 덮어써도 되면 --force 필요:
+#   pnpm env:sync -- --force
+#
+# SUPABASE_PROJECT_REF는 앱 코드가 아니라 db:types 스크립트 전용이라 env:sync가 복사하지
+# 않는다 — pnpm db:types 실행 전에는 셸 환경에 직접 있어야 함:
 #   export SUPABASE_PROJECT_REF=<your-ref>     # Git Bash
 # 또는 dotenv-cli로 .env를 로드하는 방식 사용
 
