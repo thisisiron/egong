@@ -212,3 +212,20 @@ test('선생이 올린 자료를 학생이 즉시 본다', async ({ page, browse
 
   await studentCtx.close()
 })
+
+test('선생: /teacher/stats에 담당 반만 보인다', async ({ page }) => {
+  await page.goto('/teacher/stats')
+
+  await expect(page.getByRole('heading', { name: '학원 운영 지표' })).toBeVisible()
+  const table = page.getByRole('table')
+  await expect(table).toBeVisible()
+
+  // teacher@egong.test(이선생)는 seed_dev_accounts.py에서 "초등 미술반"·"중등 수학반"
+  // 둘 다 담당(class_teachers)한다 — 두 반 모두 표에 나와야 한다.
+  await expect(table.getByRole('link', { name: '초등 미술반' })).toBeVisible()
+  await expect(table.getByRole('link', { name: '중등 수학반' })).toBeVisible()
+
+  // "타학원반"은 다른 학원("테스트학원2")의 반이라 이 선생 담당이 아니다 — RPC
+  // (class_stats_for_month.sql)의 teacher=담당 반 스코핑이 실제로 새지 않는지 확인한다.
+  await expect(table.getByRole('link', { name: '타학원반' })).toHaveCount(0)
+})
