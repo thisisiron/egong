@@ -512,3 +512,51 @@ async def ensure_announcement(
         .execute()
     )
     return resp.data[0]["id"]
+
+
+async def ensure_consultation(
+    client: AsyncClient,
+    *,
+    academy_id: str,
+    student_id: str,
+    student_name: str,
+    parent_id: str,
+    parent_name: str,
+    reason: str,
+) -> str:
+    """대기 중(requested) 상담 요청 1건. teacher-day가 확정할 대상이다.
+
+    uq_consultation_pending(student_id) WHERE status='requested' 때문에 학생당
+    대기 중 요청은 1건뿐이다 — 이미 있으면 그대로 재사용한다.
+    """
+    resp = (
+        await client.table("consultations")
+        .select("id")
+        .eq("student_id", student_id)
+        .eq("status", "requested")
+        .execute()
+    )
+    if resp.data:
+        return resp.data[0]["id"]
+
+    preferred = (datetime.now(UTC) + timedelta(days=7)).date().isoformat()
+    resp = (
+        await client.table("consultations")
+        .insert(
+            {
+                "academy_id": academy_id,
+                "student_id": student_id,
+                "parent_id": parent_id,
+                "status": "requested",
+                "preferred_date": preferred,
+                "preferred_slot": "afternoon",
+                "reason": reason,
+                # 앱에서는 request_consultation RPC가 채우는 스냅샷 — 시드는
+                # service-role로 직접 넣으므로 여기서 명시한다.
+                "student_name": student_name,
+                "parent_name": parent_name,
+            }
+        )
+        .execute()
+    )
+    return resp.data[0]["id"]

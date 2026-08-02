@@ -47,6 +47,7 @@ MATERIAL_ALL_TITLE = "[SEED] 학원 전체 자료"
 ASSIGNMENT_TITLE = "[SEED] 반1 과제"
 QUESTION_TITLE = "[SEED] 반1 질문"
 ANNOUNCEMENT_TITLE = "[SEED] 반1 공지"
+CONSULTATION_REASON = "[SEED] 진로 상담 요청"  # teacher-day가 확정할 대상
 
 # 학원 B 콘텐츠 — 학원 경계 RLS 테스트의 양성 단언(같은 테이블에서 자기 학원 데이터가
 # 실제로 보이는지)이 딛고 설 실데이터. 최소 1건만 둔다 — 학원 B를 A의 축소판으로 만들지 않는다.
