@@ -177,7 +177,7 @@ CREATE OR REPLACE FUNCTION public.cancel_consultation(p_id uuid, p_note text DEF
 RETURNS integer LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public AS $$
 DECLARE
     v_academy_id uuid; v_parent_id uuid; v_parent_user uuid; v_student_name text;
-    v_actor_name text; v_is_staff boolean; v_is_parent boolean; v_n int; v_count int;
+    v_actor_name text; v_is_staff boolean; v_is_parent boolean; v_n int;
 BEGIN
     IF auth.uid() IS NULL THEN RAISE EXCEPTION '권한이 없습니다.'; END IF;
 
@@ -227,8 +227,7 @@ BEGIN
            p_id
     FROM users u
     WHERE u.academy_id = v_academy_id AND u.role IN ('owner','teacher');
-    GET DIAGNOSTICS v_count = ROW_COUNT;
-    RETURN v_count;
+    RETURN 1;
 END; $$;
 
 GRANT EXECUTE ON FUNCTION public.cancel_consultation(uuid, text) TO authenticated;

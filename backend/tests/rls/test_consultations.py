@@ -276,3 +276,94 @@ def test_미인증_호출은_거부된다(db):
             c.execute(
                 "SELECT cancel_consultation('00000000-0000-0000-0000-000000000000', NULL)"
             ).fetchone()
+
+
+# ===== 리뷰 후속 — 반려·취소 알림, 크로스 테넌트 가드 =====
+#
+# uids["parent"]는 parent_ctx가 조회 기준으로 삼은 학부모 계정의 user_id와 동일하다
+# (parent_ctx 픽스처가 "parents p WHERE p.user_id = uids['parent']"로 조회하므로).
+# notifications는 self-read 정책만 있어(user_id = auth.uid()), 학부모 앞으로 간
+# 알림을 확인하려면 switch_to로 학부모 시점으로 바꾼 뒤 조회해야 한다.
+
+
+def test_반려_성공시_상태와_알림이_기록된다(db, uids, parent_ctx):
+    """반려 성공 경로 — handler_name 스냅샷 + 학부모 알림까지 확인한다.
+
+    기존 test_반려는_사유가_필요하다는 UPDATE 이전에 예외로 빠지므로 이 경로가
+    한 번도 실행되지 않았다.
+    """
+    with seeded(db, parent_ctx, user_id=uids["teacher"]) as cid:
+        db.execute(
+            "SELECT reject_consultation(%s, '이번 주는 일정이 어렵습니다')", (cid,)
+        ).fetchone()
+        status, handler, note = db.execute(
+            "SELECT status, handler_name, response_note FROM consultations WHERE id = %s",
+            (cid,),
+        ).fetchone()
+
+        switch_to(db, uids["parent"])
+        n = db.execute(
+            "SELECT count(*) FROM notifications "
+            "WHERE user_id = %s AND source_id = %s AND type = 'consultation' "
+            "AND link = '/me/consultations'",
+            (uids["parent"], cid),
+        ).fetchone()[0]
+    assert status == "rejected"
+    assert handler == "이선생"
+    assert note == "이번 주는 일정이 어렵습니다"
+    assert n == 1, "반려 알림이 학부모에게 생성되지 않았습니다"
+
+
+def test_스태프가_취소하면_학부모에게_알림이_간다(db, uids, parent_ctx):
+    """cancel_consultation의 학원 분기 — 학부모가 취소했을 때 스태프에게 가는
+    기존 케이스와 알림 방향이 반대라는 점이 요지다."""
+    with seeded(db, parent_ctx, user_id=uids["teacher"]) as cid:
+        db.execute(
+            "SELECT cancel_consultation(%s, '강사 사정으로 취소합니다')", (cid,)
+        ).fetchone()
+        status = db.execute(
+            "SELECT status FROM consultations WHERE id = %s", (cid,)
+        ).fetchone()[0]
+
+        switch_to(db, uids["parent"])
+        n = db.execute(
+            "SELECT count(*) FROM notifications "
+            "WHERE user_id = %s AND source_id = %s AND type = 'consultation' "
+            "AND link = '/me/consultations'",
+            (uids["parent"], cid),
+        ).fetchone()[0]
+    assert status == "cancelled"
+    assert n == 1, "학원이 취소했는데 학부모 알림이 생성되지 않았습니다"
+
+
+def test_확정되면_학부모에게_알림이_간다(db, uids, parent_ctx):
+    """알림이 이 태스크의 절반이라는 브리프 근거를 실제로 검증한다."""
+    with seeded(db, parent_ctx, user_id=uids["teacher"]) as cid:
+        future = dt.datetime.now(dt.UTC) + dt.timedelta(days=7)
+        db.execute("SELECT confirm_consultation(%s, %s, NULL)", (cid, future)).fetchone()
+
+        switch_to(db, uids["parent"])
+        n = db.execute(
+            "SELECT count(*) FROM notifications "
+            "WHERE user_id = %s AND source_id = %s AND type = 'consultation' "
+            "AND link = '/me/consultations'",
+            (uids["parent"], cid),
+        ).fetchone()[0]
+    assert n == 1, "확정 알림이 학부모에게 생성되지 않았습니다"
+
+
+def test_타학원_원장은_상담을_확정할_수_없다(db, uids, parent_ctx):
+    """크로스 테넌트 가드 — SECURITY DEFINER가 RLS를 우회하므로 함수 내부의
+    u.academy_id = v_academy_id 비교만이 유일한 방어선이다."""
+    with seeded(db, parent_ctx, user_id=uids["owner2"]) as cid:
+        future = dt.datetime.now(dt.UTC) + dt.timedelta(days=7)
+        with pytest.raises(Exception, match="권한이 없습니다"):
+            db.execute("SELECT confirm_consultation(%s, %s, NULL)", (cid, future)).fetchone()
+
+
+def test_타학원_원장은_상담을_취소할_수_없다(db, uids, parent_ctx):
+    """cancel_consultation은 학부모 분기(v_is_parent)가 따로 있어 가드 구조가
+    confirm/reject와 다르므로 별도로 검증한다."""
+    with seeded(db, parent_ctx, user_id=uids["owner2"]) as cid:
+        with pytest.raises(Exception, match="권한이 없습니다"):
+            db.execute("SELECT cancel_consultation(%s, NULL)", (cid,)).fetchone()
