@@ -20,6 +20,7 @@ import { listAnnouncementsForStudent } from '@/lib/announcements/service'
 import { listQuestionsForStudent } from '@/lib/questions/service'
 import { AnnouncementCard } from '@/lib/announcements/components/AnnouncementCard'
 import { getEventsInRange } from '@/lib/events/service'
+import { getConfirmedConsultationsInRange } from '@/lib/consultations/service'
 import { getLatestPublishedReportRow } from '@/lib/exams/service'
 import { toPercent } from '@/lib/exams/types'
 
@@ -57,14 +58,22 @@ export default async function MyStudentPage({
     return null
   })
 
-  // 이벤트(시험/상담) 읽기 전용 오버레이 — RLS가 자기 반 + 학원 전체만 반환.
-  // fail-soft: 이벤트 조회 실패가 대시보드를 죽이지 않게.
-  const eventsPromise = getEventsInRange(range.from, range.to).catch(
-    (e: unknown) => {
+  // 이벤트(시험/상담 마커) + 확정 상담 — 둘 다 읽기 전용 오버레이.
+  // fail-soft: 어느 쪽이 실패해도 대시보드는 살아야 한다.
+  // 참고: consultations 테이블에는 student SELECT 정책이 없다(20260802000001_consultations.sql —
+  // admin/parent/staff만 대상). /me는 학생·학부모 공유 라우트라 학생 세션에서는
+  // getConfirmedConsultationsInRange가 항상 []를 반환한다 — 상담 사유가 민감할 수 있어
+  // 의도된 동작이다(RLS를 넓히지 않는다).
+  const eventsPromise = Promise.all([
+    getEventsInRange(range.from, range.to).catch((e: unknown) => {
       console.error('이벤트 조회 실패:', e)
       return []
-    }
-  )
+    }),
+    getConfirmedConsultationsInRange(range.from, range.to).catch((e: unknown) => {
+      console.error('확정 상담 조회 실패:', e)
+      return []
+    }),
+  ]).then(([events, consultations]) => [...events, ...consultations])
 
   const [student, recentSessions, announcements, attendance, events, myQuestions, latestExam] =
     await Promise.all([
