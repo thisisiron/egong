@@ -36,7 +36,7 @@ export function StaffConsultationBoard({ rows }: { rows: Consultation[] }) {
           <p className="text-sm whitespace-pre-wrap">{r.reason}</p>
 
           {r.status === 'confirmed' && r.scheduled_at && (
-            <p className="text-sm text-emerald-700">
+            <p className="text-sm text-emerald-700" data-testid="consultation-scheduled-at">
               {/* scheduled_at은 timestamptz라 date-fns format(parseISO(...))은 기기 로컬
                   타임존으로 읽는다 — KST 고정을 위해 ConsultationList.tsx와 동일하게
                   formatDateTimeKR(Intl, timeZone: 'Asia/Seoul' 고정)을 쓴다. 위

@@ -237,16 +237,30 @@ test('선생님: 대기 중 상담을 확정한다', async ({ page }) => {
   // 이 파일 자신의 경고(위 헤더 주석)대로, 하이드레이션 전 클릭은 조용한 no-op이 될 수
   // 있다. 다이얼로그가 실제로 열렸는지 여기서 먼저 확인해두면, 열리지 않았을 때 아래
   // fill()의 30초 타임아웃(원인 불명)이 아니라 이 줄에서 바로 원인이 드러난다.
-  await expect(page.getByRole('dialog')).toBeVisible()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
 
   // KST 기준 7일 뒤 15:00 — datetime-local은 'YYYY-MM-DDTHH:mm'
   const kst = new Date(Date.now() + 9 * 3600_000 + 7 * 24 * 3600_000)
   const ymd = kst.toISOString().slice(0, 10)
   await page.getByLabel('상담 시각').fill(`${ymd}T15:00`)
   await page.getByLabel('안내 메모 (선택)').fill('상담실에서 뵙겠습니다.')
-  await page.getByRole('button', { name: '확정', exact: true }).last().click()
+  // 제출 버튼을 dialog로 스코프한다 — 예전엔 page 전역에서 '확정' 버튼을 찾아 .last()로
+  // 집었는데, 다이얼로그가 열리는 도중(아직 카드의 트리거 버튼에 aria-hidden이 안 붙은
+  // 시점)에는 카드의 확정 트리거까지 같이 매치되어 .last()가 무엇을 집을지 타이밍에
+  // 좌우됐다 — 실측상 제출이 발동하지 않아도 조용히 넘어갈 수 있었다. dialog로 스코프하면
+  // 항상 제출 버튼 하나만 남는다.
+  await dialog.getByRole('button', { name: '확정', exact: true }).click()
 
-  // 양성 단언 — 카드가 남아 있고 상태가 실제로 '확정'으로 바뀌었는지.
-  // 이게 없으면 다이얼로그가 조용히 실패해도 통과한다.
-  await expect(card.getByText('확정', { exact: true })).toBeVisible()
+  // 양성 단언 — 실제로 확정됐다는 증거만 인정한다. requested 카드에는 '확정' 버튼(다이얼로그
+  // 트리거)이 있고 confirmed 배지도 텍스트가 '확정'이라, card.getByText('확정', {exact:true})는
+  // 확정 액션이 실패해도(다이얼로그가 안 열렸거나 제출이 씹혀도) 트리거 버튼 자체에 매치돼
+  // 통과해버리는 거짓 양성이었다(실측: 713ms 만에 통과했지만 DB는 바뀌지 않았고 서버 액션
+  // POST 로그도 없었다). scheduled_at은 status==='confirmed'일 때만 렌더링되므로(다른 어떤
+  // 상태에서도 나오지 않음) 이걸 못 찾으면 실제로 확정되지 않은 것이다 — "배지가 더
+  // 직관적"이라며 되돌리지 말 것.
+  await expect(card.getByTestId('consultation-scheduled-at')).toBeVisible()
+  // confirmed 카드에만 나오는 취소 버튼 — 상태 전환의 추가 근거(위 testid만으로 충분하지만
+  // requested→confirmed 전환 후 UI 전체가 기대대로 바뀌었는지 이중 확인).
+  await expect(card.getByRole('button', { name: '취소하기' })).toBeVisible()
 })
