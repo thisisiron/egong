@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "env:sync": "node scripts/env-sync.mjs",
     "dev:frontend": "pnpm --filter @egong/frontend dev",
     "dev:backend": "cd backend && uvicorn src.main:app --reload --port 8000",
     "build:frontend": "pnpm --filter @egong/frontend build",
