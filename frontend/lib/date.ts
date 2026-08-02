@@ -1,19 +1,27 @@
-/** Date(인스턴트) → KST(UTC+9) 벽시계 기준 연·월·일. 서버 타임존과 무관.
- * KST = UTC+9 고정 (DST 없음).
- */
+import { TZDate } from '@date-fns/tz'
+import { addMonths, endOfMonth, format, getDate, getMonth, getYear, startOfDay, startOfMonth } from 'date-fns'
+
+/** 이 프로젝트의 모든 날짜 판정 기준 타임존. */
+const TZ = 'Asia/Seoul'
+
+/** Date(인스턴트)를 KST 벽시계로 보는 TZDate로 옮긴다. */
+function toKST(d: Date): TZDate {
+  return TZDate.tz(TZ, d.getTime())
+}
+
+/** Date(인스턴트) → KST 벽시계 기준 연·월·일. 서버 타임존과 무관. */
 export function kstParts(d: Date): { year: number; month: number; day: number } {
-  const kst = new Date(d.getTime() + 9 * 3600_000)
+  const kst = toKST(d)
   return {
-    year: kst.getUTCFullYear(),
-    month: kst.getUTCMonth() + 1,
-    day: kst.getUTCDate(),
+    year: getYear(kst),
+    month: getMonth(kst) + 1,
+    day: getDate(kst),
   }
 }
 
 /** KST 기준 'YYYY-MM-DD'. 서버 타임존과 무관. */
 export function ymdKST(d: Date): string {
-  const { year, month, day } = kstParts(d)
-  return `${year}-${pad2(month)}-${pad2(day)}`
+  return format(toKST(d), 'yyyy-MM-dd')
 }
 
 /** date가 속한 KST 기준 달의 범위.
@@ -21,32 +29,29 @@ export function ymdKST(d: Date): string {
  * fromIso/toIso: [달 시작, 다음 달 시작) UTC ISO (timestamptz 필터용 — 반개구간).
  */
 export function monthRange(date = new Date()) {
-  const { year, month } = kstParts(date)
-  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
-  const nextMonthStart =
-    month === 12 ? kstMonthStart(year + 1, 1) : kstMonthStart(year, month + 1)
+  const kst = toKST(date)
+  const first = startOfMonth(kst)
+  const last = endOfMonth(kst)
+  const nextFirst = addMonths(first, 1)
   return {
-    from: `${year}-${pad2(month)}-01`,
-    to: `${year}-${pad2(month)}-${pad2(lastDay)}`,
-    fromIso: kstMonthStart(year, month).toISOString(),
-    toIso: nextMonthStart.toISOString(),
-    label: `${year}년 ${month}월`,
+    from: format(first, 'yyyy-MM-dd'),
+    to: format(last, 'yyyy-MM-dd'),
+    fromIso: new Date(first.getTime()).toISOString(),
+    toIso: new Date(nextFirst.getTime()).toISOString(),
+    label: `${getYear(kst)}년 ${getMonth(kst) + 1}월`,
   }
 }
 
-/** KST 기준 오늘의 [시작, 끝) UTC ISO 범위. 서버 타임존과 무관하게 동작.
- * KST = UTC+9 고정 (DST 없음).
- */
+/** KST 기준 오늘의 [시작, 끝) UTC ISO 범위. 서버 타임존과 무관하게 동작. */
 export function todayRangeKST(now = new Date()): {
   fromIso: string
   toIso: string
 } {
-  // now를 KST 벽시계로 옮겨 날짜를 얻고, 그 날짜의 KST 00:00을 UTC로 환산
-  const { year, month, day } = kstParts(now)
-  const startUtcMs = Date.UTC(year, month - 1, day) - 9 * 3600_000
+  const start = startOfDay(toKST(now))
+  const next = new Date(start.getTime() + 24 * 3600_000)
   return {
-    fromIso: new Date(startUtcMs).toISOString(),
-    toIso: new Date(startUtcMs + 24 * 3600_000).toISOString(),
+    fromIso: new Date(start.getTime()).toISOString(),
+    toIso: next.toISOString(),
   }
 }
 
@@ -62,10 +67,7 @@ export function monthFromParam(param: string | undefined, now = new Date()): Dat
   return kstMonthStart(year, month)
 }
 
+/** KST 기준 해당 연·월 1일 00:00의 인스턴트. */
 function kstMonthStart(year: number, month: number): Date {
-  return new Date(Date.UTC(year, month - 1, 1) - 9 * 3600_000)
-}
-
-function pad2(n: number): string {
-  return String(n).padStart(2, '0')
+  return new Date(new TZDate(year, month - 1, 1, TZ).getTime())
 }
