@@ -122,20 +122,23 @@ test.describe('반별 운영 지표', () => {
     await expect(headerCell).toHaveAttribute('aria-sort', 'ascending')
     expect(await lastRowMetricCell()).toBe('—')
 
-    // 방향 전환 1 — aria-sort가 실제로 바뀌는지(정렬이 무의미한 클릭이 아님을 증명)와
-    // 무관하게, 값 없는 반은 여전히 맨 아래여야 한다.
-    await headerBtn.click()
-    await expect(headerCell).not.toHaveAttribute('aria-sort', 'ascending')
+    // 실측 확인(2026-08-03, ClassStatsTable의 초기 상태가 useState로 이미 'asc'라 첫
+    // 클릭부터 일반적인 unsorted→asc 시작이 아니다): enableSortingRemoval이 기본값(true)이라
+    // 클릭 사이클이 ascending → none(정렬 해제, 서버 원본 순서로 복귀) → descending →
+    // ascending … 순으로 돈다 — asc → desc → none이 아니다. "다르기만 하면 통과"로
+    // 헐겁게 확인하면 클릭 1회 후 실제로는 unsorted(=서버가 준 원본 순서를 그대로 다시
+    // 보는 것뿐)에 멈춰 있어도 통과해버려, sortUndefined:'last'가 정말 "반대 방향"에서도
+    // 지켜지는지는 증명하지 못한다. 그래서 각 클릭 뒤 aria-sort의 실제 값을 못박는다.
+    await headerBtn.click() // 1회차: ascending → none(정렬 해제)
+    await expect(headerCell).toHaveAttribute('aria-sort', 'none')
     expect(await lastRowMetricCell()).toBe('—')
 
-    // 방향 전환 2.
-    const afterFirstClick = await headerCell.getAttribute('aria-sort')
-    await headerBtn.click()
-    await expect(headerCell).not.toHaveAttribute('aria-sort', afterFirstClick ?? '')
+    await headerBtn.click() // 2회차: none → descending — 여기서 진짜 반대 방향을 검증한다.
+    await expect(headerCell).toHaveAttribute('aria-sort', 'descending')
     expect(await lastRowMetricCell()).toBe('—')
   })
 
-  test('선생님: 담당 반만 표시되고 표가 렌더된다', async ({ page }) => {
+  test('선생님: /teacher/stats는 다른 학원의 반을 노출하지 않는다', async ({ page }) => {
     await login(page, TEACHER_EMAIL, '**/teacher')
     await page.goto('/teacher/stats')
 
@@ -147,9 +150,18 @@ test.describe('반별 운영 지표', () => {
     await expect(table.getByRole('link', { name: '초등 미술반' })).toBeVisible()
     await expect(table.getByRole('link', { name: '중등 수학반' })).toBeVisible()
 
-    // 다른 학원("테스트학원2")의 반은 teacher@egong.test 담당이 아니므로 보이면 안 된다
-    // — RPC의 owner=학원 전체/teacher=담당 반 권한 분기(class_stats_for_month.sql)가
-    // 실제로 스코핑되는지 확인하는 경계 검증.
+    // 이 테스트가 실제로 증명하는 것: "학원 경계"만이다. 다른 학원("테스트학원2")의
+    // "타학원반"이 보이면 안 된다는 것만 확인한다.
+    //
+    // 증명하지 못하는 것(중요): "같은 학원 안에서 담당 아닌 반은 제외된다"는 못 본다.
+    // class_stats_for_month.sql의 scope CTE는 academy_id 필터와
+    // app_my_taught_class_ids() 담당 필터를 AND로 한 절에 묶는데, 현재 시드
+    // (seed_dev_accounts.py)는 teacher@egong.test를 학원 A의 반 2개("초등 미술반"·
+    // "중등 수학반") 전부에 배정한다 — 그래서 "타학원반"은 담당 필터를 보기도 전에
+    // academy_id 필터에서 이미 걸러진다. 즉 담당 필터(`c.id IN (SELECT
+    // app_my_taught_class_ids())`)를 통째로 지우는 회귀가 있어도 이 테스트는 여전히
+    // 통과한다. 담당 스코프까지 완전히 커버하려면 학원 A에 teacher가 담당하지 않는
+    // 반을 시드에 추가해야 하는데, 그건 이 태스크 범위 밖이다(시드 변경 필요).
     await expect(table.getByRole('link', { name: '타학원반' })).toHaveCount(0)
   })
 
@@ -161,8 +173,10 @@ test.describe('반별 운영 지표', () => {
     const table = page.getByRole('table')
     await expect(table).toBeVisible()
     await expect(table.getByRole('link', { name: '초등 미술반' })).toBeVisible()
-    // 다음 달 버튼이 아예 없음(비활성 <span>으로 대체) = 이번 달로 폴백됐다는 증거 —
-    // MonthNav는 이번 달일 때만 aria-label 없는 <span>을 렌더한다.
-    await expect(page.getByLabel('다음 달')).toHaveCount(0)
+    // 다음 달 "링크"가 아예 없음(비활성 <span>으로 대체) = 이번 달로 폴백됐다는 증거.
+    // getByLabel이 아니라 getByRole('link', ...)로 확인한다 — MonthNav의 비활성
+    // <span>이 나중에 aria-label="다음 달"을 갖게 되더라도(라벨만 같고 역할은 여전히
+    // 링크가 아님) 이 단언은 "링크가 아니다"라는 실제 의미를 그대로 지켜야 한다.
+    await expect(page.getByRole('link', { name: '다음 달' })).toHaveCount(0)
   })
 })

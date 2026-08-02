@@ -213,7 +213,7 @@ test('선생이 올린 자료를 학생이 즉시 본다', async ({ page, browse
   await studentCtx.close()
 })
 
-test('선생: /teacher/stats에 담당 반만 보인다', async ({ page }) => {
+test('선생: /teacher/stats는 다른 학원의 반을 노출하지 않는다', async ({ page }) => {
   await page.goto('/teacher/stats')
 
   await expect(page.getByRole('heading', { name: '학원 운영 지표' })).toBeVisible()
@@ -225,7 +225,16 @@ test('선생: /teacher/stats에 담당 반만 보인다', async ({ page }) => {
   await expect(table.getByRole('link', { name: '초등 미술반' })).toBeVisible()
   await expect(table.getByRole('link', { name: '중등 수학반' })).toBeVisible()
 
-  // "타학원반"은 다른 학원("테스트학원2")의 반이라 이 선생 담당이 아니다 — RPC
-  // (class_stats_for_month.sql)의 teacher=담당 반 스코핑이 실제로 새지 않는지 확인한다.
+  // 이 테스트가 실제로 증명하는 것: "학원 경계"만이다 — 다른 학원("테스트학원2")의
+  // "타학원반"이 안 보인다는 것만 확인한다.
+  //
+  // 증명하지 못하는 것(중요): "같은 학원 안에서 담당 아닌 반은 제외된다"는 못 본다.
+  // class_stats_for_month.sql의 scope CTE는 academy_id 필터와
+  // app_my_taught_class_ids() 담당 필터를 AND로 한 절에 묶는데, 위 주석처럼 teacher가
+  // 학원 A의 반 전부를 담당해서 "타학원반"은 담당 필터를 보기도 전에 academy_id
+  // 필터에서 이미 걸러진다 — 담당 필터(`c.id IN (SELECT app_my_taught_class_ids())`)를
+  // 통째로 지우는 회귀가 있어도 이 테스트는 여전히 통과한다. 담당 스코프까지 완전히
+  // 커버하려면 학원 A에 teacher가 담당하지 않는 반을 시드에 추가해야 하는데(이 파일이
+  // 손댈 범위 밖 — seed_dev_accounts.py 변경 필요), 지금은 하지 않는다.
   await expect(table.getByRole('link', { name: '타학원반' })).toHaveCount(0)
 })
