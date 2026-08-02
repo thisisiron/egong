@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       academy: {
@@ -62,12 +87,15 @@ export type Database = {
           applicant_email: string
           applicant_name: string
           applicant_phone: string
+          approved_at: string | null
           business_name: string
           business_number: string | null
           business_owner_name: string
           business_type: Database["public"]["Enums"]["business_type"]
           created_academy_id: string | null
           created_at: string
+          created_owner_user_id: string | null
+          decided_by: string | null
           id: string
           inquiry_message: string | null
           registration_file_path: string | null
@@ -75,6 +103,8 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           status: Database["public"]["Enums"]["application_status"]
+          verified_at: string | null
+          verified_b_stt_cd: string | null
         }
         Insert: {
           academy_name: string
@@ -85,12 +115,15 @@ export type Database = {
           applicant_email: string
           applicant_name: string
           applicant_phone: string
+          approved_at?: string | null
           business_name: string
           business_number?: string | null
           business_owner_name: string
           business_type: Database["public"]["Enums"]["business_type"]
           created_academy_id?: string | null
           created_at?: string
+          created_owner_user_id?: string | null
+          decided_by?: string | null
           id?: string
           inquiry_message?: string | null
           registration_file_path?: string | null
@@ -98,6 +131,8 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["application_status"]
+          verified_at?: string | null
+          verified_b_stt_cd?: string | null
         }
         Update: {
           academy_name?: string
@@ -108,12 +143,15 @@ export type Database = {
           applicant_email?: string
           applicant_name?: string
           applicant_phone?: string
+          approved_at?: string | null
           business_name?: string
           business_number?: string | null
           business_owner_name?: string
           business_type?: Database["public"]["Enums"]["business_type"]
           created_academy_id?: string | null
           created_at?: string
+          created_owner_user_id?: string | null
+          decided_by?: string | null
           id?: string
           inquiry_message?: string | null
           registration_file_path?: string | null
@@ -121,6 +159,8 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["application_status"]
+          verified_at?: string | null
+          verified_b_stt_cd?: string | null
         }
         Relationships: [
           {
@@ -128,6 +168,20 @@ export type Database = {
             columns: ["created_academy_id"]
             isOneToOne: false
             referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_applications_created_owner_user_id_fkey"
+            columns: ["created_owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_applications_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -296,10 +350,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "assignment_submissions_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "assignment_submissions_assignment_id_fkey"
             columns: ["assignment_id"]
             isOneToOne: false
             referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_submissions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_submissions_feedback_by_fkey"
+            columns: ["feedback_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -363,57 +438,6 @@ export type Database = {
           {
             foreignKeyName: "assignments_created_by_fkey"
             columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notifications: {
-        Row: {
-          academy_id: string
-          created_at: string
-          id: string
-          link: string
-          read_at: string | null
-          source_id: string | null
-          title: string
-          type: string
-          user_id: string
-        }
-        Insert: {
-          academy_id: string
-          created_at?: string
-          id?: string
-          link: string
-          read_at?: string | null
-          source_id?: string | null
-          title: string
-          type: string
-          user_id: string
-        }
-        Update: {
-          academy_id?: string
-          created_at?: string
-          id?: string
-          link?: string
-          read_at?: string | null
-          source_id?: string | null
-          title?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_academy_id_fkey"
-            columns: ["academy_id"]
-            isOneToOne: false
-            referencedRelation: "academy"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -579,60 +603,70 @@ export type Database = {
           },
         ]
       }
-      materials: {
+      exam_scores: {
         Row: {
           academy_id: string
-          author_name: string
-          class_id: string | null
+          class_id: string
           created_at: string
-          created_by: string | null
-          description: string | null
-          files: Json
+          exam_id: string
           id: string
-          title: string
+          is_absent: boolean
+          memo: string | null
+          score: number | null
+          student_id: string
+          updated_at: string
         }
         Insert: {
           academy_id: string
-          author_name: string
-          class_id?: string | null
+          class_id: string
           created_at?: string
-          created_by?: string | null
-          description?: string | null
-          files?: Json
+          exam_id: string
           id?: string
-          title: string
+          is_absent?: boolean
+          memo?: string | null
+          score?: number | null
+          student_id: string
+          updated_at?: string
         }
         Update: {
           academy_id?: string
-          author_name?: string
-          class_id?: string | null
+          class_id?: string
           created_at?: string
-          created_by?: string | null
-          description?: string | null
-          files?: Json
+          exam_id?: string
           id?: string
-          title?: string
+          is_absent?: boolean
+          memo?: string | null
+          score?: number | null
+          student_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "materials_academy_id_fkey"
+            foreignKeyName: "exam_scores_academy_id_fkey"
             columns: ["academy_id"]
             isOneToOne: false
             referencedRelation: "academy"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "materials_class_id_fkey"
+            foreignKeyName: "exam_scores_class_id_fkey"
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "materials_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: "exam_scores_exam_id_fkey"
+            columns: ["exam_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_scores_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
             referencedColumns: ["id"]
           },
         ]
@@ -701,56 +735,111 @@ export type Database = {
           },
         ]
       }
-      exam_scores: {
+      materials: {
         Row: {
           academy_id: string
-          class_id: string
+          author_name: string
+          class_id: string | null
           created_at: string
-          exam_id: string
+          created_by: string | null
+          description: string | null
+          files: Json
           id: string
-          is_absent: boolean
-          memo: string | null
-          score: number | null
-          student_id: string
-          updated_at: string
+          title: string
         }
         Insert: {
           academy_id: string
-          class_id: string
+          author_name: string
+          class_id?: string | null
           created_at?: string
-          exam_id: string
+          created_by?: string | null
+          description?: string | null
+          files?: Json
           id?: string
-          is_absent?: boolean
-          memo?: string | null
-          score?: number | null
-          student_id: string
-          updated_at?: string
+          title: string
         }
         Update: {
           academy_id?: string
-          class_id?: string
+          author_name?: string
+          class_id?: string | null
           created_at?: string
-          exam_id?: string
+          created_by?: string | null
+          description?: string | null
+          files?: Json
           id?: string
-          is_absent?: boolean
-          memo?: string | null
-          score?: number | null
-          student_id?: string
-          updated_at?: string
+          title?: string
         }
         Relationships: [
           {
-            foreignKeyName: "exam_scores_exam_id_fkey"
-            columns: ["exam_id"]
+            foreignKeyName: "materials_academy_id_fkey"
+            columns: ["academy_id"]
             isOneToOne: false
-            referencedRelation: "exams"
+            referencedRelation: "academy"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "exam_scores_student_id_fkey"
-            columns: ["student_id"]
+            foreignKeyName: "materials_class_id_fkey"
+            columns: ["class_id"]
             isOneToOne: false
-            referencedRelation: "students"
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materials_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          academy_id: string
+          created_at: string
+          id: string
+          link: string
+          read_at: string | null
+          source_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          id?: string
+          link: string
+          read_at?: string | null
+          source_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          id?: string
+          link?: string
+          read_at?: string | null
+          source_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1225,6 +1314,52 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      app_academy_parent_ids: {
+        Args: { p_academy_id: string }
+        Returns: string[]
+      }
+      app_academy_parent_user_ids: {
+        Args: { p_academy_id: string }
+        Returns: string[]
+      }
+      app_can_view_student_attendance: {
+        Args: { p_student_id: string }
+        Returns: boolean
+      }
+      app_can_view_student_scores: {
+        Args: { p_student_id: string }
+        Returns: boolean
+      }
+      app_class_academy: { Args: { p_class_id: string }; Returns: string }
+      app_exam_academy: { Args: { p_exam_id: string }; Returns: string }
+      app_exam_is_published: { Args: { p_exam_id: string }; Returns: boolean }
+      app_fanout_scope_notifications: {
+        Args: {
+          p_academy_id: string
+          p_class_id: string
+          p_exclude_user: string
+          p_link_me: string
+          p_link_owner: string
+          p_link_teacher: string
+          p_roles: string[]
+          p_source_id: string
+          p_title: string
+          p_type: string
+        }
+        Returns: number
+      }
+      app_my_child_academy_ids: { Args: never; Returns: string[] }
+      app_my_child_class_ids: { Args: never; Returns: string[] }
+      app_my_child_student_ids: { Args: never; Returns: string[] }
+      app_my_enrolled_class_ids: { Args: never; Returns: string[] }
+      app_my_parent_ids: { Args: never; Returns: string[] }
+      app_my_scored_exam_ids: { Args: never; Returns: string[] }
+      app_my_student_ids: { Args: never; Returns: string[] }
+      app_my_taught_class_ids: { Args: never; Returns: string[] }
+      app_my_taught_session_ids: { Args: never; Returns: string[] }
+      app_my_taught_student_ids: { Args: never; Returns: string[] }
+      app_session_academy: { Args: { p_session_id: string }; Returns: string }
+      app_student_academy: { Args: { p_student_id: string }; Returns: string }
       attendance_counts: {
         Args: { p_from: string; p_student_id: string; p_to: string }
         Returns: {
@@ -1238,6 +1373,18 @@ export type Database = {
         Args: { p_from: string; p_student_id: string; p_to: string }
         Returns: number
       }
+      class_stats_for_month: {
+        Args: { p_month: string }
+        Returns: {
+          attendance_pct: number
+          attendance_pct_prev: number
+          class_id: string
+          class_name: string
+          student_count: number
+          submission_pct: number
+          submission_pct_prev: number
+        }[]
+      }
       create_announcement_notifications: {
         Args: { p_announcement_id: string; p_roles: string[] }
         Returns: number
@@ -1246,30 +1393,36 @@ export type Database = {
         Args: { p_assignment_id: string; p_roles: string[] }
         Returns: number
       }
-      create_material_notifications: {
-        Args: { p_material_id: string; p_roles: string[] }
-        Returns: number
-      }
       create_exam_notifications: {
         Args: { p_exam_id: string; p_roles: string[] }
         Returns: number
       }
+      create_material_notifications: {
+        Args: { p_material_id: string; p_roles: string[] }
+        Returns: number
+      }
+      current_user_academy: { Args: never; Returns: string }
+      current_user_role: {
+        Args: never
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
       exam_report_for_student: {
-        Args: { p_student_id: string; p_from: string; p_to: string }
+        Args: { p_from: string; p_student_id: string; p_to: string }
         Returns: {
-          exam_id: string
-          title: string
-          exam_type: string | null
-          scope: string | null
+          class_avg_pct: number
+          class_max_pct: number
           exam_date: string
+          exam_id: string
+          exam_type: string
           max_score: number
-          my_score: number | null
           my_is_absent: boolean
-          class_avg_pct: number | null
-          class_max_pct: number | null
+          my_score: number
+          scope: string
           taker_count: number
+          title: string
         }[]
       }
+      is_admin: { Args: never; Returns: boolean }
       notify_assignment_feedback: {
         Args: { p_submission_id: string }
         Returns: number
@@ -1282,16 +1435,7 @@ export type Database = {
         Args: { p_question_id: string }
         Returns: number
       }
-      notify_question_reply: {
-        Args: { p_reply_id: string }
-        Returns: number
-      }
-      current_user_academy: { Args: never; Returns: string }
-      current_user_role: {
-        Args: never
-        Returns: Database["public"]["Enums"]["user_role"]
-      }
-      is_admin: { Args: never; Returns: boolean }
+      notify_question_reply: { Args: { p_reply_id: string }; Returns: number }
     }
     Enums: {
       academy_status: "active" | "suspended" | "deleted"
@@ -1430,6 +1574,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       academy_status: ["active", "suspended", "deleted"],
