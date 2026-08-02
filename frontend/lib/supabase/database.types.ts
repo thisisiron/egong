@@ -755,6 +755,95 @@ export type Database = {
           },
         ]
       }
+      consultations: {
+        Row: {
+          academy_id: string
+          created_at: string
+          handled_by: string | null
+          handler_name: string | null
+          id: string
+          parent_id: string
+          parent_name: string
+          preferred_date: string
+          preferred_slot: string
+          reason: string
+          response_note: string | null
+          responded_at: string | null
+          scheduled_at: string | null
+          status: Database["public"]["Enums"]["consultation_status"]
+          student_id: string
+          student_name: string
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          handled_by?: string | null
+          handler_name?: string | null
+          id?: string
+          parent_id: string
+          parent_name: string
+          preferred_date: string
+          preferred_slot: string
+          reason: string
+          response_note?: string | null
+          responded_at?: string | null
+          scheduled_at?: string | null
+          status?: Database["public"]["Enums"]["consultation_status"]
+          student_id: string
+          student_name: string
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          handled_by?: string | null
+          handler_name?: string | null
+          id?: string
+          parent_id?: string
+          parent_name?: string
+          preferred_date?: string
+          preferred_slot?: string
+          reason?: string
+          response_note?: string | null
+          responded_at?: string | null
+          scheduled_at?: string | null
+          status?: Database["public"]["Enums"]["consultation_status"]
+          student_id?: string
+          student_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultations_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultations_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultations_handled_by_fkey"
+            columns: ["handled_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parents: {
         Row: {
           created_at: string
@@ -1292,6 +1381,27 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       is_admin: { Args: never; Returns: boolean }
+      request_consultation: {
+        Args: {
+          p_student_id: string
+          p_preferred_date: string
+          p_preferred_slot: string
+          p_reason: string
+        }
+        Returns: string
+      }
+      confirm_consultation: {
+        Args: { p_id: string; p_scheduled_at: string; p_note?: string | null }
+        Returns: number
+      }
+      reject_consultation: {
+        Args: { p_id: string; p_note: string }
+        Returns: number
+      }
+      cancel_consultation: {
+        Args: { p_id: string; p_note?: string | null }
+        Returns: number
+      }
     }
     Enums: {
       academy_status: "active" | "suspended" | "deleted"
@@ -1300,6 +1410,7 @@ export type Database = {
       attendance_status: "present" | "late" | "absent" | "excused"
       business_type: "individual" | "corporate" | "tutoring" | "planned"
       class_level: "elementary" | "middle" | "high"
+      consultation_status: "requested" | "confirmed" | "rejected" | "cancelled"
       event_type: "exam" | "consultation"
       parent_relationship: "mother" | "father" | "other"
       session_type: "regular" | "makeup" | "special"
@@ -1438,6 +1549,7 @@ export const Constants = {
       attendance_status: ["present", "late", "absent", "excused"],
       business_type: ["individual", "corporate", "tutoring", "planned"],
       class_level: ["elementary", "middle", "high"],
+      consultation_status: ["requested", "confirmed", "rejected", "cancelled"],
       event_type: ["exam", "consultation"],
       parent_relationship: ["mother", "father", "other"],
       session_type: ["regular", "makeup", "special"],
