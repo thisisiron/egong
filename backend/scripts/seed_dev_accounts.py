@@ -234,7 +234,9 @@ async def main(reset: bool = False, reset_passwords: bool = False) -> int:
 
     print()
     print("=" * 60)
-    print(f"  DEV ACCOUNTS  (비밀번호: {get_seed_password()})")
+    # 비밀번호 값 자체는 절대 출력하지 않는다 — 터미널 스크롤백·셸 히스토리·CI 로그에
+    # 평문으로 남는 걸 막는다(get_seed_password() 호출조차 하지 않는다).
+    print("  DEV ACCOUNTS  (비밀번호: backend/.env 의 SEED_PASSWORD 참조)")
     print("=" * 60)
     for email, role, _ in ACCOUNTS:
         print(f"  {role:8s} {email}")
