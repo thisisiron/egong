@@ -109,7 +109,8 @@ BEGIN
     GET DIAGNOSTICS v_n = ROW_COUNT;
     IF v_n = 0 THEN RAISE EXCEPTION '이미 처리된 상담 요청입니다.'; END IF;
 
-    -- parents.user_id는 NULL일 수 있다(계정 미발급 학부모)
+    -- parents.user_id는 NOT NULL(20260522000001_core_schema.sql:61)이라 이 JOIN이
+    -- 성공하는 한 v_parent_user는 항상 채워진다 — 방어적 가드일 뿐 실제 분기는 아니다.
     IF v_parent_user IS NOT NULL THEN
         INSERT INTO notifications (user_id, academy_id, type, title, link, source_id)
         VALUES (v_parent_user, v_academy_id, 'consultation',

@@ -59,10 +59,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_consultation_pending
 
 ALTER TABLE consultations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS consultations_admin_all ON consultations;
 CREATE POLICY consultations_admin_all ON consultations FOR ALL TO authenticated
     USING (is_admin()) WITH CHECK (is_admin());
 
 -- parent: 본인이 신청한 건만 열람
+DROP POLICY IF EXISTS consultations_parent_select ON consultations;
 CREATE POLICY consultations_parent_select ON consultations FOR SELECT TO authenticated
     USING (
         current_user_role() = 'parent'
@@ -71,6 +73,7 @@ CREATE POLICY consultations_parent_select ON consultations FOR SELECT TO authent
 
 -- owner/teacher: 학원 전체 열람. teacher를 담당 반으로 좁히지 않는 이유는
 -- 담임이 자리를 비웠을 때 다른 선생님이 받을 수 있어야 하는 운영 요구다.
+DROP POLICY IF EXISTS consultations_staff_select ON consultations;
 CREATE POLICY consultations_staff_select ON consultations FOR SELECT TO authenticated
     USING (
         current_user_role() IN ('owner','teacher')

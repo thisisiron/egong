@@ -2,7 +2,7 @@
 
 이 테이블은 어떤 역할에도 INSERT/UPDATE 정책을 주지 않는다(admin 제외). 모든 쓰기가
 definer RPC 경유이므로, 여기서는 "직접 쓰기가 막히는가"와 "SELECT 범위"를 검증하고
-RPC 동작은 test_consultation_rpc 쪽(Task 2)에서 다룬다.
+신청·상태 전이 RPC 동작은 이 파일 아래쪽("신청·상태 전이 RPC" 절)에서 이어서 다룬다.
 """
 
 import datetime as dt
@@ -46,8 +46,16 @@ def seeded(db, ctx, *, user_id, status="requested", reason="[TEST] 상담"):
 
     as_user는 트랜잭션을 열자마자 role을 바꾸므로, RLS 우회 삽입이 필요한 이 케이스는
     직접 트랜잭션을 연다. force_rollback이라 커밋되지 않는다 — 시드가 오염되지 않는다.
+
+    시드 스크립트(ensure_consultation)가 이 학생(김학생)에게 이미 status='requested'
+    상담 1건을 커밋해 두므로, uq_consultation_pending(student_id) WHERE status='requested'
+    부분 유니크 인덱스와 충돌한다 — role을 낮추기 전에 먼저 지운다.
     """
     with db.transaction(force_rollback=True):
+        db.execute(
+            "DELETE FROM consultations WHERE student_id = %s AND status = 'requested'",
+            (ctx["student_id"],),
+        )
         preferred = (dt.date.today() + dt.timedelta(days=7)).isoformat()
         cid = db.execute(
             "INSERT INTO consultations (academy_id, student_id, parent_id, status, "

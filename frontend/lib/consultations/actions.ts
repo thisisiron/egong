@@ -81,7 +81,10 @@ export async function confirmConsultationAction(input: ConfirmConsultationInput)
   const { error } = await supabase.rpc('confirm_consultation', {
     p_id: parsed.id,
     p_scheduled_at: kstLocalToIso(parsed.scheduled_at_local),
-    p_note: parsed.note,
+    // p_note는 DEFAULT NULL이 있는 선택 인자 — 생성된 타입은 `p_note?: string`(| null
+    // 없음)이라 undefined로 넘겨야 db:types 재생성 후에도 tsc가 통과한다. supabase-js가
+    // undefined 키를 본문에서 빼면 PostgREST가 SQL의 DEFAULT NULL을 적용한다.
+    p_note: parsed.note ?? undefined,
   })
   if (error) throw new Error(error.message)
 
@@ -110,7 +113,8 @@ export async function cancelConsultationAction(input: CancelConsultationInput) {
   const supabase = await createClient()
   const { error } = await supabase.rpc('cancel_consultation', {
     p_id: parsed.id,
-    p_note: parsed.note,
+    // confirm_consultation과 같은 이유 — p_note는 DEFAULT NULL이 있는 선택 인자.
+    p_note: parsed.note ?? undefined,
   })
   if (error) throw new Error(error.message)
 
