@@ -92,7 +92,10 @@ export function ConsultationHandleDialog({
           setError(result.message)
           return
         }
-        setOpen(false)
+        // setOpen(false)를 직접 부르면 Radix의 onOpenChange가 호출되지 않아
+        // handleOpenChange의 리셋 로직(에러·입력값 비우기)이 건너뛰어진다.
+        // 성공/실패 경로 모두 같은 리셋 경로를 타도록 handleOpenChange를 거친다.
+        handleOpenChange(false)
       } catch (e) {
         setError(e instanceof Error ? e.message : '처리에 실패했습니다.')
       }

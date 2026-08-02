@@ -45,6 +45,27 @@ function revalidateCalendars() {
   revalidatePath('/owner/schedule')
 }
 
+/**
+ * catch에서 잡은 에러를 사용자에게 보여줄 메시지로 좁힌다(화이트리스트).
+ *
+ * Fix A 이전에는 Next.js가 프로덕션 빌드에서 서버 액션 예외의 message를 가려줬다 —
+ * 그래서 throw만 해두면 무슨 메시지를 담든 안전했다. throw 대신 ActionResult를
+ * 반환하도록 바꾼 지금은 그 방어막이 없다. RPC의 RAISE EXCEPTION · parse()의 zod
+ * 메시지 · 23505 변환 메시지는 그대로 통과시켜야 하지만, RLS 위반이나 PostgREST
+ * 내부 에러 같은 임의의 영어 문자열까지 그대로 나가면 안 된다.
+ *
+ * 판별 기준: 한글이 하나라도 포함돼 있으면 의도한 메시지로 본다. 이 도메인에서
+ * 사용자에게 보여줄 목적으로 던지는 모든 메시지(RPC RAISE EXCEPTION, zod 메시지,
+ * 23505 변환)는 한국어이고, Postgres/PostgREST가 내부적으로 만드는 에러는 영어이기
+ * 때문이다 — 정규식 하나로 충분히 견고하고, 메시지마다 화이트리스트를 나열하며
+ * 유지보수할 필요가 없다. 원본 에러는 무엇을 걸러냈든 항상 로그에 남긴다.
+ */
+function toUserMessage(actionName: string, e: unknown, fallback: string): string {
+  console.error(`${actionName} failed`, e)
+  const message = e instanceof Error ? e.message : ''
+  return /[가-힣]/.test(message) ? message : fallback
+}
+
 export async function requestConsultationAction(
   input: RequestConsultationInput
 ): Promise<ActionResult> {
@@ -70,12 +91,18 @@ export async function requestConsultationAction(
       }
       throw new Error(error.message)
     }
-
-    revalidateAll()
-    return { ok: true }
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : '요청을 처리하지 못했습니다.' }
+    return {
+      ok: false,
+      message: toUserMessage('requestConsultationAction', e, '요청을 처리하지 못했습니다.'),
+    }
   }
+
+  // DB 쓰기가 이미 성공한 뒤이므로 try 밖에 둔다 — revalidatePath가 던지면 성공을
+  // 실패로 오인해 사용자가 재시도하고, 이미 성공한 신청 때문에 uq_consultation_pending에
+  // 걸려 "이미 대기 중인 상담 신청이 있습니다."를 보게 되는 상황을 막는다.
+  revalidateAll()
+  return { ok: true }
 }
 
 /** datetime-local 'YYYY-MM-DDTHH:mm'을 KST 벽시계로 읽어 ISO(UTC)로. */
@@ -100,13 +127,16 @@ export async function confirmConsultationAction(
       p_note: parsed.note ?? undefined,
     })
     if (error) throw new Error(error.message)
-
-    revalidateAll()
-    revalidateCalendars()
-    return { ok: true }
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : '처리하지 못했습니다.' }
+    return {
+      ok: false,
+      message: toUserMessage('confirmConsultationAction', e, '처리하지 못했습니다.'),
+    }
   }
+
+  revalidateAll()
+  revalidateCalendars()
+  return { ok: true }
 }
 
 export async function rejectConsultationAction(
@@ -122,12 +152,15 @@ export async function rejectConsultationAction(
       p_note: parsed.note,
     })
     if (error) throw new Error(error.message)
-
-    revalidateAll()
-    return { ok: true }
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : '처리하지 못했습니다.' }
+    return {
+      ok: false,
+      message: toUserMessage('rejectConsultationAction', e, '처리하지 못했습니다.'),
+    }
   }
+
+  revalidateAll()
+  return { ok: true }
 }
 
 export async function cancelConsultationAction(
@@ -144,11 +177,14 @@ export async function cancelConsultationAction(
       p_note: parsed.note ?? undefined,
     })
     if (error) throw new Error(error.message)
-
-    revalidateAll()
-    revalidateCalendars()
-    return { ok: true }
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : '취소하지 못했습니다.' }
+    return {
+      ok: false,
+      message: toUserMessage('cancelConsultationAction', e, '취소하지 못했습니다.'),
+    }
   }
+
+  revalidateAll()
+  revalidateCalendars()
+  return { ok: true }
 }
