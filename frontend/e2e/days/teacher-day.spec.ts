@@ -212,3 +212,27 @@ test('선생이 올린 자료를 학생이 즉시 본다', async ({ page, browse
 
   await studentCtx.close()
 })
+
+// 시드가 심어둔 대기 중 상담(`[SEED] 진로 상담 요청`)을 확정한다.
+// playwright.config.ts의 프로젝트 순서가 owner → teacher → student → parent로 고정이고
+// workers: 1이라, 여기서 확정해두면 뒤에 도는 parent-day는 requested가 비워진 상태에서
+// 새 신청을 만들 수 있다(uq_consultation_pending 충돌 회피). 순서를 바꾸지 말 것.
+test('선생님: 대기 중 상담을 확정한다', async ({ page }) => {
+  await page.goto('/teacher/consultations')
+
+  const card = page.locator('[data-consultation-reason="[SEED] 진로 상담 요청"]')
+  await expect(card).toBeVisible()
+
+  await card.getByRole('button', { name: '확정' }).click()
+
+  // KST 기준 7일 뒤 15:00 — datetime-local은 'YYYY-MM-DDTHH:mm'
+  const kst = new Date(Date.now() + 9 * 3600_000 + 7 * 24 * 3600_000)
+  const ymd = kst.toISOString().slice(0, 10)
+  await page.getByLabel('상담 시각').fill(`${ymd}T15:00`)
+  await page.getByLabel('안내 메모 (선택)').fill('상담실에서 뵙겠습니다.')
+  await page.getByRole('button', { name: '확정', exact: true }).last().click()
+
+  // 양성 단언 — 카드가 남아 있고 상태가 실제로 '확정'으로 바뀌었는지.
+  // 이게 없으면 다이얼로그가 조용히 실패해도 통과한다.
+  await expect(card.getByText('확정', { exact: true })).toBeVisible()
+})
