@@ -56,6 +56,7 @@ from seed import (
     ASSIGNMENT_TITLE,
     CLASS_B_NAME,
     CLASS_NAME,
+    CONSULTATION_REASON,
     EXTRA_STUDENT_ACCOUNT,
     MATERIAL_ALL_TITLE,
     MATERIAL_B_TITLE,
@@ -215,7 +216,13 @@ async def main(reset: bool = False, reset_passwords: bool = False) -> int:
         title=ANNOUNCEMENT_TITLE,
         created_by=user_ids["owner"], author_name="박원장",
     )
-    log.info("contents : 자료 3 · 과제 1 · 질문 1 · 공지 1")
+    await h.ensure_consultation(
+        client, academy_id=academy_id,
+        student_id=student_id, student_name="김학생",
+        parent_id=parent_id, parent_name="김부모",
+        reason=CONSULTATION_REASON,
+    )
+    log.info("contents : 자료 3 · 과제 1 · 질문 1 · 공지 1 · 상담 1")
 
     # 10. 학원 B 콘텐츠 — 학원 경계 RLS 테스트의 양성 단언용(자기 학원 데이터가 실제로
     #     보이는지). 최소 1건씩만 — 학원 B를 A의 축소판으로 만들지 않는다.

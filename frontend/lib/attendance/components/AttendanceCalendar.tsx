@@ -47,6 +47,7 @@ export function AttendanceCalendar({
                   {c.eventTypes.map((t) => (
                     <span
                       key={t}
+                      data-event-type={t}
                       className={`inline-block w-1.5 h-1.5 rounded-full ${EVENT_TYPE_META[t].dot}`}
                       title={EVENT_TYPE_META[t].label}
                     />

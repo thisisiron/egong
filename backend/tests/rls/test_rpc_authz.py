@@ -1,10 +1,18 @@
-"""notify_* RPC 인가. da060c2(미인증 fail-open + anon EXECUTE) 회귀 방지.
+"""definer RPC 인가. da060c2(미인증 fail-open + anon EXECUTE) 회귀 방지.
 
-da060c2는 독립된 두 가지를 고쳤다: (1) 각 notify_* 함수 내부의
+da060c2는 독립된 두 가지를 고쳤다: (1) 각 definer 함수 내부의
 `IF auth.uid() IS NULL THEN RAISE EXCEPTION` 가드, (2) anon으로부터의 EXECUTE 회수.
 아래 test_anon_*·test_authenticated_역할에는_열려_있다는 (2)만 검증한다 — GRANT를
 그대로 둔 채 CREATE OR REPLACE로 (1)의 가드만 지워도 이 파일이 통째로 초록불이었다.
 test_인증_안_된_authenticated_호출은_함수_내부_가드에_막힌다가 (1)을 메운다.
+
+DEFINER_FUNCS(존재·anon 회수·authenticated 부여 검증)에는 상담 RPC 4종도 포함한다 —
+Supabase가 pg_default_acl로 anon에 직접 EXECUTE를 부여하므로, 마이그레이션이 REVOKE를
+빠뜨리면 이 목록에 없는 한 아무 테스트도 잡아내지 못한다. 다만 그 4종은 인자 개수·타입이
+notify_*(단일 uuid)와 달라 test_인증_안_된_authenticated_호출은_함수_내부_가드에_막힌다의
+`SELECT {func}(%s)` 단일 인자 호출 템플릿을 그대로 못 쓴다 — 그 테스트는 NOTIFY_FUNCS만
+쓰고, cancel_consultation 쪽 동일 가드는 test_consultations.py::test_미인증_호출은_거부된다가
+이미 검증한다.
 """
 
 import uuid
@@ -23,6 +31,17 @@ NOTIFY_FUNCS = [
     "notify_question_reply",
 ]
 
+# 상담 신청·상태 전이 RPC(20260802000002_consultation_rpc.sql). 인자 시그니처가 각기
+# 달라 단일 uuid 인자 호출 템플릿에 못 태우므로 존재·GRANT/REVOKE 검증에만 쓴다.
+CONSULTATION_FUNCS = [
+    "request_consultation",
+    "confirm_consultation",
+    "reject_consultation",
+    "cancel_consultation",
+]
+
+DEFINER_FUNCS = NOTIFY_FUNCS + CONSULTATION_FUNCS
+
 
 def _oids(db, name: str) -> list[int]:
     return [
@@ -35,12 +54,12 @@ def _oids(db, name: str) -> list[int]:
     ]
 
 
-@pytest.mark.parametrize("func", NOTIFY_FUNCS)
+@pytest.mark.parametrize("func", DEFINER_FUNCS)
 def test_함수가_존재한다(db, func):
     assert _oids(db, func), f"{func}가 없습니다 — 이름이 바뀌었다면 목록을 갱신하세요"
 
 
-@pytest.mark.parametrize("func", NOTIFY_FUNCS)
+@pytest.mark.parametrize("func", DEFINER_FUNCS)
 def test_anon은_EXECUTE_권한이_없다(db, func):
     oids = _oids(db, func)
     assert oids, f"{func}가 없습니다 — 이름이 바뀌었다면 목록을 갱신하세요"
@@ -51,7 +70,7 @@ def test_anon은_EXECUTE_권한이_없다(db, func):
         assert granted is False, f"anon에 {func} EXECUTE가 열려 있습니다"
 
 
-@pytest.mark.parametrize("func", NOTIFY_FUNCS)
+@pytest.mark.parametrize("func", DEFINER_FUNCS)
 def test_authenticated_역할에는_열려_있다(db, func):
     """대조군 — 전부 막혀 있어서 통과하는 상황을 구분한다."""
     oids = _oids(db, func)
