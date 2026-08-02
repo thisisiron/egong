@@ -7,6 +7,7 @@
     "dev:backend": "cd backend && uvicorn src.main:app --reload --port 8000",
     "build:frontend": "pnpm --filter @egong/frontend build",
     "test:frontend": "pnpm --filter @egong/frontend test:e2e",
+    "test:unit": "pnpm --filter @egong/frontend test:unit",
     "test:backend": "cd backend && pytest",
     "db:push": "npx -y supabase db push",
     "db:types": "npx -y supabase gen types typescript --project-id \"$SUPABASE_PROJECT_REF\" > frontend/lib/supabase/database.types.ts",
