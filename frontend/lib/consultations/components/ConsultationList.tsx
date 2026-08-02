@@ -36,7 +36,10 @@ function ConsultationCard({ row }: { row: Consultation }) {
     setError(null)
     startTransition(async () => {
       try {
-        await cancelConsultationAction({ id: row.id, note: null })
+        const result = await cancelConsultationAction({ id: row.id, note: null })
+        if (!result.ok) {
+          setError(result.message)
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : '취소에 실패했습니다.')
       }

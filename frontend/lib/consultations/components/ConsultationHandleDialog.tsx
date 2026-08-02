@@ -37,14 +37,17 @@ export function ConsultationHandleDialog({
     setError(null)
     startTransition(async () => {
       try {
-        if (mode === 'confirm') {
-          await confirmConsultationAction({
-            id: consultationId,
-            scheduled_at_local: scheduledAt,
-            note: note || null,
-          })
-        } else {
-          await rejectConsultationAction({ id: consultationId, note })
+        const result =
+          mode === 'confirm'
+            ? await confirmConsultationAction({
+                id: consultationId,
+                scheduled_at_local: scheduledAt,
+                note: note || null,
+              })
+            : await rejectConsultationAction({ id: consultationId, note })
+        if (!result.ok) {
+          setError(result.message)
+          return
         }
         setOpen(false)
       } catch (e) {

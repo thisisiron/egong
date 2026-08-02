@@ -61,12 +61,16 @@ export function ConsultationRequestForm({
     const preferredDate = toYmd(date)
     startTransition(async () => {
       try {
-        await requestConsultationAction({
+        const result = await requestConsultationAction({
           student_id: studentId,
           preferred_date: preferredDate,
           preferred_slot: slot,
           reason,
         })
+        if (!result.ok) {
+          setError(result.message)
+          return
+        }
         setDate(undefined)
         setReason('')
       } catch (e) {

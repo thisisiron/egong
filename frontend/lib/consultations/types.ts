@@ -44,3 +44,11 @@ export type Consultation = {
 export function isOpen(status: ConsultationStatus): boolean {
   return status === 'requested' || status === 'confirmed'
 }
+
+/**
+ * 서버 액션의 반환 타입 — Next.js는 프로덕션 빌드에서 서버 액션이 던진 예외의
+ * message를 클라이언트로 넘기지 않는다(일반 문구 + digest로 치환). 상담 도메인은
+ * 학부모가 행동을 바꿔야 하는 한국어 메시지(중복 신청, 지난 시각 등)에 유독 의존하므로
+ * throw 대신 이 타입으로 결과를 반환한다.
+ */
+export type ActionResult = { ok: true } | { ok: false; message: string }
