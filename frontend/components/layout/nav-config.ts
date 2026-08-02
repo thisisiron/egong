@@ -12,6 +12,7 @@ import {
   Megaphone,
   MessagesSquare,
   School,
+  TrendingUp,
   UserRound,
   Users,
   type LucideIcon,
@@ -29,6 +30,7 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
       items: [
         { href: '/owner', label: '대시보드', icon: LayoutDashboard },
         { href: '/owner/schedule', label: '일정', icon: CalendarDays },
+        { href: '/owner/stats', label: '통계', icon: TrendingUp },
       ],
     },
     {
@@ -56,6 +58,7 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
       items: [
         { href: '/teacher', label: '대시보드', icon: LayoutDashboard },
         { href: '/teacher/schedule', label: '일정', icon: CalendarDays },
+        { href: '/teacher/stats', label: '통계', icon: TrendingUp },
       ],
     },
     {
