@@ -11,33 +11,24 @@ import { cancelConsultationAction } from '../actions'
 import { isOpen, SLOT_LABEL, type Consultation } from '../types'
 import { ConsultationStatusBadge } from './ConsultationStatusBadge'
 
-export function ConsultationList({
-  rows,
-  viewer,
-}: {
-  rows: Consultation[]
-  /** 'parent'면 학생 이름을 숨기고 취소만 노출, 'staff'면 학생·학부모 이름을 보여준다. */
-  viewer: 'parent' | 'staff'
-}) {
+// 이 컴포넌트는 학부모 화면(/me/consultations) 전용이다. 예전에는 'staff' 뷰 분기가
+// 있었으나 호출자가 없는 죽은 코드였다(스태프 화면은 StaffConsultationBoard.tsx가 별도로
+// 담당 — 카드 모양은 비슷해도 서로 다른 액션 세트를 갖는 별개 컴포넌트다). 리뷰에서
+// 지적돼 제거했다.
+export function ConsultationList({ rows }: { rows: Consultation[] }) {
   if (rows.length === 0) {
     return <p className="text-sm text-slate-400 text-center py-12">상담 내역이 없습니다.</p>
   }
   return (
     <div className="space-y-2">
       {rows.map((r) => (
-        <ConsultationCard key={r.id} row={r} viewer={viewer} />
+        <ConsultationCard key={r.id} row={r} />
       ))}
     </div>
   )
 }
 
-function ConsultationCard({
-  row,
-  viewer,
-}: {
-  row: Consultation
-  viewer: 'parent' | 'staff'
-}) {
+function ConsultationCard({ row }: { row: Consultation }) {
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -60,11 +51,6 @@ function ConsultationCard({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <ConsultationStatusBadge status={row.status} />
-          {viewer === 'staff' && (
-            <span className="text-sm font-medium">
-              {row.student_name} · {row.parent_name}
-            </span>
-          )}
         </div>
         <span className="text-xs text-slate-500">
           희망 {format(parseISO(row.preferred_date), 'M월 d일 (E)', { locale: ko })}{' '}

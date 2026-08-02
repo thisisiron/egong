@@ -49,7 +49,7 @@ export default async function MyConsultationsPage({
 
       <section className="space-y-2">
         <h2 className="font-semibold text-sm">신청 내역</h2>
-        <ConsultationList rows={rows} viewer="parent" />
+        <ConsultationList rows={rows} />
       </section>
     </div>
   )

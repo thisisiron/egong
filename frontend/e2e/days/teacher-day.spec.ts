@@ -6,6 +6,15 @@ import { type Page, test, expect } from '@playwright/test'
 //
 // 주의(task-10 handoff): testInfo.testId는 (프로젝트·파일·테스트 제목)의 해시라 실행마다
 // 값이 같다. Date.now()를 반드시 덧붙여야 재실행 시에도 실제로 유니크하다.
+//
+// 예외(task-6 리뷰): 맨 아래 '선생님: 대기 중 상담을 확정한다'는 위 규칙의 예외다 — 새 행을
+// 만드는 대신 시드가 심어둔 상담 행을 제자리에서 requested → confirmed로 변형한다. 그래서
+// --reset 없이 이 파일을 두 번 돌리면 두 번째 실행에서는 카드가 이미 confirmed라 '확정'
+// 버튼을 못 찾고 실패하고, 그 사이 --reset 없는 시드가 한 번 더 돌면 ensure_consultation이
+// status='requested' 행을 못 찾아 같은 reason의 행을 하나 더 심어 셀렉터가 2건에 매치되는
+// strict mode 위반이 날 수 있다. pnpm test:scenario와 이 파일의 실행 커맨드는 둘 다
+// seed:reset을 선행하므로 실제 실행 경로에서는 영향이 없다 — 이 주석은 "--reset 없이 이
+// 파일만 반복 실행"하는 경우에 한해서만 유효하다.
 
 /**
  * '과제 내기' 폼(자료·공지와 달리 composing 토글이 없어 "폼이 마운트됨" 같은 자체 하이드레이션
@@ -224,6 +233,11 @@ test('선생님: 대기 중 상담을 확정한다', async ({ page }) => {
   await expect(card).toBeVisible()
 
   await card.getByRole('button', { name: '확정' }).click()
+
+  // 이 파일 자신의 경고(위 헤더 주석)대로, 하이드레이션 전 클릭은 조용한 no-op이 될 수
+  // 있다. 다이얼로그가 실제로 열렸는지 여기서 먼저 확인해두면, 열리지 않았을 때 아래
+  // fill()의 30초 타임아웃(원인 불명)이 아니라 이 줄에서 바로 원인이 드러난다.
+  await expect(page.getByRole('dialog')).toBeVisible()
 
   // KST 기준 7일 뒤 15:00 — datetime-local은 'YYYY-MM-DDTHH:mm'
   const kst = new Date(Date.now() + 9 * 3600_000 + 7 * 24 * 3600_000)

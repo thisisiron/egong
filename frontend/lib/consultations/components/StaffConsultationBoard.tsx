@@ -46,6 +46,13 @@ export function StaffConsultationBoard({ rows }: { rows: Consultation[] }) {
             </p>
           )}
 
+          {/* 스태프가 자기가 방금 확정·반려하며 남긴 메모를 다시 확인할 수 있어야 한다 —
+              ConsultationList.tsx(학부모 화면)와 동일한 블록. 없으면 반려 사유를 학부모에게
+              뭐라 보냈는지 스태프 쪽에서 확인할 방법이 없다. */}
+          {r.response_note && (
+            <p className="text-xs text-slate-500">학원 메모: {r.response_note}</p>
+          )}
+
           {r.status === 'requested' && (
             <div className="flex gap-2">
               <ConsultationHandleDialog
