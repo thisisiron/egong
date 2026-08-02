@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Building2,
+  CalendarClock,
   CalendarDays,
   ClipboardCheck,
   ClipboardList,
@@ -95,6 +96,7 @@ export const NAV: Record<'owner' | 'teacher' | 'admin' | 'me', NavSection[]> = {
         { href: '/me/questions', label: '질문', icon: MessagesSquare },
         { href: '/me/materials', label: '자료', icon: FolderOpen },
         { href: '/me/exams', label: '성적', icon: BarChart3 },
+        { href: '/me/consultations', label: '상담', icon: CalendarClock },
       ],
     },
   ],
