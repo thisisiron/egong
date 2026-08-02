@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
 import { Button } from '@/components/ui/button'
+import { formatDateTimeKR } from '@/lib/format'
 
 import { cancelConsultationAction } from '../actions'
 import { isOpen, SLOT_LABEL, type Consultation } from '../types'
@@ -75,7 +76,10 @@ function ConsultationCard({
 
       {row.status === 'confirmed' && row.scheduled_at && (
         <p className="text-sm text-emerald-700" data-testid="consultation-scheduled-at">
-          확정 {format(parseISO(row.scheduled_at), 'M월 d일 (E) HH:mm', { locale: ko })}
+          {/* scheduled_at은 timestamptz라 date-fns format(parseISO(...))은 기기 로컬
+              타임존으로 읽는다 — KST 고정을 위해 formatDateTimeKR(Intl, timeZone:
+              'Asia/Seoul' 고정)을 쓴다. preferred_date(바로 위)는 date-only라 영향 없음. */}
+          확정 {formatDateTimeKR(row.scheduled_at)}
           {row.handler_name && ` · ${row.handler_name}`}
         </p>
       )}

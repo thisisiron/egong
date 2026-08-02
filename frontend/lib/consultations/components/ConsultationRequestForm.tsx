@@ -8,17 +8,21 @@ import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { kstParts } from '@/lib/date'
 
 import { requestConsultationAction } from '../actions'
 import { SLOT_OPTIONS, type ConsultationSlot } from '../types'
 
-/** KST 기준 내일 0시 — Calendar의 disabled 경계. */
+/**
+ * KST 기준 내일 0시 — Calendar의 disabled 경계.
+ * react-day-picker의 `{ before }` 매처는 런타임 로컬 타임존으로 Date를 읽으므로,
+ * kstParts로 뽑은 KST 필드를 로컬 생성자(`new Date(y, m, d)`)에 넣어 "그 날짜의
+ * 로컬 자정" Date를 만든다 — Calendar가 선택 가능한 날짜에 쓰는 것과 같은 표현이다.
+ * (Date.UTC로 만들면 비-KST 브라우저에서 로컬 필드가 하루 어긋난다.)
+ */
 function tomorrowKST(): Date {
-  const kstNow = new Date(Date.now() + 9 * 3600_000)
-  const d = new Date(
-    Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth(), kstNow.getUTCDate() + 1)
-  )
-  return d
+  const { year, month, day } = kstParts(new Date(Date.now() + 24 * 3600_000))
+  return new Date(year, month - 1, day)
 }
 
 /** Date → KST 'YYYY-MM-DD'. Calendar가 주는 Date는 로컬 자정이라 그대로 포맷한다. */
