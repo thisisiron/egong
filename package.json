@@ -5,15 +5,17 @@
   "scripts": {
     "env:sync": "node scripts/env-sync.mjs",
     "dev:frontend": "pnpm --filter @egong/frontend dev",
-    "dev:backend": "cd backend && uvicorn src.main:app --reload --port 8000",
+    "dev:backend": "uv run --directory backend uvicorn src.main:app --reload --port 8000",
     "build:frontend": "pnpm --filter @egong/frontend build",
     "test:frontend": "pnpm --filter @egong/frontend test:e2e",
     "test:unit": "pnpm --filter @egong/frontend test:unit",
-    "test:backend": "cd backend && .venv\\Scripts\\python.exe -m pytest",
+    "py:sync": "uv sync --directory backend --extra dev",
+    "test:backend": "uv run --directory backend --extra dev pytest",
+    "lint:backend": "uv run --directory backend --extra dev ruff check .",
     "db:push": "npx -y supabase db push",
-    "db:types": "npx -y supabase gen types typescript --project-id \"$SUPABASE_PROJECT_REF\" > frontend/lib/supabase/database.types.ts",
-    "seed:reset": "cd backend && .venv\\Scripts\\python.exe scripts/seed_dev_accounts.py --reset",
-    "test:rls": "cd backend && .venv\\Scripts\\python.exe -m pytest -m rls",
+    "db:types": "node scripts/gen-types.mjs",
+    "seed:reset": "uv run --directory backend --extra dev python scripts/seed_dev_accounts.py --reset",
+    "test:rls": "uv run --directory backend --extra dev pytest -m rls",
     "test:scenario": "pnpm seed:reset && pnpm --filter @egong/frontend exec playwright test --project=owner-day --project=teacher-day --project=student-day --project=parent-day"
   }
 }

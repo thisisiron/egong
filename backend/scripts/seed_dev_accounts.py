@@ -12,11 +12,10 @@
 (테스트학원·테스트학원2)와 `@egong.test` 계정을 전부 지운 뒤 처음부터 다시 시딩합니다.
 ENVIRONMENT=production 에서는 안전장치가 실행을 거부합니다.
 
-사용:
-    cd backend
-    ./.venv/Scripts/python.exe scripts/seed_dev_accounts.py
-    ./.venv/Scripts/python.exe scripts/seed_dev_accounts.py --reset-passwords
-    ./.venv/Scripts/python.exe scripts/seed_dev_accounts.py --reset
+사용 (저장소 루트에서 — 인터프리터 경로를 적지 않는다. uv가 backend/.venv를 찾는다):
+    pnpm seed:reset                                    # --reset 포함
+    uv run --directory backend python scripts/seed_dev_accounts.py
+    uv run --directory backend python scripts/seed_dev_accounts.py --reset-passwords
 
 환경변수:
     SEED_PASSWORD (필수, 기본값 없음) — 신규 생성되는 모든 계정에 동일하게 사용.

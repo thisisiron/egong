@@ -1,6 +1,8 @@
 """Auth guard tests for applications router. Happy-path submission is verified
 manually via UI in Task 3."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from src.auth import dependencies as deps
@@ -42,9 +44,6 @@ async def test_list_applications_rejects_non_admin(client):
 async def test_get_application_requires_admin(client):
     response = await client.get("/api/v1/admin/applications/00000000-0000-0000-0000-000000000000")
     assert response.status_code == 401
-
-
-from unittest.mock import AsyncMock, MagicMock, patch
 
 
 def _make_application_out(**overrides):

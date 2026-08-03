@@ -76,7 +76,7 @@ def uids(db) -> dict[str, str]:
         if row is None:
             pytest.fail(
                 f"시드 계정 {email} 없음 — "
-                "cd backend && ./.venv/Scripts/python.exe scripts/seed_dev_accounts.py --reset 먼저 실행하세요"
+                "저장소 루트에서 `pnpm seed:reset` 먼저 실행하세요"
             )
         out[key] = str(row[0])
     return out
@@ -89,7 +89,7 @@ def ids(db) -> dict[str, str]:
         if row is None:
             pytest.fail(
                 f"시드 데이터 없음: {sql} {params} — "
-                "cd backend && ./.venv/Scripts/python.exe scripts/seed_dev_accounts.py --reset 먼저 실행하세요"
+                "저장소 루트에서 `pnpm seed:reset` 먼저 실행하세요"
             )
         return str(row[0])
 

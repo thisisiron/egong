@@ -2,21 +2,34 @@
 
 도메인-드리븐 FastAPI 백엔드. 모든 admin·연동·외부 API 호출은 여기를 거침.
 
-## 셋업 (Windows)
+## 셋업
 
-`python` / `python3`이 Microsoft Store stub로 잡혀있어 winget 경로를 직접 사용:
+[uv](https://docs.astral.sh/uv/)만 있으면 된다. Python 자체도 uv가 받아오므로,
+머신에 어떤 Python이 깔려 있는지(또는 `python`이 Microsoft Store stub인지) 상관없다.
 
 ```bash
-# Git Bash
-cd backend
-"C:/Users/ldcc/AppData/Local/Programs/Python/Python312/python.exe" -m venv .venv
-source .venv/Scripts/activate
+# 저장소 루트에서
+pnpm py:sync        # = uv sync --directory backend --extra dev
+```
 
-# 의존성 설치 (편집 가능 모드 + dev)
+이 한 줄이 `backend/.venv`를 만들고, `pyproject.toml`의 런타임 + `dev` extra를
+설치하고, 프로젝트 자체를 편집 가능 모드로 넣는다. OS·셸 무관하게 동일하다.
+
+**인터프리터 경로를 어디에도 적지 않는다.** venv를 손으로 활성화할 필요도 없다 —
+아래 명령들은 전부 `uv run`이 알아서 `backend/.venv`를 쓴다.
+
+<details>
+<summary>uv 없이 표준 venv로 하려면</summary>
+
+```bash
+cd backend
+python -m venv .venv                  # 이 머신에서 동작하는 Python 3.11+ 인터프리터로
+source .venv/Scripts/activate         # Git Bash (PowerShell: .venv\Scripts\Activate.ps1)
 pip install -e ".[dev]"
 ```
 
-venv 활성화 후엔 `python`·`pip` 명령이 venv 내부 인터프리터로 풀림. PowerShell이면 `.venv\Scripts\Activate.ps1`.
+경로가 같은 `backend/.venv`라서 `uv run` 계열 명령과도 섞어 쓸 수 있다.
+</details>
 
 ## 환경변수
 
@@ -25,20 +38,21 @@ venv 활성화 후엔 `python`·`pip` 명령이 venv 내부 인터프리터로 �
 | 키 | 설명 |
 |---|---|
 | `SUPABASE_URL` | Supabase 클라우드 프로젝트 URL |
-| `SUPABASE_SECRET_KEY` | `sb_secret_...` (서버 전용, 절대 클라이언트 노출 금지) |
+| `SUPABASE_SECRET_KEY` | legacy `service_role` JWT (서버 전용, 절대 클라이언트 노출 금지). 신형 `sb_secret_...`은 이 프로젝트에서 401 — `.env.example` 주석 참고 |
 | `SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_...` (정보 표시용) |
 | `ALLOWED_ORIGINS` | CORS 허용 origin (콤마 구분) |
 | `ENVIRONMENT` | `development` / `test` / `production` |
+| `SEED_PASSWORD` | 시드 계정 비밀번호. **기본값 없음** — 없으면 시딩이 에러로 멈춘다 |
+| `DATABASE_URL` | RLS 테스트(`-m rls`) 전용 Postgres 직결 DSN |
 
 ## 실행
 
 ```bash
-# 개발 서버 (자동 reload, port 8000)
-source .venv/Scripts/activate
-uvicorn src.main:app --reload --port 8000
-
-# 루트 monorepo에서:
+# 루트 monorepo에서 (권장)
 pnpm dev:backend
+
+# backend/ 안에서 직접
+uv run uvicorn src.main:app --reload --port 8000
 ```
 
 API docs: http://localhost:8000/docs · Health: http://localhost:8000/api/v1/health
@@ -46,10 +60,13 @@ API docs: http://localhost:8000/docs · Health: http://localhost:8000/api/v1/hea
 ## 테스트
 
 ```bash
-source .venv/Scripts/activate
-pytest                          # 전체
-pytest tests/health -v          # 도메인별
-pytest tests/health/test_router.py::test_health_returns_ok -v   # 단일
+# 루트에서
+pnpm test:backend               # 전체 (rls 마커 제외)
+pnpm test:rls                   # RLS 권한 경계 (DATABASE_URL 필요)
+
+# backend/ 안에서 직접 — 범위를 좁힐 때
+uv run --extra dev pytest tests/health -v
+uv run --extra dev pytest tests/health/test_router.py::test_health_returns_ok -v
 ```
 
 ## 도메인 추가법
