@@ -9,7 +9,7 @@ import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 const pretendard = localFont({
   src: "./fonts/PretendardVariable.woff2",
   weight: "45 920",
-  variable: "--font-sans",
+  variable: "--font-pretendard",
   display: "swap",
 });
 

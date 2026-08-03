@@ -133,7 +133,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
 
-  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-pretendard), ui-sans-serif, system-ui, sans-serif;
 
   /* 한글은 자간을 이보다 좁히면 받침이 붙어 읽기 어려워진다. */
   --tracking-heading: -0.02em;
