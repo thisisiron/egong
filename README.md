@@ -7,7 +7,9 @@
 ### 사전 조건
 - Node.js 20+ (현재 검증: 24.x)
 - pnpm 9+ (현재: 11.3.0)
-- Python 3.11+ (Windows: `C:/Users/ldcc/AppData/Local/Programs/Python/Python312/python.exe`)
+- Python 3.11+ (경로는 머신마다 다르다 — `python3 --version` 또는 `py --version`으로
+  확인하고, 아래 venv 생성 단계에서 그 인터프리터를 사용할 것. 예: `python`, `python3`,
+  `py -3.12`, 또는 `uv`로 관리 중이면 `uv python find`)
 - Supabase 클라우드 프로젝트 1개 (대시보드에서 생성, 키 복사)
 
 ### 시작
@@ -16,7 +18,7 @@
 # 1. 의존성
 pnpm install                                                # 워크스페이스 전체
 cd backend
-"C:/Users/ldcc/AppData/Local/Programs/Python/Python312/python.exe" -m venv .venv
+python -m venv .venv                                        # 위에서 확인한 인터프리터로 실행
 source .venv/Scripts/activate                               # Git Bash
 pip install -e ".[dev]"
 cd ..
@@ -36,7 +38,7 @@ cp backend/.env.example backend/.env
 
 # 3. (선택) Supabase CLI 로그인·링크 — Task 2 마이그레이션 push 직전에
 npx supabase login                                          # 브라우저 OAuth
-npx supabase link --project-ref ltyopuvdqtcajioioudb
+npx supabase link --project-ref <your-project-ref>          # 대시보드 → Settings → General 에서 확인
 pnpm run db:push                                            # 마이그레이션 push (Task 2 이후)
 pnpm run db:types                                           # TypeScript 타입 생성
 
@@ -72,9 +74,22 @@ pnpm run dev:frontend                                       # http://localhost:3
 | `pnpm dev:frontend` | Next.js dev server |
 | `pnpm dev:backend` | FastAPI (uvicorn, port 8000) |
 | `pnpm build:frontend` | Next.js production 빌드 |
-| `pnpm test:frontend` | 프론트엔드 테스트 |
+| `pnpm test:frontend` | 프론트엔드 e2e (Playwright) — 아래 참고 |
+| `pnpm test:unit` | 프론트엔드 단위 테스트 (Vitest) |
 | `pnpm test:backend` | pytest (`cd backend && pytest`) |
 | `pnpm db:push` | Supabase 마이그레이션 push |
 | `pnpm db:types` | DB 타입 자동 생성 → `frontend/lib/supabase/database.types.ts` (셸에 `SUPABASE_PROJECT_REF` 필요) |
+
+#### `pnpm test:frontend` (Playwright e2e) 실행 전 필수
+
+`frontend/playwright.config.ts`는 dotenv를 로드하지 않는다. `frontend/e2e/auth.setup.ts`와
+`frontend/e2e/stats.spec.ts`는 `SEED_PASSWORD`가 없으면 **모듈 로드 시점에 throw**하므로,
+셸 환경변수로 미리 내보내지 않으면 테스트가 시작도 못 하고 죽는다(하네스가 고장난 것처럼
+보이지만 실제로는 이 변수 부재가 원인):
+
+```bash
+export SEED_PASSWORD=<seed_dev_accounts.py에 쓴 것과 같은 값>   # Git Bash
+pnpm test:frontend
+```
 
 자세한 셋업은 `frontend/README.md`, `backend/README.md` 참조.
