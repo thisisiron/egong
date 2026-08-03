@@ -17,8 +17,15 @@ MONTH = "2026-08-01"
 
 
 def _rows(db, month: str = MONTH) -> list[tuple]:
+    # 7개 컬럼 전부 선택 — class_id/class_name만 뽑으면 scope CTE(월 무관)만
+    # 검증하게 되어 월 정규화(date_trunc) 테스트가 항상 통과하는 공허한
+    # 단언이 된다. 다른 테스트들은 r[0]/r[1] 또는 []와만 비교하므로
+    # 컬럼을 넓혀도 그 테스트들의 의미는 바뀌지 않는다.
     return db.execute(
-        "SELECT class_id, class_name FROM class_stats_for_month(%s)", (month,)
+        "SELECT class_id, class_name, student_count, attendance_pct, "
+        "attendance_pct_prev, submission_pct, submission_pct_prev "
+        "FROM class_stats_for_month(%s)",
+        (month,),
     ).fetchall()
 
 
