@@ -1,33 +1,153 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Tailwind v4에는 dark 변형이 기본 제공되지 않는다. next-themes가 <html>에 붙이는
+   .dark 클래스를 기준으로 정의한다. */
+@custom-variant dark (&:is(.dark *));
 
-  /* White-base theme — indigo point, neutral surfaces (light only) */
-  --primary: hsl(243 75% 59%);            /* indigo-600 #4f46e5 */
-  --primary-foreground: #ffffff;
-  --ring: hsl(239 84% 67%);               /* indigo-500 */
-  --accent: hsl(226 100% 97%);            /* indigo-50 */
-  --accent-foreground: hsl(245 58% 51%);  /* indigo-700 #4338ca */
-  --muted: hsl(210 20% 98%);              /* gray-50 */
-  --muted-foreground: hsl(215 16% 47%);   /* slate-500 */
-  --card: #ffffff;
-  --card-foreground: #171717;
-  --popover: #ffffff;
-  --secondary: hsl(210 40% 96%);
-  --destructive: hsl(0 84% 60%);
+:root {
+  --radius: 0.5rem;
+
+  --background: oklch(0.9886 0.0026 286.4);
+  --foreground: oklch(0.2035 0.0139 285.1);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2035 0.0139 285.1);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2035 0.0139 285.1);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.2035 0.0139 285.1);
+  --muted: oklch(0.9601 0.0093 286.2);
+  --muted-foreground: oklch(0.5477 0.0262 285.5);
+  --secondary: oklch(0.9601 0.0093 286.2);
+  --secondary-foreground: oklch(0.2035 0.0139 285.1);
+  --accent: oklch(0.9601 0.0093 286.2);
+  --accent-foreground: oklch(0.4082 0.1323 278.8);
+  --border: oklch(0.93 0.0094 286.2);
+  --input: oklch(0.6688 0.0102 286.1);
+  --primary: oklch(0.5403 0.1841 278.3);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.5403 0.1841 278.3);
+
+  --success-foreground: oklch(0.5126 0.1198 153.6);
+  --success-muted: oklch(0.9605 0.0182 161.1);
+  --warning-foreground: oklch(0.5488 0.1131 70.8);
+  --warning-muted: oklch(0.9657 0.0231 75.9);
+  --danger-foreground: oklch(0.4957 0.1753 26.5);
+  --danger-muted: oklch(0.9566 0.0185 17.5);
+  --neutral-foreground: oklch(0.5164 0.0266 285.4);
+  --neutral-muted: oklch(0.9593 0.0053 286.3);
+
+  --destructive: oklch(0.4957 0.1753 26.5);
+  --destructive-foreground: oklch(1 0 0);
+
+  --chart-emphasis: oklch(0.5403 0.1841 278.3);
+  --chart-reference: oklch(0.5477 0.0262 285.5);
+  --chart-grid: oklch(0.93 0.0094 286.2);
+
+  --category-exam: oklch(0.5534 0.1739 38.4);
+  --category-consultation: oklch(0.5109 0.0861 186.4);
+}
+
+.dark {
+  --background: oklch(0.1615 0.0105 285.2);
+  --foreground: oklch(0.9468 0.0068 277.2);
+  --card: oklch(0.2084 0.0158 285);
+  --card-foreground: oklch(0.9468 0.0068 277.2);
+  --popover: oklch(0.2401 0.0209 284.7);
+  --popover-foreground: oklch(0.9468 0.0068 277.2);
+  --sidebar: oklch(0.1615 0.0105 285.2);
+  --sidebar-foreground: oklch(0.9468 0.0068 277.2);
+  --muted: oklch(0.2621 0.0242 284.6);
+  --muted-foreground: oklch(0.6431 0.0281 285.6);
+  --secondary: oklch(0.2621 0.0242 284.6);
+  --secondary-foreground: oklch(0.9468 0.0068 277.2);
+  --accent: oklch(0.2621 0.0242 284.6);
+  --accent-foreground: oklch(0.6836 0.1537 281.5);
+  --border: oklch(0.2725 0.0166 285.2);
+  --input: oklch(0.5063 0.0141 285.9);
+  --primary: oklch(0.6836 0.1537 281.5);
+  --primary-foreground: oklch(0.1615 0.0105 285.2);
+  --ring: oklch(0.6836 0.1537 281.5);
+
+  --success-foreground: oklch(0.8416 0.1422 158.4);
+  --success-muted: oklch(0.2546 0.0354 160.7);
+  --warning-foreground: oklch(0.8355 0.1036 76);
+  --warning-muted: oklch(0.2554 0.0285 75.3);
+  --danger-foreground: oklch(0.7808 0.1119 19.9);
+  --danger-muted: oklch(0.2369 0.0374 20.2);
+  --neutral-foreground: oklch(0.7138 0.0216 285.8);
+  --neutral-muted: oklch(0.2564 0.0187 285);
+
+  --destructive: oklch(0.7808 0.1119 19.9);
+  --destructive-foreground: oklch(0.1615 0.0105 285.2);
+
+  --chart-emphasis: oklch(0.6836 0.1537 281.5);
+  --chart-reference: oklch(0.6431 0.0281 285.6);
+  --chart-grid: oklch(0.2725 0.0166 285.2);
+
+  --category-exam: oklch(0.7576 0.159 55.9);
+  --category-consultation: oklch(0.8549 0.1251 181.1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+
+  --color-success-foreground: var(--success-foreground);
+  --color-success-muted: var(--success-muted);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-muted: var(--warning-muted);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-muted: var(--danger-muted);
+  --color-neutral-foreground: var(--neutral-foreground);
+  --color-neutral-muted: var(--neutral-muted);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-chart-emphasis: var(--chart-emphasis);
+  --color-chart-reference: var(--chart-reference);
+  --color-chart-grid: var(--chart-grid);
+
+  --color-category-exam: var(--category-exam);
+  --color-category-consultation: var(--category-consultation);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+
+  /* 한글은 자간을 이보다 좁히면 받침이 붙어 읽기 어려워진다. */
+  --tracking-heading: -0.02em;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    /* 운영 화면 밀도를 위해 본문 기본을 14px로 둔다. */
+    font-size: 0.875rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
 }
