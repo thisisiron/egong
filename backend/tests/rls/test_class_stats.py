@@ -58,25 +58,6 @@ def test_teacher는_담당_반만_본다(db, uids):
     assert class_ids == taught, "선생님 결과가 담당 반 집합과 다릅니다"
 
 
-def test_teacher에게_담당_아닌_반은_안_보인다(db, uids, ids):
-    with as_user(db, uids["teacher"]) as c:
-        rows = _rows(c)
-    class_ids = {str(r[0]) for r in rows}
-    not_taught = {
-        str(r[0])
-        for r in db.execute(
-            "SELECT c.id FROM classes c "
-            "WHERE c.academy_id = %s "
-            "  AND c.id NOT IN ("
-            "    SELECT ct.class_id FROM class_teachers ct "
-            "    JOIN teachers t ON t.id = ct.teacher_id WHERE t.user_id = %s)",
-            (ids["academy_a"], uids["teacher"]),
-        ).fetchall()
-    }
-    assert not_taught, "시드에 선생님이 담당하지 않는 반이 없어 검사 불가 — 시드를 확인하세요"
-    assert not (class_ids & not_taught), "담당하지 않는 반이 결과에 섞여 있습니다"
-
-
 def test_teacher는_같은_학원의_새로_만든_미배정_반은_안_본다(db, uids, ids):
     """seed는 teacher@egong.test를 학원 A의 '모든' 반에 배정해 둔다. 그래서
     scope CTE에서 `c.id IN (SELECT app_my_taught_class_ids())` 절이 통째로
