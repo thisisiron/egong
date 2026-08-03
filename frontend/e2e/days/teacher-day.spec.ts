@@ -241,15 +241,20 @@ test('선생님: 대기 중 상담을 확정한다', async ({ page }) => {
   // 에서도 나타날 수 있는 일반적 레이스다(이 파일 헤더 주석·teacher-day의 '오늘' 클릭
   // 재시도, playwright.config.ts의 15s expect timeout 상향 근거와 동일 계열).
   //
-  // 이 트리거 클릭은 Radix Dialog의 순수 client useState(open)만 바꿀 뿐 서버에는 아무
-  // 영향이 없다(ConsultationHandleDialog.tsx) — 그래서 다이얼로그가 뜰 때까지 재클릭해도
-  // 안전하다(멱등: 이미 열려 있으면 다시 눌러도 상태가 그대로다). 다이얼로그가 실제로
-  // 열렸다는 것 자체가 "이 서브트리의 하이드레이션이 끝났다"는 증거이므로, 이 지점만
-  // 통과시키고 나면 아래 제출 클릭(서버 상태를 바꾸는 confirmConsultationAction)은 절대
-  // 재시도하지 않고 단 한 번만 실행한다 — 두 번 실행되면 uq_consultation_pending 위반이나
-  // 중복 처리로 이어질 수 있기 때문이다.
+  // 이 트리거는 Radix DialogTrigger라 순수 client useState(open)만 바꾸지만, 그 바인딩은
+  // onOpenToggle이다 — 즉 멱등이 아니라 토글이다("이미 열려 있으면 다시 눌러도 그대로"는
+  // 틀렸다: 다시 누르면 닫힌다). 다이얼로그가 하이드레이션 레이스로 늦게 열리는 동안 재시도가
+  // 트리거를 또 누르면, modal 오버레이가 이미 떠 있어 pointer-events에 막혀 헛돌거나(a),
+  // 오버레이가 아직 마운트되지 않은 틈이면 실제로 다이얼로그를 닫아버릴 수 있다(b). 그래서
+  // targetCell/pickedDate와 같은 "아직 안 열려 있을 때만 누른다" 조건부 가드로 클릭 자체를
+  // 멱등하게 만든다. 다이얼로그가 실제로 열렸다는 것 자체가 "이 서브트리의 하이드레이션이
+  // 끝났다"는 증거이므로, 이 지점만 통과시키고 나면 아래 제출 클릭(서버 상태를 바꾸는
+  // confirmConsultationAction)은 절대 재시도하지 않고 단 한 번만 실행한다 — 두 번 실행되면
+  // uq_consultation_pending 위반이나 중복 처리로 이어질 수 있기 때문이다.
   await expect(async () => {
-    await card.getByRole('button', { name: '확정' }).click()
+    if (!(await dialog.isVisible().catch(() => false))) {
+      await card.getByRole('button', { name: '확정' }).click({ timeout: 2000 })
+    }
     await expect(dialog).toBeVisible({ timeout: 2000 })
   }).toPass({ timeout: 15_000 })
 

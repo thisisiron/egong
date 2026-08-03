@@ -113,12 +113,14 @@ test('학부모: 상담을 신청한다', async ({ page }, testInfo) => {
   // 클릭이 씹히면 다음 달 셀 자체가 DOM에 없어 이어지는 `td[data-day=...]` 클릭이 원인
   // 불명의 타임아웃으로 실패한다.
   //
-  // 다만 이 클릭은 다이얼로그 트리거(teacher-day)와 달리 멱등이 아니다 — 매번 누를 때마다
-  // 한 달씩 더 넘어간다. targetCell을 그냥 toPass로 감싸 맹목적으로 다시 누르면, 클릭이
-  // 실제로는 이미 먹혔는데 아래 픽업 단언만 늦게 뜬 경우 재시도가 한 달을 더 넘겨버려
-  // targetCell을 오히려 놓치는 역효과가 난다. 그래서 "targetCell이 아직 안 보일 때만
-  // 누른다"는 조건부 재시도로 만들어 클릭 자체를 멱등하게 만든다(이미 성공했으면 재시도
-  // 루프가 다시 누르지 않고 그냥 통과).
+  // 다만 이 클릭은 멱등이 아니다 — 매번 누를 때마다 한 달씩 더 넘어간다(teacher-day의
+  // 다이얼로그 트리거도 마찬가지로 멱등이 아님이 밝혀졌다 — Radix DialogTrigger는
+  // onOpenToggle에 바인딩돼 재클릭이 토글로 동작한다). targetCell을 그냥 toPass로 감싸
+  // 맹목적으로 다시 누르면, 클릭이 실제로는 이미 먹혔는데 아래 픽업 단언만 늦게 뜬 경우
+  // 재시도가 한 달을 더 넘겨버려 targetCell을 오히려 놓치는 역효과가 난다. 그래서
+  // "targetCell이 아직 안 보일 때만 누른다"는 조건부 재시도로 만들어 클릭 자체를
+  // 멱등하게 만든다(이미 성공했으면 재시도 루프가 다시 누르지 않고 그냥 통과) — 아래
+  // 날짜 셀 클릭, teacher-day의 다이얼로그 트리거도 모두 같은 패턴으로 통일했다.
   await expect(async () => {
     if (!(await targetCell.isVisible().catch(() => false))) {
       await nextMonthBtn.click({ timeout: 2000 })
@@ -126,14 +128,20 @@ test('학부모: 상담을 신청한다', async ({ page }, testInfo) => {
     await expect(targetCell).toBeVisible({ timeout: 2000 })
   }).toPass({ timeout: 15_000 })
 
-  // 날짜 셀 클릭은 진짜 멱등이다(같은 날짜를 다시 선택해도 선택 상태가 그대로) — 그대로
-  // toPass로 감싸 하이드레이션 완료를 한 번 더 확인한다. 이 지점을 통과하면 폼 전체가
-  // 하이드레이션됐다는 뜻이므로, 아래 실제 신청 제출(서버 상태 변경 — requestConsultationAction
-  // insert)은 재시도 없이 단 한 번만 실행한다.
+  // 날짜 셀 클릭은 멱등이 아니다 — react-day-picker v10 selection/useSingle.js는
+  // `!required && selected && isSameDay(triggerDate, selected)`이면 선택을 undefined로
+  // 되돌린다(토글). ConsultationRequestForm의 <Calendar mode="single">은 required를 안
+  // 넘기므로 이 토글이 그대로 적용된다. 위 targetCell 재시도와 같은 "아직 선택 안
+  // 됐을 때만 누른다" 조건부 가드로 감싸야, 첫 클릭이 하이드레이션 레이스에 씹혀 재시도가
+  // 도는 중에 실제로는 먹혔던 클릭을 또 눌러 선택을 지워버리는 사고를 막는다. 이 지점을
+  // 통과하면 폼 전체가 하이드레이션됐다는 뜻이므로, 아래 실제 신청 제출(서버 상태 변경 —
+  // requestConsultationAction insert)은 재시도 없이 단 한 번만 실행한다.
   await expect(async () => {
-    await targetCell.click({ timeout: 2000 })
+    if (!(await pickedDate.isVisible().catch(() => false))) {
+      await targetCell.click({ timeout: 2000 })
+    }
     await expect(pickedDate).toBeVisible({ timeout: 2000 })
-  }).toPass({ timeout: 5_000 })
+  }).toPass({ timeout: 15_000 })
 
   await page.getByLabel('희망 시간대').selectOption('afternoon')
   await page.getByLabel('상담 사유').fill(reason)
