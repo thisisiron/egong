@@ -4,8 +4,24 @@ from __future__ import annotations
 
 import os
 
-DEFAULT_SEED_PASSWORD = "***REMOVED***"
-SEED_PASSWORD = os.environ.get("SEED_PASSWORD", DEFAULT_SEED_PASSWORD)
+_SEED_PASSWORD_ENV = "SEED_PASSWORD"
+
+
+def get_seed_password() -> str:
+    """시드 계정 비밀번호. 실제로 필요한 시점(계정 생성 · 비밀번호 재설정)에만 호출할 것.
+
+    모듈 로드 시점에 평가하면 안 된다 — backend/tests/rls/conftest.py가 이 모듈에서
+    ACADEMY_NAME 등 세계 상수만 가져와 쓰는데, RLS 스위트는 SEED_PASSWORD 없이도
+    수집·실행돼야 한다. 여기서 지연 평가해서, 조용한 기본값 대신 실제 사용 시점에
+    시끄럽게 실패한다.
+    """
+    password = os.environ.get(_SEED_PASSWORD_ENV)
+    if not password:
+        raise RuntimeError(
+            f"{_SEED_PASSWORD_ENV} 환경변수가 설정되지 않았습니다. "
+            "backend/.env 에 SEED_PASSWORD=<강한 비밀번호> 를 추가한 뒤 다시 실행하세요."
+        )
+    return password
 
 ACADEMY_NAME = "테스트학원"
 ACADEMY_B_NAME = "테스트학원2"

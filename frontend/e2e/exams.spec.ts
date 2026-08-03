@@ -20,7 +20,7 @@ import { test, expect, type Page } from '@playwright/test'
 
 // 성적·시험 스모크.
 // 사전조건: seed_dev_accounts.py로 시드된 학원("테스트학원") — teacher@egong.test가
-//   "초등 미술반" 담당, student@egong.test(김학생)가 그 반에 배정. 모든 계정 비밀번호 ***REMOVED***.
+//   "초등 미술반" 담당, student@egong.test(김학생)가 그 반에 배정. 모든 계정 비밀번호는 SEED_PASSWORD 환경변수 값.
 // 환경변수 미설정 시 skip (기존 e2e 스펙들과 동일한 게이팅).
 const teacherEmail = process.env.TEACHER_EMAIL
 const teacherPassword = process.env.TEACHER_PASSWORD

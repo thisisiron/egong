@@ -6,7 +6,7 @@
 
 멱등: 다시 돌려도 안전. 이미 있으면 skip, 플래그 없이는 기존 비밀번호를 덮어쓰지 않음.
 (비밀번호를 재설정하려면 --reset-passwords 플래그를 쓰세요. `@egong.test` 계정에
-한해 비밀번호를 SEED_PASSWORD(기본 '***REMOVED***')로 재설정합니다.)
+한해 비밀번호를 SEED_PASSWORD로 재설정합니다. 이 환경변수는 필수이며 기본값이 없습니다.)
 
 시드 세계를 완전히 새로 만들려면 --reset 플래그를 쓰세요. 시드가 소유한 학원 2개
 (테스트학원·테스트학원2)와 `@egong.test` 계정을 전부 지운 뒤 처음부터 다시 시딩합니다.
@@ -19,7 +19,8 @@ ENVIRONMENT=production 에서는 안전장치가 실행을 거부합니다.
     ./.venv/Scripts/python.exe scripts/seed_dev_accounts.py --reset
 
 환경변수:
-    SEED_PASSWORD (기본 '***REMOVED***') — 신규 생성되는 모든 계정에 동일하게 사용
+    SEED_PASSWORD (필수, 기본값 없음) — 신규 생성되는 모든 계정에 동일하게 사용.
+        미설정 시 계정을 실제로 생성/재설정하는 시점에 에러로 중단합니다.
     SUPABASE_URL, SUPABASE_SECRET_KEY — backend/.env 에서 로드
 """
 
@@ -57,14 +58,13 @@ from seed import (
     CLASS_B_NAME,
     CLASS_NAME,
     CONSULTATION_REASON,
-    DEFAULT_SEED_PASSWORD,
     EXTRA_STUDENT_ACCOUNT,
     MATERIAL_ALL_TITLE,
     MATERIAL_B_TITLE,
     MATERIAL_CLASS1_TITLE,
     MATERIAL_CLASS2_TITLE,
     QUESTION_TITLE,
-    SEED_PASSWORD,
+    get_seed_password,
     is_seed_email,
 )
 from seed import (
@@ -106,7 +106,7 @@ async def main(reset: bool = False, reset_passwords: bool = False) -> int:
         user_id, created = await h.ensure_auth_user(client, email, display_name)
         if reset_passwords and not created and is_seed_email(email):
             await client.auth.admin.update_user_by_id(
-                user_id, {"password": SEED_PASSWORD}
+                user_id, {"password": get_seed_password()}
             )
             log.info("pwd  [RESET] %-7s %s", role, email)
         await h.ensure_users_row(
@@ -239,17 +239,12 @@ async def main(reset: bool = False, reset_passwords: bool = False) -> int:
     )
     log.info("academy B contents: 자료 1 · 출결 1")
 
-    # 기본값이면 그대로 보여줘 바로 복사해 쓸 수 있게 한다. 커스텀 값(운영자가
-    # backend/.env에 직접 설정한 값)이면 터미널 스크롤백·CI 로그·셸 히스토리에
-    # 평문으로 남지 않도록 마스킹한다.
-    password_display = (
-        SEED_PASSWORD
-        if SEED_PASSWORD == DEFAULT_SEED_PASSWORD
-        else "backend/.env의 SEED_PASSWORD 참조"
-    )
     print()
     print("=" * 60)
-    print(f"  DEV ACCOUNTS  (비밀번호: {password_display})")
+    # 비밀번호 값 자체는 절대 출력하지 않는다 — 터미널 스크롤백·셸 히스토리·CI 로그에
+    # 평문으로 남는 걸 막는다(get_seed_password() 호출조차 하지 않는다).
+    # main의 "기본값이면 그대로 보여준다" 방식은 기본값 자체가 사라져 성립하지 않는다.
+    print("  DEV ACCOUNTS  (비밀번호: backend/.env 의 SEED_PASSWORD 참조)")
     print("=" * 60)
     for email, role, _ in ACCOUNTS:
         print(f"  {role:8s} {email}")

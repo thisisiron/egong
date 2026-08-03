@@ -11,7 +11,6 @@ from .world import (
     CLASS_B_NAME,
     CLASS_NAME,
     CONSULTATION_REASON,
-    DEFAULT_SEED_PASSWORD,
     EXTRA_STUDENT_ACCOUNT,
     MATERIAL_ALL_TITLE,
     MATERIAL_B_TITLE,
@@ -19,7 +18,7 @@ from .world import (
     MATERIAL_CLASS2_TITLE,
     QUESTION_TITLE,
     SEED_EMAIL_DOMAIN,
-    SEED_PASSWORD,
+    get_seed_password,
     is_seed_email,
 )
 
@@ -34,7 +33,6 @@ __all__ = [
     "CLASS_B_NAME",
     "CLASS_NAME",
     "CONSULTATION_REASON",
-    "DEFAULT_SEED_PASSWORD",
     "EXTRA_STUDENT_ACCOUNT",
     "MATERIAL_ALL_TITLE",
     "MATERIAL_B_TITLE",
@@ -42,6 +40,6 @@ __all__ = [
     "MATERIAL_CLASS2_TITLE",
     "QUESTION_TITLE",
     "SEED_EMAIL_DOMAIN",
-    "SEED_PASSWORD",
+    "get_seed_password",
     "is_seed_email",
 ]

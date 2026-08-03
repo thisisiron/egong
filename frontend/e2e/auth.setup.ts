@@ -1,7 +1,13 @@
 import path from 'node:path'
 import { test as setup, expect } from '@playwright/test'
 
-const PASSWORD = process.env.SEED_PASSWORD ?? '***REMOVED***'
+// 하드코딩 기본값 없음 — 시드 비밀번호가 공개 저장소에 평문으로 남지 않게 한다.
+const PASSWORD = process.env.SEED_PASSWORD
+if (!PASSWORD) {
+  throw new Error(
+    'SEED_PASSWORD 환경변수가 설정되지 않았습니다 (셸 또는 .env.local 확인)'
+  )
+}
 
 // 체크아웃 재사용 가드는 "E2E_BASE_URL이 설정됐는가"가 아니라 "겨누는 호스트가
 // localhost인가"로 판단해야 한다. 이 가드의 실패 메시지가 안내하는 회피책이 바로

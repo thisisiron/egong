@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta, timezone
 
 from supabase import AsyncClient
 
-from .world import SEED_PASSWORD
+from .world import get_seed_password
 
 
 async def get_or_create_academy(client: AsyncClient, name: str) -> str:
@@ -31,7 +31,7 @@ async def ensure_auth_user(
     resp = await client.auth.admin.create_user(
         {
             "email": email,
-            "password": SEED_PASSWORD,
+            "password": get_seed_password(),
             "email_confirm": True,
             "user_metadata": {"display_name": display_name},
         }

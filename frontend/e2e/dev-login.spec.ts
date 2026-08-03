@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 // dev 퀵 로그인 스모크.
 // 사전조건:
-//   1. seed_dev_accounts.py --reset-passwords 로 시드 (5개 계정 비밀번호 ***REMOVED***)
+//   1. seed_dev_accounts.py --reset-passwords 로 시드 (5개 계정 비밀번호는 SEED_PASSWORD 값)
 //   2. frontend/.env.local 에 DEV_LOGIN_ENABLED=1
 //   3. 셸 환경변수 DEV_LOGIN_ENABLED=1 (미설정 시 skip — 기존 스펙들의 env 가드 패턴과 동일)
 const devLoginEnabled = process.env.DEV_LOGIN_ENABLED === '1'
