@@ -232,13 +232,26 @@ test('선생님: 대기 중 상담을 확정한다', async ({ page }) => {
   const card = page.locator('[data-consultation-reason="[SEED] 진로 상담 요청"]')
   await expect(card).toBeVisible()
 
-  await card.getByRole('button', { name: '확정' }).click()
-
-  // 이 파일 자신의 경고(위 헤더 주석)대로, 하이드레이션 전 클릭은 조용한 no-op이 될 수
-  // 있다. 다이얼로그가 실제로 열렸는지 여기서 먼저 확인해두면, 열리지 않았을 때 아래
-  // fill()의 30초 타임아웃(원인 불명)이 아니라 이 줄에서 바로 원인이 드러난다.
   const dialog = page.getByRole('dialog')
-  await expect(dialog).toBeVisible()
+
+  // 실측(콜드 서버 재현, 오늘): 이 트리거 클릭이 하이드레이션 레이스에 씹혀 다이얼로그가
+  // 아예 안 열리는 경우가 실제로 재현됐다 — 같은 실행 중 /teacher/schedule의
+  // SessionEditDialog에서도 동일한 "Hydration failed..." 서버 로그가 함께 찍혔으므로,
+  // 이건 상담 기능 특유의 결함이 아니라 콜드 Turbopack 컴파일 중이면 어떤 client 아일랜드
+  // 에서도 나타날 수 있는 일반적 레이스다(이 파일 헤더 주석·teacher-day의 '오늘' 클릭
+  // 재시도, playwright.config.ts의 15s expect timeout 상향 근거와 동일 계열).
+  //
+  // 이 트리거 클릭은 Radix Dialog의 순수 client useState(open)만 바꿀 뿐 서버에는 아무
+  // 영향이 없다(ConsultationHandleDialog.tsx) — 그래서 다이얼로그가 뜰 때까지 재클릭해도
+  // 안전하다(멱등: 이미 열려 있으면 다시 눌러도 상태가 그대로다). 다이얼로그가 실제로
+  // 열렸다는 것 자체가 "이 서브트리의 하이드레이션이 끝났다"는 증거이므로, 이 지점만
+  // 통과시키고 나면 아래 제출 클릭(서버 상태를 바꾸는 confirmConsultationAction)은 절대
+  // 재시도하지 않고 단 한 번만 실행한다 — 두 번 실행되면 uq_consultation_pending 위반이나
+  // 중복 처리로 이어질 수 있기 때문이다.
+  await expect(async () => {
+    await card.getByRole('button', { name: '확정' }).click()
+    await expect(dialog).toBeVisible({ timeout: 2000 })
+  }).toPass({ timeout: 15_000 })
 
   // KST 기준 7일 뒤 15:00 — datetime-local은 'YYYY-MM-DDTHH:mm'
   const kst = new Date(Date.now() + 9 * 3600_000 + 7 * 24 * 3600_000)

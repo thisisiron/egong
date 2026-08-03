@@ -86,8 +86,6 @@ test('학부모: 상담을 신청한다', async ({ page }, testInfo) => {
   // `locale={ko}`(ConsultationRequestForm.tsx)는 date-fns 포맷(월/요일 이름)에만 적용되고,
   // 다음 달 버튼의 aria-label(labelNext)은 별도 `labels` prop으로 덮어써야 하는데 이 폼은
   // 그걸 넘기지 않는다 — 실제 접근성 이름은 하드코딩된 영어 기본값 "Go to the Next Month"다.
-  await page.getByRole('button', { name: 'Go to the Next Month' }).click()
-
   // 날짜 셀의 접근성 이름도 "1" 같은 단순 숫자가 아니다 — DayPicker.js를 보면 mode="single"이라
   // isInteractive=true가 되어 gridcell(td) 자체의 aria-label은 비워지고, 안쪽 DayButton에
   // labelDayButton(PPPP 포맷 전체 날짜, 예: "2026년 9월 1일 화요일")이 aria-label로 박힌다.
@@ -105,8 +103,37 @@ test('학부모: 상담을 신청한다', async ({ page }, testInfo) => {
     Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth() + 1, 1)
   )
   const nextMonthFirstIso = nextMonthFirst.toISOString().slice(0, 10)
-  await page.locator(`td[data-day="${nextMonthFirstIso}"]`).click()
-  await expect(page.getByTestId('consultation-picked-date')).toBeVisible()
+  const nextMonthBtn = page.getByRole('button', { name: 'Go to the Next Month' })
+  const targetCell = page.locator(`td[data-day="${nextMonthFirstIso}"]`)
+  const pickedDate = page.getByTestId('consultation-picked-date')
+
+  // 달 이동은 순수 client state(react-day-picker의 `month`)만 바꾸는 부작용 없는
+  // 상호작용이라 서버 액션이 끼지 않는다 — teacher-day.spec.ts에서 실측된 것과 같은
+  // 하이드레이션 레이스가 여기서도 그대로 적용된다: 콜드 서버에서 'Go to the Next Month'
+  // 클릭이 씹히면 다음 달 셀 자체가 DOM에 없어 이어지는 `td[data-day=...]` 클릭이 원인
+  // 불명의 타임아웃으로 실패한다.
+  //
+  // 다만 이 클릭은 다이얼로그 트리거(teacher-day)와 달리 멱등이 아니다 — 매번 누를 때마다
+  // 한 달씩 더 넘어간다. targetCell을 그냥 toPass로 감싸 맹목적으로 다시 누르면, 클릭이
+  // 실제로는 이미 먹혔는데 아래 픽업 단언만 늦게 뜬 경우 재시도가 한 달을 더 넘겨버려
+  // targetCell을 오히려 놓치는 역효과가 난다. 그래서 "targetCell이 아직 안 보일 때만
+  // 누른다"는 조건부 재시도로 만들어 클릭 자체를 멱등하게 만든다(이미 성공했으면 재시도
+  // 루프가 다시 누르지 않고 그냥 통과).
+  await expect(async () => {
+    if (!(await targetCell.isVisible().catch(() => false))) {
+      await nextMonthBtn.click({ timeout: 2000 })
+    }
+    await expect(targetCell).toBeVisible({ timeout: 2000 })
+  }).toPass({ timeout: 15_000 })
+
+  // 날짜 셀 클릭은 진짜 멱등이다(같은 날짜를 다시 선택해도 선택 상태가 그대로) — 그대로
+  // toPass로 감싸 하이드레이션 완료를 한 번 더 확인한다. 이 지점을 통과하면 폼 전체가
+  // 하이드레이션됐다는 뜻이므로, 아래 실제 신청 제출(서버 상태 변경 — requestConsultationAction
+  // insert)은 재시도 없이 단 한 번만 실행한다.
+  await expect(async () => {
+    await targetCell.click({ timeout: 2000 })
+    await expect(pickedDate).toBeVisible({ timeout: 2000 })
+  }).toPass({ timeout: 5_000 })
 
   await page.getByLabel('희망 시간대').selectOption('afternoon')
   await page.getByLabel('상담 사유').fill(reason)
