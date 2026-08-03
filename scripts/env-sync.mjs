@@ -238,6 +238,19 @@ function assertNoSecretInOutput(file, content) {
 class EnvSyncError extends Error {}
 
 // ---------------------------------------------------------------------------
+// 쓸 때 항상 안전하게 인용한다 (Finding 3). 파서(parseEnvFile)는 따옴표를 벗기지만
+// 쓰는 쪽은 늘 raw로 찍어서, 공백이나 `#`이 든 값(예: SEED_PASSWORD='Dev 1234 #x')이
+// 따옴표 없이 다운스트림에 넘어가면 python-dotenv/JS dotenv가 `#` 이후를 주석으로
+// 잘라 값이 조용히 잘렸다. 이 리포의 실제 값 형태(Supabase 키, DSN, URL)에서 흔한
+// 문자는 인용 없이 그대로 두고, 그 밖의 문자가 하나라도 있으면 통째로 인용한다.
+// ---------------------------------------------------------------------------
+const SAFE_UNQUOTED_VALUE = /^[A-Za-z0-9_.:/@+=%,!~-]*$/
+function quote(value) {
+  if (SAFE_UNQUOTED_VALUE.test(value)) return value
+  return `"${value.replace(/(["\\$`])/g, '\\$1')}"`
+}
+
+// ---------------------------------------------------------------------------
 // 루트 .env에서 필요한 키가 다 있는지 검증. 모자라면 이름을 대며 에러를 던진다.
 // (한 파일이라도 실패하면 아무 파일도 쓰지 않는다 — 부분 생성 방지.)
 // ---------------------------------------------------------------------------
@@ -271,7 +284,7 @@ function buildFileContent(target, rootEnv) {
 
   lines.push('# ---- 필수 (공유 값, 루트 .env에서 복사) ----')
   for (const entry of target.required) {
-    lines.push(`${entry.to}=${rootEnv[entry.from]}`)
+    lines.push(`${entry.to}=${quote(rootEnv[entry.from])}`)
   }
 
   if (target.optionalWithDefault.length > 0) {
@@ -281,7 +294,7 @@ function buildFileContent(target, rootEnv) {
       const value = rootEnv[entry.from] !== undefined && rootEnv[entry.from] !== ''
         ? rootEnv[entry.from]
         : entry.default
-      lines.push(`${entry.to}=${value}`)
+      lines.push(`${entry.to}=${quote(value)}`)
     }
   }
 
@@ -292,7 +305,7 @@ function buildFileContent(target, rootEnv) {
       if (entry.comment) lines.push(`# ${entry.comment}`)
       const value = rootEnv[entry.from]
       if (value !== undefined && value !== '') {
-        lines.push(`${entry.to}=${value}`)
+        lines.push(`${entry.to}=${quote(value)}`)
       } else {
         lines.push(`# ${entry.to}=  (루트 .env에 없음)`)
       }
