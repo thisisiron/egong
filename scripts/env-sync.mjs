@@ -25,14 +25,46 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 // 이 마커가 없으면 "사람이 손으로 만든 파일"로 간주해 --force 없이는 멈춘다.
 const GENERATED_MARKER = '# env-sync:generated — 이 파일은 pnpm env:sync 가 생성합니다'
 
-// secret 계열로 간주하는 키 이름 패턴. 프론트로 나가는 매핑 테이블에는
-// 이 패턴에 걸리는 키가 절대 등장하면 안 된다 (from/to 이름 둘 다 검사).
+// secret 계열로 간주하는 키 이름 패턴 (denylist). 이름 기반이라 완전하지 않다 —
+// 예: NTS_API_KEY는 실제 자격증명이지만 이 패턴에 안 걸린다 (Finding 4). 그래서
+// 브라우저에 실제로 전달되는 frontend/.env.local에는 이 패턴을 1차 방어선으로만 쓰고,
+// 최종 결정은 아래 FRONTEND_ALLOWED_* allowlist(2차·주 방어선)에 맡긴다.
 const SECRET_PATTERN = /SECRET|SERVICE_ROLE|PRIVATE_KEY|PASSWORD|DATABASE_URL|_TOKEN\b/i
 
 // 이 목록에 있는 target 파일만 SECRET_PATTERN에 걸리는 키를 가질 수 있다.
 // (지금은 backend/.env 뿐이다.) 여기 없는 target에서 매치가 하나라도 나오면
 // 스크립트는 파일을 하나도 쓰지 않고 즉시 에러로 멈춘다.
 const GUARD_EXEMPT_FILES = new Set(['backend/.env'])
+
+// SECRET_PATTERN(denylist)에 걸리지만 의도적으로 통과시켜야 하는 "file:key" 이름 있는
+// 예외. 과거에는 이런 예외를 buildDevLoginLines()라는 별도 함수로 가드 자체를 우회해
+// 처리했는데, 그러면 그 함수가 만드는 다른 줄도 가드를 영영 안 거치게 된다(Finding 1).
+// 지금은 예외를 이 표 하나에 이름으로 적어두고, DEV_LOGIN_PASSWORD도 TARGETS의 일반
+// optionalNoDefault 항목으로 되돌린다 — "어떤 키가 어디로 가는지 표 하나만 보면 된다"는
+// 요구사항이 복구된다.
+const GUARD_ALLOWLIST = new Set([
+  // NEXT_PUBLIC_ 접두사가 없어 Next.js 클라이언트 번들에 인라인되지 않는다(서버에서만
+  // 읽는 로컬 전용 dev 퀵 로그인 토글). 이름에 PASSWORD가 있다는 이유만으로
+  // SECRET_PATTERN에 걸리므로 명시적으로 예외 처리한다.
+  'frontend/.env.local:DEV_LOGIN_PASSWORD',
+])
+
+// frontend/.env.local은 브라우저까지 실제로 전달되는 유일한 대상이라, denylist가 아니라
+// allowlist(화이트리스트)로 검사한다 — "표에 없는 키는 이름이 뭐든 거부"가 기본값이다.
+// 이 목록이 곧 "프론트로 나가도 되는 키 전체"이므로, 나중에 누가 매핑 표나 별도 빌더에
+// 새 키를 몰래 추가해도(Finding 4의 NTS_API_KEY 재현처럼) 여기 없으면 막힌다.
+const FRONTEND_FILE = 'frontend/.env.local'
+const FRONTEND_ALLOWED_KEYS = new Set([
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+  'NEXT_PUBLIC_API_BASE_URL',
+])
+const FRONTEND_ALLOWED_PREFIXES = ['DEV_LOGIN_']
+
+function isFrontendKeyAllowed(key) {
+  if (FRONTEND_ALLOWED_KEYS.has(key)) return true
+  return FRONTEND_ALLOWED_PREFIXES.some((prefix) => key.startsWith(prefix))
+}
 
 // ---------------------------------------------------------------------------
 // 명시적 매핑 테이블 — 어떤 키가 어느 파일로, 어떤 이름으로 가는지 여기 전부 적는다.
@@ -74,14 +106,23 @@ const TARGETS = [
     optionalWithDefault: [
       { from: 'NEXT_PUBLIC_API_BASE_URL', to: 'NEXT_PUBLIC_API_BASE_URL', default: 'http://localhost:8000' },
     ],
-    optionalNoDefault: [],
-    // DEV_LOGIN_ENABLED / DEV_LOGIN_PASSWORD 는 여기 목록에 없다 — 의도적.
-    // DEV_LOGIN_PASSWORD라는 이름은 SECRET_PATTERN(PASSWORD)에 걸리므로, 이 배열에 넣으면
-    // 가드가 즉시 막는다. 이 값은 실제로는 로컬 전용 dev 퀵 로그인 토글(기본값
-    // '***REMOVED***', ENVIRONMENT=production에서는 seed 스크립트 자체가 거부)이라 낮은 위험도의
-    // 예외지만, 그 판단을 이 표 안에서 조용히 허용목록으로 처리하지 않고
-    // buildDevLoginLines()라는 별도의, 코드리뷰에서 눈에 띄는 경로로 뺐다.
-    // → 가드는 "이 배열 안에서는 예외 없음"이라는 불변식을 유지한다.
+    optionalNoDefault: [
+      // dev 퀵 로그인 토글 — 로컬 전용, 로그인 화면에 역할별 원클릭 배너를 띄운다.
+      // DEV_LOGIN_PASSWORD는 이름에 PASSWORD가 있어 SECRET_PATTERN(denylist)에 걸리지만
+      // GUARD_ALLOWLIST('frontend/.env.local:DEV_LOGIN_PASSWORD')로 이름 있는 예외 처리돼
+      // 있고, 어차피 FRONTEND_ALLOWED_PREFIXES('DEV_LOGIN_')가 출력 단계에서도 통과시킨다.
+      // NEXT_PUBLIC_ 접두사가 없어 Next.js 클라이언트 번들에는 들어가지 않는다.
+      {
+        from: 'DEV_LOGIN_ENABLED',
+        to: 'DEV_LOGIN_ENABLED',
+        comment: 'dev 퀵 로그인 — 켜려면 루트 .env에 DEV_LOGIN_ENABLED=1을 설정하고 pnpm env:sync를 다시 실행하세요. 프로덕션에는 절대 설정하지 마세요.',
+      },
+      {
+        from: 'DEV_LOGIN_PASSWORD',
+        to: 'DEV_LOGIN_PASSWORD',
+        comment: '시드 비밀번호(SEED_PASSWORD)를 바꾼 경우에만 설정하세요 (기본값 ***REMOVED***).',
+      },
+    ],
   },
 ]
 
@@ -135,6 +176,7 @@ function assertNoSecretLeak(targets) {
       ...target.optionalNoDefault,
     ]
     for (const entry of allEntries) {
+      if (GUARD_ALLOWLIST.has(`${target.file}:${entry.to}`)) continue
       if (SECRET_PATTERN.test(entry.from) || SECRET_PATTERN.test(entry.to)) {
         problems.push(`${target.file}: ${entry.from} -> ${entry.to}`)
       }
@@ -144,7 +186,48 @@ function assertNoSecretLeak(targets) {
     throw new EnvSyncError(
       [
         'secret 가드 위반 — 매핑 테이블에 secret로 보이는 키가 프론트(또는 비허용) 대상에 있습니다.',
-        '다음 항목을 TARGETS에서 제거하거나, 정말 의도한 것이면 GUARD_EXEMPT_FILES를 검토하세요:',
+        '다음 항목을 TARGETS에서 제거하거나, 정말 의도한 것이면 GUARD_EXEMPT_FILES/GUARD_ALLOWLIST를 검토하세요:',
+        ...problems.map((p) => `  - ${p}`),
+        '(파일은 하나도 쓰지 않았습니다.)',
+      ].join('\n')
+    )
+  }
+}
+
+// ---------------------------------------------------------------------------
+// secret 가드(2단계) — buildFileContent가 만든 "실제 렌더된 내용"을 다시 파싱해 검사한다.
+// assertNoSecretLeak은 TARGETS 표만 보므로, 표를 거치지 않고 내용을 추가하는 어떤 코드
+// (과거의 buildDevLoginLines() 같은)가 생겨도 이 검사는 놓치지 않는다 (Finding 1).
+//
+// frontend/.env.local은 allowlist로, 그 외 non-exempt 대상은 SECRET_PATTERN denylist로
+// 검사한다 — 조합 근거는 파일 상단 FRONTEND_ALLOWED_KEYS 주석 참고.
+// ---------------------------------------------------------------------------
+function assertNoSecretInOutput(file, content) {
+  if (GUARD_EXEMPT_FILES.has(file)) return
+  const keys = Object.keys(parseEnvFile(content))
+
+  if (file === FRONTEND_FILE) {
+    const problems = keys.filter((key) => !isFrontendKeyAllowed(key))
+    if (problems.length > 0) {
+      throw new EnvSyncError(
+        [
+          `secret 가드 위반 — ${file}에 기록될 내용에 allowlist에 없는 키가 있습니다:`,
+          ...problems.map((p) => `  - ${p}`),
+          `허용된 키: ${[...FRONTEND_ALLOWED_KEYS].join(', ')}, 접두사 허용: ${FRONTEND_ALLOWED_PREFIXES.join(', ')}*`,
+          '(파일은 하나도 쓰지 않았습니다.)',
+        ].join('\n')
+      )
+    }
+    return
+  }
+
+  const problems = keys.filter(
+    (key) => SECRET_PATTERN.test(key) && !GUARD_ALLOWLIST.has(`${file}:${key}`)
+  )
+  if (problems.length > 0) {
+    throw new EnvSyncError(
+      [
+        `secret 가드 위반 — ${file}에 기록될 내용에 secret로 보이는 키가 있습니다:`,
         ...problems.map((p) => `  - ${p}`),
         '(파일은 하나도 쓰지 않았습니다.)',
       ].join('\n')
@@ -153,28 +236,6 @@ function assertNoSecretLeak(targets) {
 }
 
 class EnvSyncError extends Error {}
-
-// ---------------------------------------------------------------------------
-// dev 퀵 로그인 전용 라인 빌더 — 의도적으로 TARGETS/가드 경로 밖에 있다 (위 주석 참고).
-// ---------------------------------------------------------------------------
-function buildDevLoginLines(rootEnv) {
-  const lines = []
-  lines.push('')
-  lines.push('# ---- dev 퀵 로그인 (선택, 로컬 전용) ----')
-  lines.push('# 켜려면 루트 .env에 DEV_LOGIN_ENABLED=1 을 설정하고 pnpm env:sync를 다시 실행하세요.')
-  lines.push('# 프로덕션에는 절대 설정하지 마세요.')
-  if (rootEnv.DEV_LOGIN_ENABLED) {
-    lines.push(`DEV_LOGIN_ENABLED=${rootEnv.DEV_LOGIN_ENABLED}`)
-  } else {
-    lines.push('# DEV_LOGIN_ENABLED=1')
-  }
-  if (rootEnv.DEV_LOGIN_PASSWORD) {
-    lines.push(`DEV_LOGIN_PASSWORD=${rootEnv.DEV_LOGIN_PASSWORD}`)
-  } else {
-    lines.push("# DEV_LOGIN_PASSWORD=***REMOVED***  # 시드 비밀번호(SEED_PASSWORD)를 바꾼 경우에만 설정")
-  }
-  return lines
-}
 
 // ---------------------------------------------------------------------------
 // 루트 .env에서 필요한 키가 다 있는지 검증. 모자라면 이름을 대며 에러를 던진다.
@@ -228,6 +289,7 @@ function buildFileContent(target, rootEnv) {
     lines.push('')
     lines.push('# ---- 선택 (기본값 없음, 루트 .env에 있을 때만 포함) ----')
     for (const entry of target.optionalNoDefault) {
+      if (entry.comment) lines.push(`# ${entry.comment}`)
       const value = rootEnv[entry.from]
       if (value !== undefined && value !== '') {
         lines.push(`${entry.to}=${value}`)
@@ -235,10 +297,6 @@ function buildFileContent(target, rootEnv) {
         lines.push(`# ${entry.to}=  (루트 .env에 없음)`)
       }
     }
-  }
-
-  if (target.file === 'frontend/.env.local') {
-    lines.push(...buildDevLoginLines(rootEnv))
   }
 
   lines.push('')
@@ -300,6 +358,12 @@ function main() {
     const content = buildFileContent(target, rootEnv)
     return { target, targetPath, content }
   })
+
+  // 표 검사(assertNoSecretLeak)와 별개로, 실제로 쓰일 내용도 검사한다 — buildDevLoginLines
+  // 같은 표 밖 빌더가 나중에 다시 생겨도 이 단계가 잡는다 (Finding 1).
+  for (const plan of plans) {
+    assertNoSecretInOutput(plan.target.file, plan.content)
+  }
 
   // 쓰기 전에 전부 검사 — 하나라도 막히면 아무 파일도 쓰지 않는다 (부분 생성 방지).
   for (const plan of plans) {
