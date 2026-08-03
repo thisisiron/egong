@@ -5,6 +5,7 @@ import "./globals.css";
 
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
+import { Toaster } from "@/components/ui/sonner";
 
 // weight를 지정하지 않으면 WebKit 기반 브라우저에서 굵기가 잘못 렌더된다.
 const pretendard = localFont({
@@ -32,6 +33,7 @@ export default function RootLayout({
             <ImpersonationBanner />
           </Suspense>
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
