@@ -152,9 +152,11 @@ describe('prevMonth / nextMonth', () => {
   })
 
   it('31일 달에서 이전 달로 가도 1일에 고정된다', () => {
-    // 3월 31일에서 subMonths하면 2월 31일이 없어 말일로 밀리는 함정 — 1일 기준이라 안전
-    const mar = monthFromParam('2026-03', new Date('2026-03-15T00:00:00Z'))
-    expect(kstParts(prevMonth(mar))).toMatchObject({ year: 2026, month: 2, day: 1 })
+    // 3월 31일에서 subMonths하면 2월 31일이 없어 말일로 밀리는 함정을 실제로 재현하려면
+    // day-31 입력이 필요하다. monthFromParam은 항상 그 달 1일을 돌려주므로(day-31을
+    // 절대 만들지 않는다) 여기서는 KST 3월 31일 Date를 직접 만들어 prevMonth에 넘긴다.
+    const mar31 = new Date('2026-03-31T00:00:00+09:00')
+    expect(kstParts(prevMonth(mar31))).toMatchObject({ year: 2026, month: 2, day: 1 })
   })
 })
 
