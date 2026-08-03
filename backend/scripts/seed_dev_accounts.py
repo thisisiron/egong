@@ -57,6 +57,7 @@ from seed import (
     CLASS_B_NAME,
     CLASS_NAME,
     CONSULTATION_REASON,
+    DEFAULT_SEED_PASSWORD,
     EXTRA_STUDENT_ACCOUNT,
     MATERIAL_ALL_TITLE,
     MATERIAL_B_TITLE,
@@ -238,9 +239,17 @@ async def main(reset: bool = False, reset_passwords: bool = False) -> int:
     )
     log.info("academy B contents: 자료 1 · 출결 1")
 
+    # 기본값이면 그대로 보여줘 바로 복사해 쓸 수 있게 한다. 커스텀 값(운영자가
+    # backend/.env에 직접 설정한 값)이면 터미널 스크롤백·CI 로그·셸 히스토리에
+    # 평문으로 남지 않도록 마스킹한다.
+    password_display = (
+        SEED_PASSWORD
+        if SEED_PASSWORD == DEFAULT_SEED_PASSWORD
+        else "backend/.env의 SEED_PASSWORD 참조"
+    )
     print()
     print("=" * 60)
-    print(f"  DEV ACCOUNTS  (비밀번호: {SEED_PASSWORD})")
+    print(f"  DEV ACCOUNTS  (비밀번호: {password_display})")
     print("=" * 60)
     for email, role, _ in ACCOUNTS:
         print(f"  {role:8s} {email}")
