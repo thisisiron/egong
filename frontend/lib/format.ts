@@ -54,6 +54,28 @@ export function formatDateTimeKR(iso: string): string {
   return `${get('year')}. ${get('month')}. ${get('day')}. ${period} ${h12}:${get('minute')}`
 }
 
+/**
+ * ISO timestamp → "2026. 6. 12." 형태의 한국어 날짜(시각 없음).
+ * 잘못된 입력은 원본 그대로 반환. formatDateTimeKR과 같은 이유로
+ * new Date(iso).toLocaleDateString('ko-KR')를 직접 쓰지 않는다 — 로케일을 명시해도
+ * Node(small-icu)와 브라우저(full-icu)의 ko-KR 렌더링이 달라질 수 있어(구분자,
+ * 표기 방식 등) hydration mismatch 소지가 있으므로 formatToParts로 값만 뽑아
+ * 직접 조립한다.
+ */
+export function formatDateKR(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  const parts = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(d)
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? ''
+  return `${get('year')}. ${get('month')}. ${get('day')}.`
+}
+
 /** ISO timestamp → "14:00" (KST 고정 — 서버/클라이언트 어디서든 동일). */
 export function formatTimeKR(iso: string): string {
   const d = new Date(iso)

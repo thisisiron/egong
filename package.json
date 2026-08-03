@@ -10,8 +10,8 @@
     "test:backend": "cd backend && pytest",
     "db:push": "npx -y supabase db push",
     "db:types": "npx -y supabase gen types typescript --project-id \"$SUPABASE_PROJECT_REF\" > frontend/lib/supabase/database.types.ts",
-    "seed:reset": "cd backend && ./.venv/Scripts/python.exe scripts/seed_dev_accounts.py --reset",
-    "test:rls": "cd backend && ./.venv/Scripts/python.exe -m pytest -m rls",
+    "seed:reset": "cd backend && .venv\\Scripts\\python.exe scripts/seed_dev_accounts.py --reset",
+    "test:rls": "cd backend && .venv\\Scripts\\python.exe -m pytest -m rls",
     "test:scenario": "pnpm seed:reset && pnpm --filter @egong/frontend exec playwright test --project=owner-day --project=teacher-day --project=student-day --project=parent-day"
   }
 }

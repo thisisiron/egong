@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import os
 
-SEED_PASSWORD = os.environ.get("SEED_PASSWORD", "***REMOVED***")
+DEFAULT_SEED_PASSWORD = "***REMOVED***"
+SEED_PASSWORD = os.environ.get("SEED_PASSWORD", DEFAULT_SEED_PASSWORD)
 
 ACADEMY_NAME = "테스트학원"
 ACADEMY_B_NAME = "테스트학원2"

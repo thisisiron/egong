@@ -42,8 +42,14 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       formatters={{
+        // "default"는 로케일 인자를 안 준 것과 동급이라 서버(small-icu, en 전용
+        // 데이터만 내장)와 브라우저(시스템 로케일)가 서로 다른 월 이름을 낼 수 있다
+        // (lib/format.ts의 dayPeriod mismatch와 같은 부류). 현재 이 앱의 유일한
+        // Calendar 사용처(ConsultationRequestForm)는 captionLayout="label"(기본값)이라
+        // 이 포매터가 실제로 호출되진 않지만, 드롭다운 레이아웃을 쓰게 되면 그대로
+        // 재현되므로 로케일을 고정해 결정적으로 만들어 둔다.
         formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
+          date.toLocaleString("en-US", { month: "short" }),
         ...formatters,
       }}
       classNames={{
@@ -180,6 +186,9 @@ function Calendar({
 
 function CalendarDayButton({
   className,
+  // day는 더 이상 안 쓴다(과거 여기서 로케일 의존 data-day를 만드는 데만 썼음) —
+  // Button에 그대로 흘려보내면 알 수 없는 DOM 속성이 되므로 구조분해로 걷어낸다.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   day,
   modifiers,
   ...props
@@ -195,7 +204,6 @@ function CalendarDayButton({
     <Button
       ref={ref}
       variant="ghost"
-      data-day={day.date.toLocaleDateString()}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { StorageFileUpload, type UploadedFile } from '@/components/ui/StorageFileUpload'
+import { formatDateTimeKR } from '@/lib/format'
 import { createReplyAction, toggleResolvedAction, deleteQuestionAction } from '../actions'
 import { REPLY_ROLE_LABEL, type QuestionReply, type QuestionWithClass } from '../types'
 
@@ -113,7 +114,7 @@ export function QuestionThread({ question, questionFiles, replies, canReply, can
           )}
         </div>
         <h1 className="text-lg font-semibold">{question.title}</h1>
-        <p className="text-xs text-slate-500">{question.author_name} · {new Date(question.created_at).toLocaleString('ko-KR')}</p>
+        <p className="text-xs text-slate-500">{question.author_name} · {formatDateTimeKR(question.created_at)}</p>
       </header>
 
       <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -128,7 +129,7 @@ export function QuestionThread({ question, questionFiles, replies, canReply, can
             <p className="text-xs text-slate-500 mb-1">
               <span className="font-medium text-slate-700">{r.author_name}</span>
               <span className="ml-1 px-1.5 py-0.5 rounded bg-slate-100">{REPLY_ROLE_LABEL[r.author_role]}</span>
-              <span className="ml-1">· {new Date(r.created_at).toLocaleString('ko-KR')}</span>
+              <span className="ml-1">· {formatDateTimeKR(r.created_at)}</span>
             </p>
             <p className="text-sm whitespace-pre-wrap">{r.body}</p>
             <FileLinks files={r.signedFiles} />

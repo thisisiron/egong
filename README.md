@@ -72,5 +72,14 @@ pnpm run dev:frontend                                       # http://localhost:3
 | `pnpm test:backend` | pytest (`cd backend && pytest`) |
 | `pnpm db:push` | Supabase 마이그레이션 push |
 | `pnpm db:types` | DB 타입 자동 생성 → `frontend/lib/supabase/database.types.ts` (셸에 `SUPABASE_PROJECT_REF` 필요) |
+| `pnpm seed:reset` | 개발용 시드 데이터 초기화 (`backend/scripts/seed_dev_accounts.py --reset`) |
+| `pnpm test:rls` | RLS 정책 pytest (`-m rls`) |
+| `pnpm test:scenario` | `seed:reset` 실행 후 4역할 day E2E 시나리오 |
+
+> `seed:reset` / `test:rls`는 `backend/.venv/Scripts/python.exe`(Windows venv 경로)를 직접 호출합니다.
+> 이 팀은 Windows에서 개발하므로 하드코딩돼 있습니다 — macOS/Linux에서 돌리려면
+> `.venv/bin/python`으로 바꿔야 합니다. PowerShell·cmd.exe·Git Bash 어디서 `pnpm run`으로
+> 실행해도 동작하도록 경로에 `./` 접두사를 쓰지 않습니다(cmd.exe는 `./x`를 실행 파일로
+> 인식하지 못해 `'.' is not recognized...` 오류가 났었습니다).
 
 자세한 셋업은 `frontend/README.md`, `backend/README.md` 참조.

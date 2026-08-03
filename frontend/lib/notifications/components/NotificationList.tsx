@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useTransition } from 'react'
 import type { Notification } from '../types'
 import { markNotificationReadAction } from '../actions'
+import { kstParts } from '@/lib/date'
 
 type Props = {
   items: Notification[]
@@ -13,15 +14,27 @@ type Props = {
   onItemRead?: () => void
 }
 
-/** 상대 시각 — "방금 전 / N분 전 / N시간 전 / M월 D일". */
+/** 상대 시각 — "방금 전 / N분 전 / N시간 전 / M월 D일".
+ * Date.now() 기준이지만 하이드레이션 mismatch 우려는 없다 — 이 컴포넌트는
+ * NotificationBell.tsx의 `{open && <NotificationList .../>}`로만 렌더되어 SSR에도
+ * 최초 하이드레이션 렌더에도 존재하지 않는다(벨을 클릭해 open이 true가 된 후에야
+ * 마운트됨). 즉 서버 스냅샷과 비교할 대상 자체가 없다.
+ *
+ * fallback(1일 이상 지난 항목)의 월/일은 kstParts로 KST 기준 고정 —
+ * new Date().getMonth()/getDate()는 실행 환경의 로컬 타임존을 따라 KST가 아닌
+ * 기기에서 날짜가 하루 어긋날 수 있다(이 저장소의 KST 고정 규칙, lib/date.ts 참고).
+ * 이전 커밋(fb6ee60)은 이 fallback을 formatDateTimeKR + `mounted` 가드로 감쌌으나,
+ * 위 이유로 mounted는 항상 true라 그 분기는 죽은 코드였다 — kstParts 수정만 남기고
+ * useMounted/useSyncExternalStore는 제거했다.
+ */
 function relTime(iso: string): string {
   const then = new Date(iso).getTime()
   const diffMin = Math.floor((Date.now() - then) / 60000)
   if (diffMin < 1) return '방금 전'
   if (diffMin < 60) return `${diffMin}분 전`
   if (diffMin < 1440) return `${Math.floor(diffMin / 60)}시간 전`
-  const d = new Date(iso)
-  return `${d.getMonth() + 1}월 ${d.getDate()}일`
+  const { month, day } = kstParts(new Date(iso))
+  return `${month}월 ${day}일`
 }
 
 export function NotificationList({ items, onNavigate, onItemRead }: Props) {

@@ -54,7 +54,26 @@ export default defineConfig({
         webServer: {
           command: 'pnpm dev',
           url: BASE_URL,
+          // 이 저장소는 .claude/worktrees/ 아래 여러 워크트리에서 병렬로 개발한다.
+          // reuseExistingServer:true는 "포트 3000에 뭔가 떠 있으면 그게 뭐든 재사용"
+          // 한다는 뜻이라, 다른 워크트리(다른 브랜치)의 dev 서버가 먼저 3000을
+          // 잡고 있으면 이 체크아웃과 무관한 코드를 검증하고도 조용히 통과해
+          // 버린다(실제로 겪음 — 새 라우트가 없는 브랜치의 서버를 재사용해 그
+          // 라우트만 404, 나머지는 통과). 그렇다고 무조건 reuseExistingServer:false로
+          // 바꾸면 되는 게 아니다: Next는 포트가 점유돼 있으면 기본적으로 조용히
+          // 다음 포트(3001...)로 밀려나고, 그러면 BASE_URL(3000 고정)과 실제
+          // 서버 포트가 어긋나 더 알아채기 어려운 실패가 된다(직접 재현 확인).
+          // 그래서 두 가지를 함께 한다:
+          //   1) PORT를 BASE_URL 포트로 고정 — 포트가 점유돼 있으면 Next가 밀려나지
+          //      않고 EADDRINUSE로 즉시, 시끄럽게 죽는다(직접 확인).
+          //   2) reuseExistingServer는 true로 유지(같은 워크트리에서 이미 띄워둔
+          //      dev 서버를 재사용하는 흔한 워크플로를 그대로 지원) 하되, "재사용된
+          //      서버가 이 체크아웃의 코드가 맞는지"는 e2e/auth.setup.ts의 첫 테스트가
+          //      x-egong-checkout-root 응답 헤더(next.config.ts에서 설정)로 검증한다.
+          //      다르면 어떤 경로의 서버를 보고 있는지까지 에러 메시지에 그대로 찍혀
+          //      원인이 즉시 드러난다.
           reuseExistingServer: true,
+          env: { PORT: new URL(BASE_URL).port || '3000' },
           timeout: 60_000,
         },
       }

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { formatDateTimeKR } from '@/lib/format'
 
 import { approveApplicationAction } from '../actions'
 import type { Application } from '../types'
@@ -38,7 +39,7 @@ export function DecisionPanel({ application }: Props) {
 
   if (application.status === 'approved') {
     const approvedDate = application.approved_at
-      ? new Date(application.approved_at).toLocaleString('ko-KR')
+      ? formatDateTimeKR(application.approved_at)
       : '-'
     return (
       <div
