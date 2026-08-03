@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { deleteMaterialAction, updateMaterialAction } from '../actions'
 import { updateMaterialSchema } from '../schemas'
 import type { MaterialWithClass, SignedMaterialFile } from '../types'
+import { formatDateKR } from '@/lib/format'
 
 type Props = {
   material: MaterialWithClass
@@ -148,7 +149,7 @@ export function MaterialCard({ material, files, canManage }: Props) {
       </ul>
 
       <p className="text-xs text-slate-400">
-        {material.author_name} · {new Date(material.created_at).toLocaleDateString('ko-KR')}
+        {material.author_name} · {formatDateKR(material.created_at)}
       </p>
     </article>
   )
