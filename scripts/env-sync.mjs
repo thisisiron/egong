@@ -87,13 +87,19 @@ const TARGETS = [
     optionalWithDefault: [
       { from: 'ALLOWED_ORIGINS', to: 'ALLOWED_ORIGINS', default: 'http://localhost:3000' },
       { from: 'ENVIRONMENT', to: 'ENVIRONMENT', default: 'development' },
-      // backend/scripts/seed/world.py 가 이미 동일 기본값으로 os.environ.get() 하지만,
-      // 여기서도 명시해 backend/.env만 보고도 실제 시드 비밀번호를 알 수 있게 한다.
-      { from: 'SEED_PASSWORD', to: 'SEED_PASSWORD', default: '***REMOVED***' },
     ],
     optionalNoDefault: [
       // RLS 테스트(-m rls)에서만 필요한 Postgres 직결 DSN. 프로젝트마다 달라 기본값을 줄 수 없다.
       { from: 'DATABASE_URL', to: 'DATABASE_URL' },
+      // 시드 계정 비밀번호. **기본값을 주면 안 된다.** 이 저장소는 공개돼 있고 시드 계정은
+      // 실제 Supabase 프로젝트에 존재하므로, 여기 적힌 값은 곧 공개된 로그인 자격증명이
+      // 된다(실제로 한 번 그렇게 유출됐다). 없으면 backend/.env에서 그냥 빠지고,
+      // backend/scripts/seed/world.py의 get_seed_password()가 시딩 시점에 에러로 멈춘다.
+      {
+        from: 'SEED_PASSWORD',
+        to: 'SEED_PASSWORD',
+        comment: '시드 계정(@egong.test) 비밀번호. 기본값 없음 — 루트 .env에 직접 강한 값을 넣으세요.',
+      },
     ],
   },
   {
@@ -120,7 +126,7 @@ const TARGETS = [
       {
         from: 'DEV_LOGIN_PASSWORD',
         to: 'DEV_LOGIN_PASSWORD',
-        comment: '시드 비밀번호(SEED_PASSWORD)를 바꾼 경우에만 설정하세요 (기본값 ***REMOVED***).',
+        comment: '루트 .env의 SEED_PASSWORD와 같은 값을 넣으세요 (dev 퀵 로그인이 그 계정으로 로그인합니다).',
       },
     ],
   },
