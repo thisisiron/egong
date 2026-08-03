@@ -69,6 +69,7 @@ pnpm run dev:frontend                                       # http://localhost:3
 
 | 명령 | 동작 |
 |---|---|
+| `pnpm env:sync` | 루트 `.env` → `backend/.env`, `frontend/.env.local` 생성 (`scripts/env-sync.mjs`) |
 | `pnpm dev:frontend` | Next.js dev server |
 | `pnpm dev:backend` | FastAPI (uvicorn, port 8000) |
 | `pnpm build:frontend` | Next.js production 빌드 |

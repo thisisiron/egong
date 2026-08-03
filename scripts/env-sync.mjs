@@ -131,11 +131,34 @@ const TARGETS = [
 // ---------------------------------------------------------------------------
 function parseArgs(argv) {
   const args = { root: null, force: false }
+  const unknown = []
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
-    if (a === '--force') args.force = true
-    else if (a === '--root') args.root = argv[++i]
-    else if (a.startsWith('--root=')) args.root = a.slice('--root='.length)
+    if (a === '--force') {
+      args.force = true
+    } else if (a === '--root') {
+      const value = argv[i + 1]
+      // 값을 안 주거나(마지막 인자) 다음 토큰이 또 다른 플래그면, 조용히 undefined로
+      // 폴백해 진짜 리포 루트에 쓰는 대신 에러로 거부한다.
+      if (value === undefined || value.startsWith('--')) {
+        throw new EnvSyncError(
+          `--root 뒤에 디렉터리 경로가 필요합니다 (받은 값: ${value === undefined ? '(없음)' : value}).`
+        )
+      }
+      args.root = value
+      i++
+    } else if (a.startsWith('--root=')) {
+      const value = a.slice('--root='.length)
+      if (value === '') {
+        throw new EnvSyncError('--root= 뒤에 디렉터리 경로가 필요합니다.')
+      }
+      args.root = value
+    } else {
+      unknown.push(a)
+    }
+  }
+  if (unknown.length > 0) {
+    throw new EnvSyncError(`알 수 없는 인자: ${unknown.join(', ')}`)
   }
   return args
 }
@@ -150,7 +173,9 @@ function parseEnvFile(content) {
     if (!line || line.startsWith('#')) continue
     const eq = line.indexOf('=')
     if (eq === -1) continue
-    const key = line.slice(0, eq).trim()
+    // `export KEY=value` 형태(README가 SUPABASE_PROJECT_REF에 안내하는 셸 관용구)도 인식한다.
+    // 이걸 안 벗기면 키가 "export ENVIRONMENT"로 저장돼 매칭이 조용히 실패한다.
+    const key = line.slice(0, eq).trim().replace(/^export\s+/, '')
     let value = line.slice(eq + 1).trim()
     if (
       (value.startsWith('"') && value.endsWith('"') && value.length >= 2) ||
@@ -307,7 +332,11 @@ function buildFileContent(target, rootEnv) {
       if (value !== undefined && value !== '') {
         lines.push(`${entry.to}=${quote(value)}`)
       } else {
-        lines.push(`# ${entry.to}=  (루트 .env에 없음)`)
+        // `KEY=` 뒤에 값 없이 바로 설명을 붙이면 안 된다 — 사용자가 `#`만 지우고
+        // uncomment하면 설명 텍스트가 그대로 값이 돼 버린다(예:
+        // `DATABASE_URL=  (루트 .env에 없음)`). `#` 뒤에 별도 주석으로 둬서, 지워도
+        // 빈 값(`KEY=`)만 남게 한다.
+        lines.push(`# ${entry.to}=      # 루트 .env에 없어 생략됨`)
       }
     }
   }
