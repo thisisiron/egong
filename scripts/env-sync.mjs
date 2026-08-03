@@ -370,18 +370,33 @@ function main() {
     if (!fs.existsSync(plan.targetPath)) continue
     const existingContent = fs.readFileSync(plan.targetPath, 'utf8')
     const generated = isGeneratedByUs(existingContent)
-    if (generated || cli.force) continue
-
     const diff = summarizeKeyDiff(existingContent, plan.content)
-    const msg = [
-      `${plan.target.file} 파일이 이미 있고, env:sync가 만든 파일처럼 보이지 않습니다 (사람이 만든 파일로 간주).`,
-      '값은 보여주지 않고 키 이름만 비교합니다:',
-      `  - 기존 파일에만 있음: ${diff.onlyInExisting.length > 0 ? diff.onlyInExisting.join(', ') : '(없음)'}`,
-      `  - 새로 생성되면 추가됨: ${diff.onlyInNew.length > 0 ? diff.onlyInNew.join(', ') : '(없음)'}`,
-      `  - 둘 다에 있음(값은 덮어쓰기 대상): ${diff.inBoth.length > 0 ? diff.inBoth.join(', ') : '(없음)'}`,
-      '계속 덮어쓰려면 `--force`를 붙여 다시 실행하세요.',
-    ].join('\n')
-    throw new EnvSyncError(msg)
+
+    if (!generated && !cli.force) {
+      const msg = [
+        `${plan.target.file} 파일이 이미 있고, env:sync가 만든 파일처럼 보이지 않습니다 (사람이 만든 파일로 간주).`,
+        '값은 보여주지 않고 키 이름만 비교합니다:',
+        `  - 기존 파일에만 있음: ${diff.onlyInExisting.length > 0 ? diff.onlyInExisting.join(', ') : '(없음)'}`,
+        `  - 새로 생성되면 추가됨: ${diff.onlyInNew.length > 0 ? diff.onlyInNew.join(', ') : '(없음)'}`,
+        `  - 둘 다에 있음(값은 덮어쓰기 대상): ${diff.inBoth.length > 0 ? diff.inBoth.join(', ') : '(없음)'}`,
+        '계속 덮어쓰려면 `--force`를 붙여 다시 실행하세요.',
+      ].join('\n')
+      throw new EnvSyncError(msg)
+    }
+
+    // 여기 도달했다는 건 마커가 있거나 --force라 실제로 덮어쓴다는 뜻이다. 그렇더라도
+    // 기존 파일에만 있던 키(예: 사람이 직접 넣은 DATABASE_URL)가 조용히 사라지면 안 되므로
+    // 경고는 반드시 찍는다 (Finding 2 — 마커 있는 파일도, --force도 예외 없음).
+    if (diff.onlyInExisting.length > 0) {
+      console.warn(
+        [
+          `경고: ${plan.target.file}에 있던 다음 키가 새로 생성되는 파일에는 없어 사라집니다:`,
+          `  - ${diff.onlyInExisting.join(', ')}`,
+          '이 키가 계속 필요하면(예: DATABASE_URL은 RLS 테스트 전용) 루트 .env에도 추가한 뒤',
+          '`pnpm env:sync`를 다시 실행하세요.',
+        ].join('\n')
+      )
+    }
   }
 
   for (const plan of plans) {

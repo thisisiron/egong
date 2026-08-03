@@ -58,7 +58,8 @@ def db():
     url = os.environ.get("DATABASE_URL")
     if not url:
         pytest.fail(
-            "DATABASE_URL 미설정 — backend/.env에 세션 풀러 URL을 설정하세요 "
+            "DATABASE_URL 미설정 — 루트 .env에 DATABASE_URL(세션 풀러 URL)을 설정하고 "
+            "pnpm env:sync를 다시 실행하세요 "
             "(RLS 테스트는 -m rls로 명시 실행했을 때만 로드되므로 skip이 아니라 fail)"
         )
     with psycopg.connect(url, autocommit=True) as conn:
