@@ -11,6 +11,11 @@ const CHECKOUT_ROOT = process.cwd().replace(/\\/g, "/");
 
 const nextConfig: NextConfig = {
   async headers() {
+    // `next build`가 headers()를 routes-manifest.json에 정적으로 구워 넣으므로, 이 가드가
+    // 없으면 프로덕션 응답(및 `/:path*`이 매칭하는 /_next/static/* 자산까지) 전부에 빌드
+    // 머신의 절대 경로가 노출된다. 이 헤더는 E2E가 로컬 dev 서버를 식별하기 위한 진단용일
+    // 뿐이므로 프로덕션 빌드에서는 아예 빼야 한다.
+    if (process.env.NODE_ENV === "production") return [];
     return [
       {
         source: "/:path*",
