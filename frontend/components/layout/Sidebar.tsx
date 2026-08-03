@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import type { UserRole } from '@/lib/auth'
 import { NotificationBell } from '@/lib/notifications/components/NotificationBell'
 import type { Notification } from '@/lib/notifications/types'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { NavList } from './NavList'
 import { ROLE_LABEL, type NavKey } from './nav-config'
 
@@ -71,6 +72,7 @@ export function Sidebar({ navKey, role, displayName, academyName, initialCollaps
               <div className="text-xs text-slate-500">{ROLE_LABEL[role]}</div>
             </div>
           )}
+          <ThemeToggle />
           <form action="/auth/logout" method="post">
             <button
               title="로그아웃"

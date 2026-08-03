@@ -8,6 +8,7 @@ import { Logo } from '@/components/Logo'
 import type { UserRole } from '@/lib/auth'
 import { NotificationBell } from '@/lib/notifications/components/NotificationBell'
 import type { Notification } from '@/lib/notifications/types'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { NavList } from './NavList'
 import { ROLE_LABEL, type NavKey } from './nav-config'
 
@@ -52,7 +53,8 @@ export function MobileNav({ navKey, role, displayName, academyName, notification
           <Menu className="h-5 w-5" />
         </button>
         <Logo subtitle={academyName ?? ROLE_LABEL[role]} />
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+          <ThemeToggle />
           <NotificationBell initialItems={notifications} initialUnread={unreadCount} />
         </div>
       </div>
