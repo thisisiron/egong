@@ -77,20 +77,20 @@ export function StorageFileUpload({
       {value.length > 0 && (
         <ul className="space-y-1">
           {value.map((f, i) => (
-            <li key={f.path} className="flex items-center gap-2 text-sm text-slate-700">
+            <li key={f.path} className="flex items-center gap-2 text-sm text-foreground">
               <span className="truncate">{f.name}</span>
-              <button type="button" onClick={() => removeAt(i)} className="text-xs text-red-600 hover:underline">제거</button>
+              <button type="button" onClick={() => removeAt(i)} className="text-xs text-danger-foreground hover:underline">제거</button>
             </li>
           ))}
         </ul>
       )}
       <label className="cursor-pointer inline-block">
         <input type="file" accept={accept} multiple={multiple} onChange={handleSelect} disabled={uploading} className="hidden" />
-        <span className={`inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium ${uploading ? 'bg-slate-100 text-slate-400 cursor-wait' : 'border border-slate-200 bg-white text-slate-700 hover:bg-gray-50'}`}>
+        <span className={`inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium ${uploading ? 'bg-muted text-muted-foreground cursor-wait' : 'border border-input bg-card text-foreground hover:bg-muted'}`}>
           {uploading ? '업로드 중...' : multiple ? '파일 추가' : value.length ? '다른 파일 선택' : '파일 첨부'}
         </span>
       </label>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-danger-foreground">{error}</p>}
     </div>
   )
 }
