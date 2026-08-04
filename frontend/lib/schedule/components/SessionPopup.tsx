@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { SessionCellInfo } from '@/lib/teacher-calendar'
 import { SESSION_TYPE_META } from '@/lib/sessions/types'
 import { EVENT_TYPE_META, type ScheduleEventWithClass } from '@/lib/events/types'
+import { EventBadge } from '@/lib/events/components/EventBadge'
 
 type Props = {
   /** ymd 형식 (`YYYY-MM-DD`) — 선택된 날 */
@@ -42,7 +43,7 @@ export function SessionPopup({ day, cells, sessionLinkBase, events = [] }: Props
                 {e.title}
                 {e.class_name && <span className="text-xs text-slate-500 font-normal">· {e.class_name}</span>}
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded font-semibold ${meta.badge}`}>{meta.label}</span>
+              <EventBadge type={e.type} />
             </div>
             {e.memo && <div className="text-xs text-slate-600 mt-1">{e.memo}</div>}
           </div>

@@ -18,8 +18,8 @@ export type ScheduleEventWithClass = ScheduleEvent & {
   class_name: string | null
 }
 
-/** 이벤트 타입 라벨·색. */
-export const EVENT_TYPE_META: Record<EventType, { label: string; dot: string; badge: string }> = {
-  exam: { label: '시험', dot: 'bg-rose-500', badge: 'bg-rose-100 text-rose-700' },
-  consultation: { label: '상담', dot: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-700' },
+/** 이벤트 타입 라벨·점 색. 배지는 무채색이고 색은 달력 점에만 쓴다(분류이지 상태가 아니므로). */
+export const EVENT_TYPE_META: Record<EventType, { label: string; dot: string }> = {
+  exam: { label: '시험', dot: 'bg-category-exam' },
+  consultation: { label: '상담', dot: 'bg-category-consultation' },
 }
