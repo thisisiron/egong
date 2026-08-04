@@ -11,7 +11,7 @@ type Props = {
 
 export function StatCard({ label, value, unit, sub, href }: Props) {
   const body = (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-lg border border-border bg-card p-4 transition-colors group-hover:border-input">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-1 flex items-baseline gap-1">
         <span className="text-2xl font-semibold tracking-heading tabular-nums text-foreground">
@@ -27,7 +27,7 @@ export function StatCard({ label, value, unit, sub, href }: Props) {
   return (
     <Link
       href={href}
-      className="block rounded-lg transition-colors hover:border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       {body}
     </Link>
